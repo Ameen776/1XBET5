@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.5
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.6
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v10.5...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v10.6...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "10.5.0",
+    VERSION: "10.6.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -194,7 +194,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "10.5";
+        this.algorithmVersion = "10.6";
     }
 
     generateSmartPrediction(userId) {
@@ -361,9 +361,19 @@ class DatabaseManager {
                     return settingsDoc.data();
                 }
             }
-            return settingsDatabase.get('config');
+            return settingsDatabase.get('config') || {
+                prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+                payment_links: { ...CONFIG.PAYMENT_LINKS },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
         } catch (error) {
-            return settingsDatabase.get('config');
+            return settingsDatabase.get('config') || {
+                prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+                payment_links: { ...CONFIG.PAYMENT_LINKS },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
         }
     }
 
@@ -438,7 +448,7 @@ class DatabaseManager {
             return users.filter(user => 
                 (user.user_id && user.user_id.toString().includes(query)) ||
                 (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
-                (user.onexbet && user.onexbet.includes(query))
+                (user.onexbet && user.onexbet.toString().includes(query))
             );
         } catch (error) {
             console.error('Search users error:', error);
@@ -677,15 +687,27 @@ bot.on('text', async (ctx) => {
             }
         }
 
-        // معالجة البحث عن مستخدم
+        // معالجة البحث عن مستخدم - الإصلاح هنا
         if (session.adminStep === 'search_user') {
             await handleAdminSearchUser(ctx, text);
             return;
         }
 
-        // معالجة الإشعار الجماعي
+        // معالجة الإشعار الجماعي - الإصلاح هنا
         if (session.adminStep === 'broadcast') {
             await handleAdminBroadcast(ctx, text);
+            return;
+        }
+
+        // معالجة تعديل الأسعار
+        if (session.adminStep === 'price_edit') {
+            await handleAdminPriceEdit(ctx, text);
+            return;
+        }
+        
+        // معالجة تعديل الروابط
+        if (session.adminStep === 'link_edit') {
+            await handleAdminLinkEdit(ctx, text);
             return;
         }
 
@@ -1410,43 +1432,6 @@ async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
     try {
-        // معالجة تعديل الأسعار
-        if (session.adminStep === 'price_edit') {
-            await handleAdminPriceEdit(ctx, text);
-            return;
-        }
-        
-        // معالجة تعديل الروابط
-        if (session.adminStep === 'link_edit') {
-            await handleAdminLinkEdit(ctx, text);
-            return;
-        }
-
-        switch (session.adminStep) {
-            case 'main':
-                await handleAdminMain(ctx, text);
-                break;
-            case 'users':
-                await handleAdminUsers(ctx, text);
-                break;
-            case 'payments':
-                await handleAdminPayments(ctx, text);
-                break;
-            case 'settings':
-                await handleAdminSettings(ctx, text);
-                break;
-            default:
-                await handleAdminMain(ctx, text);
-                break;
-        }
-    } catch (error) {
-        console.error('Admin commands error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
-    }
-}
-
-async function handleAdminMain(ctx, text) {
-    try {
         switch (text) {
             case '📊 إحصائيات النظام':
                 await handleAdminStats(ctx);
@@ -1496,20 +1481,75 @@ async function handleAdminMain(ctx, text) {
                 ctx.session.adminStep = null;
                 await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
                 break;
+
+            case '💰 تعديل الأسعار':
+                await handleAdminPriceSettings(ctx);
+                break;
+                
+            case '🔗 تعديل روابط الدفع':
+                await handleAdminPaymentLinks(ctx);
+                break;
+                
+            case '⚙️ الإعدادات العامة':
+                await handleAdminGeneralSettings(ctx);
+                break;
+                
+            case '🔄 إعادة التعيين':
+                await handleAdminReset(ctx);
+                break;
+
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+
+            case '📋 قائمة المستخدمين':
+                await handleAdminUsersList(ctx);
+                break;
+                
+            case '✅ المشتركين النشطين':
+                await handleAdminActiveUsers(ctx);
+                break;
+                
+            case '🆓 المستخدمين المجانين':
+                await handleAdminFreeUsers(ctx);
+                break;
+                
+            case '📈 إحصائيات المستخدمين':
+                await handleAdminUsersStats(ctx);
+                break;
+
+            case '📥 الطلبات المعلقة':
+                await handleAdminPendingPayments(ctx);
+                break;
+                
+            case '✅ الطلبات المقبولة':
+                await handleAdminAcceptedPayments(ctx);
+                break;
+                
+            case '❌ الطلبات المرفوضة':
+                await handleAdminRejectedPayments(ctx);
+                break;
+                
+            case '📋 كل الطلبات':
+                await handleAdminAllPayments(ctx);
+                break;
                 
             default:
                 await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminMainKeyboard());
                 break;
         }
     } catch (error) {
-        console.error('Admin main error:', error);
+        console.error('Admin commands error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
     }
 }
 
-// البحث عن مستخدم
+// البحث عن مستخدم - الإصلاح الكامل
 async function handleAdminSearchUser(ctx, query) {
     try {
+        console.log('🔍 Searching for users with query:', query);
+        
         const users = await dbManager.searchUsers(query);
         
         if (users.length === 0) {
@@ -1522,9 +1562,14 @@ async function handleAdminSearchUser(ctx, query) {
         
         users.slice(0, 10).forEach((user, index) => {
             const status = user.subscription_status === 'active' ? '✅' : '🆓';
-            message += `${index + 1}. ${user.username || 'بدون اسم'} ${status}\n`;
-            message += `   👤 ${user.user_id} | 🔐 ${user.onexbet}\n`;
-            message += `   📊 ${user.total_predictions || 0} توقع | 💰 ${user.total_profit || 0}$\n\n`;
+            const username = user.username || 'بدون اسم';
+            const onexbet = user.onexbet || 'غير محدد';
+            const predictions = user.total_predictions || 0;
+            const profit = user.total_profit || 0;
+            
+            message += `${index + 1}. ${username} ${status}\n`;
+            message += `   👤 ${user.user_id} | 🔐 ${onexbet}\n`;
+            message += `   📊 ${predictions} توقع | 💰 ${profit}$\n\n`;
         });
 
         if (users.length > 10) {
@@ -1541,15 +1586,18 @@ async function handleAdminSearchUser(ctx, query) {
     }
 }
 
-// الإشعار الجماعي
+// الإشعار الجماعي - الإصلاح الكامل
 async function handleAdminBroadcast(ctx, message) {
     try {
+        console.log('📢 Starting broadcast to all users');
+        
         const users = await dbManager.getAllUsers();
         let success = 0;
         let failed = 0;
 
         const broadcastMsg = await ctx.replyWithMarkdown('📢 *جاري إرسال الإشعار لجميع المستخدمين...*');
 
+        // إرسال الرسالة لكل مستخدم
         for (const user of users) {
             try {
                 await bot.telegram.sendMessage(
@@ -1558,12 +1606,14 @@ async function handleAdminBroadcast(ctx, message) {
                     { parse_mode: 'Markdown' }
                 );
                 success++;
+                
+                // تأخير بسيط لتجنب حظر التليجرام
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
             } catch (error) {
+                console.log(`❌ Failed to send to user ${user.user_id}:`, error.message);
                 failed++;
             }
-            
-            // تأخير بسيط لتجنب حظر التليجرام
-            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         await ctx.replyWithMarkdown(
@@ -1945,10 +1995,11 @@ async function handleAdminSettings(ctx, text) {
     }
 }
 
+// تعديل الأسعار - الإصلاح الكامل
 async function handleAdminPriceSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const prices = settings.prices;
+        const prices = settings.prices || CONFIG.SUBSCRIPTION_PRICES;
         
         const priceMessage = `
 💰 *الإعدادات الحالية*
@@ -1975,10 +2026,11 @@ year 300  (لتغيير السعر السنوي لـ 300)
     }
 }
 
+// تعديل الروابط - الإصلاح الكامل
 async function handleAdminPaymentLinks(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const payment_links = settings.payment_links;
+        const payment_links = settings.payment_links || CONFIG.PAYMENT_LINKS;
         
         const linksMessage = `
 🔗 *روابط الدفع الحالية*
@@ -1995,6 +2047,8 @@ week https://new-link.com
 month https://new-link.com  
 three_months https://new-link.com
 year https://new-link.com
+
+💡 *يمكنك أيضاً إرسال صورة QR بدلاً من الرابط*
         `;
         
         await ctx.replyWithMarkdown(linksMessage);
@@ -2063,7 +2117,7 @@ async function handleAdminReset(ctx) {
     }
 }
 
-// معالجة تعديل الأسعار
+// معالجة تعديل الأسعار - الإصلاح الكامل
 async function handleAdminPriceEdit(ctx, text) {
     try {
         const parts = text.split(' ');
@@ -2104,7 +2158,7 @@ async function handleAdminPriceEdit(ctx, text) {
     }
 }
 
-// معالجة تعديل الروابط
+// معالجة تعديل الروابط - الإصلاح الكامل
 async function handleAdminLinkEdit(ctx, text) {
     try {
         const parts = text.split(' ');
@@ -2263,7 +2317,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v10.5 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v10.6 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
