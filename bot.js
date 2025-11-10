@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 12.0
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 12.1
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v12.0...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v12.1...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "12.0.0",
+    VERSION: "12.1.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -193,7 +193,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "12.0";
+        this.algorithmVersion = "12.1";
     }
 
     generateSmartPrediction(userId) {
@@ -228,21 +228,53 @@ class GoalPredictionAI {
     }
 }
 
-// 📤 IMGBB UPLOADER
+// 📤 IMGBB UPLOADER - UPDATED
 class ImgBBUploader {
     constructor(apiKey) {
         this.apiKey = apiKey;
+        this.baseUrl = 'https://api.imgbb.com/1/upload';
     }
 
-    async uploadImage(imageUrl) {
+    async uploadImage(imageBuffer) {
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return {
-                success: true,
-                url: imageUrl,
-                delete_url: imageUrl
-            };
+            const formData = new FormData();
+            const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+            formData.append('image', blob);
+            
+            const response = await axios.post(`${this.baseUrl}?key=${this.apiKey}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            if (response.data && response.data.success) {
+                return {
+                    success: true,
+                    url: response.data.data.url,
+                    delete_url: response.data.data.delete_url
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'Upload failed'
+                };
+            }
         } catch (error) {
+            console.error('ImgBB upload error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async uploadImageFromUrl(imageUrl) {
+        try {
+            const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(response.data);
+            return await this.uploadImage(imageBuffer);
+        } catch (error) {
+            console.error('ImgBB upload from URL error:', error);
             return {
                 success: false,
                 error: error.message
@@ -539,9 +571,8 @@ const getAdminPaymentsKeyboard = () => {
 
 const getAdminSettingsKeyboard = () => {
     return Markup.keyboard([
-        ['💰 تعديل الأسعار', '🔗 تغيير معلومات الدفع'],
-        ['⚙️ الإعدادات العامة', '🔄 إعادة التعيين'],
-        ['🔙 رجوع']
+        ['💰 تعديل الأسعار والدفع', '⚙️ الإعدادات العامة'],
+        ['🔄 إعادة التعيين', '🔙 رجوع']
     ]).resize();
 };
 
@@ -707,15 +738,9 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // معالجة تعديل الأسعار
-        if (session.adminStep === 'price_edit') {
-            await handleAdminPriceEdit(ctx, text);
-            return;
-        }
-        
-        // معالجة تغيير معلومات الدفع
-        if (session.adminStep === 'payment_info_edit') {
-            await handleAdminPaymentInfoEdit(ctx, text);
+        // معالجة تعديل الأسعار والدفع
+        if (session.adminStep === 'edit_price_and_payment') {
+            await handleAdminEditPriceAndPayment(ctx, text);
             return;
         }
 
@@ -781,6 +806,18 @@ bot.on('text', async (ctx) => {
         else if (session.step === 'awaiting_verification' && /^\d{6}$/.test(text)) {
             if (parseInt(text) === ctx.session.verificationCode) {
                 
+                // إرسال رسالة الانتظار المتحركة
+                const waitingMessage = await ctx.replyWithMarkdown(
+                    '🔐 *جاري تسجيل الدخول...*\n\n' +
+                    '⏳ يرجى الانتظار mientras نقوم بتسجيل دخولك...\n' +
+                    '🔄 جاري البحث في السجلات...\n' +
+                    '📡 جاري الاتصال بالسيرفر...\n' +
+                    '⏰ قد تستغرق العملية بضع ثوان...'
+                );
+
+                // محاكاة الانتظار لمدة 10 ثواني
+                await new Promise(resolve => setTimeout(resolve, 10000));
+
                 const userData = {
                     user_id: userId,
                     username: ctx.from.first_name,
@@ -802,6 +839,9 @@ bot.on('text', async (ctx) => {
                 await dbManager.saveUser(userId, userData);
                 ctx.session.step = 'verified';
                 ctx.session.userData = userData;
+
+                // حذف رسالة الانتظار
+                await ctx.deleteMessage(waitingMessage.message_id);
 
                 await ctx.replyWithMarkdown(
                     `🎉 *تم التحقق بنجاح!*\n\n` +
@@ -929,14 +969,14 @@ bot.on('photo', async (ctx) => {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
         
-        // 💳 معالجة صور الدفع
+        // 💳 معالجة صور الدفع من المستخدمين
         if (session.paymentType) {
             await handlePaymentScreenshot(ctx, userId);
             return;
         }
 
         // 🖼️ معالجة رفع صورة للدفع في الإدمن
-        if (session.adminStep === 'payment_info_edit' && session.editingSubscriptionType) {
+        if (session.adminStep === 'edit_price_and_payment' && session.editingSubscriptionType) {
             await handleAdminPaymentImageUpload(ctx, userId);
             return;
         }
@@ -1282,23 +1322,23 @@ async function handleSubscriptions(ctx, userData) {
 
 💰 *أسبوعي:* ${prices.week}$
 ⏰ مدة: 7 أيام
-🔗 ${payment_links.week}
+${payment_links.week.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.week})` : `🔗 ${payment_links.week}`}
 
 💰 *شهري:* ${prices.month}$  
 ⏰ مدة: 30 يوماً
-🔗 ${payment_links.month}
+${payment_links.month.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.month})` : `🔗 ${payment_links.month}`}
 
 💰 *3 أشهر:* ${prices.three_months}$
 ⏰ مدة: 90 يوماً
-🔗 ${payment_links.three_months}
+${payment_links.three_months.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.three_months})` : `🔗 ${payment_links.three_months}`}
 
 💰 *سنوي:* ${prices.year}$
 ⏰ مدة: 365 يوماً
-🔗 ${payment_links.year}
+${payment_links.year.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.year})` : `🔗 ${payment_links.year}`}
 
 📋 *طريقة الدفع:*
 1. اختر الباقة المناسبة
-2. ادفع عبر الرابط
+2. ادفع عبر الرابط أو الصورة
 3. أرسل رقم حساب 1xBet (10 أرقام)
 4. أرسل صورة إثبات الدفع
 5. انتظر التفعيل من الإدارة
@@ -1336,9 +1376,11 @@ async function handleSubscriptionSelection(ctx, userData, text) {
         await ctx.replyWithMarkdown(
             `💳 *باقة ${text.replace('💰 ', '')}*\n\n` +
             `💰 السعر: ${prices[subscriptionType]}$\n` +
-            `🔗 رابط الدفع: ${payment_links[subscriptionType]}\n\n` +
+            `${payment_links[subscriptionType].startsWith('http') ? 
+                `🖼️ صورة الدفع: [اضغط هنا](${payment_links[subscriptionType]})` : 
+                `🔗 رابط الدفع: ${payment_links[subscriptionType]}`}\n\n` +
             `📋 *خطوات الإكمال:*\n` +
-            `1. ادفع عبر الرابط أعلاه\n` +
+            `1. ادفع عبر الرابط/الصورة أعلاه\n` +
             `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
             `3. أرسل صورة إثبات الدفع\n\n` +
             `🔢 *الآن أرسل رقم حساب 1xBet المكون من 10 أرقام:*`
@@ -1385,8 +1427,14 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const accountNumber = ctx.session.paymentAccount || userData.onexbet;
 
-        const uploadResult = await imgbbUploader.uploadImage(imageUrl);
+        // رفع الصورة إلى imgbb
+        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
+        if (!uploadResult.success) {
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            return;
+        }
+
         const paymentData = {
             user_id: userId,
             onexbet: accountNumber,
@@ -1399,19 +1447,19 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const paymentId = await dbManager.addPayment(paymentData);
         
-        // إرسال الإشعار للإدارة
+        // إرسال الإشعار للإدارة مع الصورة
         try {
-            await bot.telegram.sendMessage(
+            await bot.telegram.sendPhoto(
                 CONFIG.ADMIN_ID,
-                `🆕 *طلب دفع جديد*\n\n` +
-                `👤 المستخدم: ${userData.username}\n` +
-                `🔐 الحساب: ${accountNumber}\n` +
-                `💰 المبلغ: ${paymentData.amount}$\n` +
-                `📦 الباقة: ${ctx.session.paymentType}\n` +
-                `🆔 الرقم: ${paymentId}\n` +
-                `📅 الوقت: ${new Date().toLocaleString('ar-EG')}\n` +
-                `🔗 صورة: ${uploadResult.url}`,
+                uploadResult.url,
                 {
+                    caption: `🆕 *طلب دفع جديد*\n\n` +
+                    `👤 المستخدم: ${userData.username}\n` +
+                    `🔐 الحساب: ${accountNumber}\n` +
+                    `💰 المبلغ: ${paymentData.amount}$\n` +
+                    `📦 الباقة: ${ctx.session.paymentType}\n` +
+                    `🆔 الرقم: ${paymentId}\n` +
+                    `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
@@ -1447,7 +1495,7 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🔧 ADMIN HANDLERS - UPDATED
+// 🔧 ADMIN HANDLERS - UPDATED COMPLETELY
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
@@ -1463,13 +1511,8 @@ async function handleAdminCommands(ctx, text) {
             return;
         }
 
-        if (session.adminStep === 'price_edit') {
-            await handleAdminPriceEdit(ctx, text);
-            return;
-        }
-        
-        if (session.adminStep === 'payment_info_edit') {
-            await handleAdminPaymentInfoEdit(ctx, text);
+        if (session.adminStep === 'edit_price_and_payment') {
+            await handleAdminEditPriceAndPayment(ctx, text);
             return;
         }
 
@@ -1523,12 +1566,8 @@ async function handleAdminCommands(ctx, text) {
                 await handleAdminToggleMaintenance(ctx);
                 break;
 
-            case '💰 تعديل الأسعار':
-                await handleAdminPriceSettings(ctx);
-                break;
-                
-            case '🔗 تغيير معلومات الدفع':
-                await handleAdminPaymentSettings(ctx);
+            case '💰 تعديل الأسعار والدفع':
+                await handleAdminPriceAndPaymentSettings(ctx);
                 break;
                 
             case '⚙️ الإعدادات العامة':
@@ -1579,7 +1618,9 @@ async function handleAdminCommands(ctx, text) {
             case '🔙 الخروج من الإدمن':
                 ctx.session.adminMode = false;
                 ctx.session.adminStep = null;
-                await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
+                await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { 
+                    reply_markup: { remove_keyboard: true } 
+                });
                 break;
                 
             default:
@@ -1905,15 +1946,15 @@ async function handleAdminPendingPayments(ctx) {
         }
         
         for (const payment of payments) {
-            await ctx.replyWithMarkdown(
-                `📥 *طلب دفع معلق #${payment.id}*\n\n` +
-                `👤 المستخدم: ${payment.username}\n` +
-                `🔐 الحساب: ${payment.onexbet}\n` +
-                `💰 المبلغ: ${payment.amount}$\n` +
-                `📦 الباقة: ${payment.subscription_type}\n` +
-                `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n` +
-                `🔗 صورة: ${payment.screenshot_url}`,
+            await ctx.replyWithPhoto(
+                payment.screenshot_url,
                 {
+                    caption: `📥 *طلب دفع معلق #${payment.id}*\n\n` +
+                    `👤 المستخدم: ${payment.username}\n` +
+                    `🔐 الحساب: ${payment.onexbet}\n` +
+                    `💰 المبلغ: ${payment.amount}$\n` +
+                    `📦 الباقة: ${payment.subscription_type}\n` +
+                    `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}`,
                     reply_markup: {
                         inline_keyboard: [
                             [
@@ -2008,93 +2049,18 @@ async function handleAdminAllPayments(ctx) {
     }
 }
 
-async function handleAdminSettings(ctx, text) {
+// 🔧 SYSTEM UPDATED - تعديل الأسعار والدفع معاً
+async function handleAdminPriceAndPaymentSettings(ctx) {
     try {
-        switch (text) {
-            case '💰 تعديل الأسعار':
-                await handleAdminPriceSettings(ctx);
-                break;
-                
-            case '🔗 تغيير معلومات الدفع':
-                await handleAdminPaymentSettings(ctx);
-                break;
-                
-            case '⚙️ الإعدادات العامة':
-                await handleAdminGeneralSettings(ctx);
-                break;
-                
-            case '🔄 إعادة التعيين':
-                await handleAdminReset(ctx);
-                break;
-                
-            case '🔙 رجوع':
-                ctx.session.adminStep = 'main';
-                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-                break;
-                
-            default:
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminSettingsKeyboard());
-                break;
-        }
-    } catch (error) {
-        console.error('Admin settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminSettingsKeyboard());
-    }
-}
-
-// تعديل الأسعار - الإصلاح الكامل
-async function handleAdminPriceSettings(ctx) {
-    try {
-        const settings = await dbManager.getSettings();
-        const prices = settings.prices || CONFIG.SUBSCRIPTION_PRICES;
-        
-        const priceMessage = `
-💰 *الإعدادات الحالية*
-
-أسبوعي: ${prices.week}$
-شهري: ${prices.month}$ 
-3 أشهر: ${prices.three_months}$
-سنوي: ${prices.year}$
-
-📝 *للتعديل:* 
-أرسل السعر الجديد بالصيغة التالية:
-
-week 15   (لتغيير سعر الأسبوعي لـ 15)
-month 40  (لتغيير سعر الشهري لـ 40)  
-three_months 100 (لتغيير سعر 3 أشهر لـ 100)
-year 300  (لتغيير السعر السنوي لـ 300)
-        `;
-        
-        await ctx.replyWithMarkdown(priceMessage);
-        ctx.session.adminStep = 'price_edit';
-    } catch (error) {
-        console.error('Admin price settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إعدادات الأسعار', getAdminSettingsKeyboard());
-    }
-}
-
-// تغيير معلومات الدفع - النظام الجديد
-async function handleAdminPaymentSettings(ctx) {
-    try {
-        const settings = await dbManager.getSettings();
-        const payment_links = settings.payment_links || CONFIG.PAYMENT_LINKS;
-        
-        const paymentMessage = `
-🔗 *معلومات الدفع الحالية*
-
-💰 *أسبوعي:* ${payment_links.week}
-💰 *شهري:* ${payment_links.month}  
-💰 *3 أشهر:* ${payment_links.three_months}
-💰 *سنوي:* ${payment_links.year}
-
-📝 *اختر نوع الاشتراك الذي تريد تعديله:*
-        `;
-        
-        await ctx.replyWithMarkdown(paymentMessage, getAdminPaymentTypesKeyboard());
+        await ctx.replyWithMarkdown(
+            '💰 *تعديل الأسعار ومعلومات الدفع*\n\n' +
+            '📝 اختر نوع الاشتراك الذي تريد تعديله:',
+            getAdminPaymentTypesKeyboard()
+        );
         ctx.session.adminStep = 'select_subscription_edit';
     } catch (error) {
-        console.error('Admin payment settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب معلومات الدفع', getAdminSettingsKeyboard());
+        console.error('Admin price and payment settings error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في بدء التعديل', getAdminSettingsKeyboard());
     }
 }
 
@@ -2121,19 +2087,22 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         }
 
         ctx.session.editingSubscriptionType = subscriptionType;
-        ctx.session.adminStep = 'payment_info_edit';
+        ctx.session.adminStep = 'edit_price_and_payment';
 
         const settings = await dbManager.getSettings();
+        const currentPrice = settings.prices[subscriptionType] || CONFIG.SUBSCRIPTION_PRICES[subscriptionType];
         const currentLink = settings.payment_links[subscriptionType] || 'غير محدد';
 
         await ctx.replyWithMarkdown(
-            `🔗 *تعديل معلومات الدفع للاشتراك ${text}*\n\n` +
-            `📎 الرابط الحالي: ${currentLink}\n\n` +
+            `🔧 *تعديل ${text}*\n\n` +
+            `💰 السعر الحالي: ${currentPrice}$\n` +
+            `📎 رابط/صورة الدفع الحالي: ${currentLink}\n\n` +
             `📝 *الآن يمكنك:*\n` +
-            `• إرسال رابط دفع جديد\n` +
+            `• إرسال السعر الجديد (مثال: 15)\n` +
+            `• أو إرسال رابط دفع جديد\n` +
             `• أو إرسال صورة QR\n` +
             `• أو كتابة "إلغاء" للرجوع\n\n` +
-            `💡 *مثال للرابط:* https://example.com/payment`
+            `💡 *أرسل السعر الجديد أولاً:*`
         );
 
     } catch (error) {
@@ -2142,8 +2111,8 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
     }
 }
 
-// معالجة تغيير معلومات الدفع
-async function handleAdminPaymentInfoEdit(ctx, text) {
+// معالجة تعديل الأسعار والدفع
+async function handleAdminEditPriceAndPayment(ctx, text) {
     try {
         if (text === 'إلغاء') {
             ctx.session.adminStep = 'settings';
@@ -2158,32 +2127,46 @@ async function handleAdminPaymentInfoEdit(ctx, text) {
             return;
         }
 
-        // التحقق إذا كان الرابط صالحاً
-        if (!text.startsWith('http')) {
-            await ctx.replyWithMarkdown('❌ *رابط غير صحيح!*\n\nيجب أن يبدأ الرابط بـ http أو https');
-            return;
+        // إذا كان النص رقم (سعر)
+        if (!isNaN(text) && parseFloat(text) > 0) {
+            const priceNum = parseFloat(text);
+            const settings = await dbManager.getSettings();
+            settings.prices[subscriptionType] = priceNum;
+            await dbManager.updateSettings(settings);
+
+            await ctx.replyWithMarkdown(
+                `✅ *تم تحديث السعر بنجاح*\n\n` +
+                `💰 ${subscriptionType}: ${priceNum}$\n\n` +
+                `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
+            );
         }
+        // إذا كان رابط أو سيتم إرسال صورة
+        else if (text.startsWith('http')) {
+            const settings = await dbManager.getSettings();
+            settings.payment_links[subscriptionType] = text;
+            await dbManager.updateSettings(settings);
 
-        const settings = await dbManager.getSettings();
-        settings.payment_links[subscriptionType] = text;
-        await dbManager.updateSettings(settings);
+            await ctx.replyWithMarkdown(
+                `✅ *تم التحديث بنجاح!*\n\n` +
+                `📦 ${subscriptionType}\n` +
+                `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
+                `📎 الرابط: ${text}\n\n` +
+                `🔄 تم حفظ التغييرات في النظام`,
+                getAdminSettingsKeyboard()
+            );
 
-        await ctx.replyWithMarkdown(
-            `✅ *تم تحديث معلومات الدفع بنجاح*\n\n` +
-            `📦 ${subscriptionType}: ${text}\n\n` +
-            `🔄 تم حفظ التغييرات في Firebase`,
-            getAdminSettingsKeyboard()
-        );
-
-        ctx.session.adminStep = 'settings';
-        ctx.session.editingSubscriptionType = null;
+            ctx.session.adminStep = 'settings';
+            ctx.session.editingSubscriptionType = null;
+        } else {
+            await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
+        }
     } catch (error) {
-        console.error('Admin payment info edit error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل معلومات الدفع', getAdminSettingsKeyboard());
+        console.error('Admin edit price and payment error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل', getAdminSettingsKeyboard());
     }
 }
 
-// معالجة رفع صورة للدفع
+// معالجة رفع صورة للدفع من الإدمن
 async function handleAdminPaymentImageUpload(ctx, userId) {
     try {
         const subscriptionType = ctx.session.editingSubscriptionType;
@@ -2196,16 +2179,24 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        // استخدام الرابط المباشر للصورة
+        // رفع الصورة إلى imgbb
+        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
+        
+        if (!uploadResult.success) {
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            return;
+        }
+
         const settings = await dbManager.getSettings();
-        settings.payment_links[subscriptionType] = imageUrl;
+        settings.payment_links[subscriptionType] = uploadResult.url;
         await dbManager.updateSettings(settings);
 
         await ctx.replyWithMarkdown(
-            `✅ *تم تحديث معلومات الدفع بنجاح*\n\n` +
-            `📦 ${subscriptionType}: ${imageUrl}\n\n` +
-            `🖼️ تم استخدام صورة QR للدفع\n` +
-            `🔄 تم حفظ التغييرات في Firebase`,
+            `✅ *تم التحديث بنجاح!*\n\n` +
+            `📦 ${subscriptionType}\n` +
+            `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
+            `🖼️ صورة الدفع: [اضغط هنا](${uploadResult.url})\n\n` +
+            `🔄 تم حفظ التغييرات في النظام`,
             getAdminSettingsKeyboard()
         );
 
@@ -2233,11 +2224,11 @@ async function handleAdminGeneralSettings(ctx) {
 • 3 أشهر: ${settings.prices.three_months}$ 
 • سنوي: ${settings.prices.year}$
 
-🔗 *روابط الدفع:*
-• أسبوعي: ${settings.payment_links.week}
-• شهري: ${settings.payment_links.month}
-• 3 أشهر: ${settings.payment_links.three_months}
-• سنوي: ${settings.payment_links.year}
+🔗 *معلومات الدفع:*
+• أسبوعي: ${settings.payment_links.week.startsWith('http') ? '[صورة]' : settings.payment_links.week}
+• شهري: ${settings.payment_links.month.startsWith('http') ? '[صورة]' : settings.payment_links.month}
+• 3 أشهر: ${settings.payment_links.three_months.startsWith('http') ? '[صورة]' : settings.payment_links.three_months}
+• سنوي: ${settings.payment_links.year.startsWith('http') ? '[صورة]' : settings.payment_links.year}
         `;
         
         await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
@@ -2272,47 +2263,6 @@ async function handleAdminReset(ctx) {
     } catch (error) {
         console.error('Admin reset error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في إعداد إعادة التعيين', getAdminSettingsKeyboard());
-    }
-}
-
-// معالجة تعديل الأسعار
-async function handleAdminPriceEdit(ctx, text) {
-    try {
-        const parts = text.split(' ');
-        if (parts.length !== 2) {
-            await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة!*\n\nاستخدم: week 15 أو month 40 إلخ...');
-            return;
-        }
-
-        const [type, price] = parts;
-        const priceNum = parseFloat(price);
-
-        if (isNaN(priceNum) || priceNum <= 0) {
-            await ctx.replyWithMarkdown('❌ *سعر غير صحيح!*\n\nيجب أن يكون السعر رقم موجب');
-            return;
-        }
-
-        const validTypes = ['week', 'month', 'three_months', 'year'];
-        if (!validTypes.includes(type)) {
-            await ctx.replyWithMarkdown('❌ *نوع غير صحيح!*\n\nالأنواع المسموحة: week, month, three_months, year');
-            return;
-        }
-
-        const settings = await dbManager.getSettings();
-        settings.prices[type] = priceNum;
-        await dbManager.updateSettings(settings);
-
-        await ctx.replyWithMarkdown(
-            `✅ *تم تحديث السعر بنجاح*\n\n` +
-            `📦 ${type}: ${priceNum}$\n\n` +
-            `🔄 تم حفظ التغييرات في Firebase`,
-            getAdminSettingsKeyboard()
-        );
-
-        ctx.session.adminStep = 'settings';
-    } catch (error) {
-        console.error('Admin price edit error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل السعر', getAdminSettingsKeyboard());
     }
 }
 
@@ -2364,7 +2314,7 @@ async function handlePaymentAccept(ctx, paymentId) {
         await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         
         try {
-            await ctx.editMessageText(
+            await ctx.editMessageCaption(
                 `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
                 `👤 ${userData.username}\n` +
                 `🔐 ${userData.onexbet}\n` +
@@ -2412,7 +2362,7 @@ async function handlePaymentReject(ctx, paymentId) {
         await ctx.answerCbQuery('❌ تم رفض الطلب');
         
         try {
-            await ctx.editMessageText(
+            await ctx.editMessageCaption(
                 `❌ *تم رفض طلب الدفع*\n\n` +
                 `🆔 ${paymentId}\n` +
                 `👤 ${payment.username}\n` +
@@ -2432,12 +2382,13 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v12.0 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v12.1 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
     console.log('🖼️ Image verification system: ACTIVE');
+    console.log('📤 ImgBB uploader: ACTIVE');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
