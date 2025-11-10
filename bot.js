@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.0
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 12.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v11.0...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v12.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "11.0.0",
+    VERSION: "12.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -88,7 +88,6 @@ class FlexibleImageVerification {
             console.log(`🔍 Verifying image: ${imageUrl}`);
             await new Promise(resolve => setTimeout(resolve, 1500));
             
-            // 95% قبول للصور مع كلمات عشوائية
             const randomCheck = Math.random() < 0.95;
             const personCount = Math.floor(Math.random() * 3) + 1;
             const foundKeywords = this.getRandomKeywords();
@@ -128,39 +127,35 @@ class FlexibleImageVerification {
     }
 }
 
-// 🔥 FIREBASE INITIALIZATION - UPDATED CONFIG
+// 🔥 FIREBASE INITIALIZATION
 let db = null;
 let admin = null;
 
 try {
     admin = require('firebase-admin');
     
-    // استخدام التهيئة الجديدة مع معلومات Firebase الخاصة بك
-    const firebaseConfig = {
-        apiKey: "AIzaSyDYb722t6Oh4waMKW0AO1lRUbaXZJKuTC4",
-        authDomain: "bot-tlegram-9f4b5.firebaseapp.com",
-        databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com",
-        projectId: "bot-tlegram-9f4b5",
-        storageBucket: "bot-tlegram-9f4b5.firebasestorage.app",
-        messagingSenderId: "561534640067",
-        appId: "1:561534640067:web:4be5ed739278d0e2e66776",
-        measurementId: "G-K1T66T95S5"
+    const serviceAccount = {
+        "type": "service_account",
+        "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
+        "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+        "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+        "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
+        "client_id": process.env.FIREBASE_CLIENT_ID,
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": process.env.FIREBASE_CERT_URL
     };
 
     if (!admin.apps.length) {
-        // استخدام طريقة التهيئة مع التكوين مباشرة
         admin.initializeApp({
-            credential: admin.credential.cert({
-                "project_id": "bot-tlegram-9f4b5",
-                "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
-                "client_email": "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com"
-            }),
+            credential: admin.credential.cert(serviceAccount),
             databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
         });
     }
     
     db = admin.firestore();
-    console.log('✅ Firebase initialized successfully with new config');
+    console.log('✅ Firebase initialized successfully');
     
 } catch (error) {
     console.log('⚠️ Firebase initialization failed:', error.message);
@@ -198,7 +193,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "11.0";
+        this.algorithmVersion = "12.0";
     }
 
     generateSmartPrediction(userId) {
@@ -256,7 +251,7 @@ class ImgBBUploader {
     }
 }
 
-// 💾 DATABASE MANAGER - UPDATED WITH FIREBASE SYNC
+// 💾 DATABASE MANAGER
 class DatabaseManager {
     constructor() {
         this.maintenanceMode = false;
@@ -277,10 +272,7 @@ class DatabaseManager {
     async saveUser(userId, userData) {
         try {
             if (db) {
-                await db.collection('users').doc(userId.toString()).set({
-                    ...userData,
-                    last_updated: new Date().toISOString()
-                }, { merge: true });
+                await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
             }
             userDatabase.set(userId, userData);
             return true;
@@ -332,10 +324,7 @@ class DatabaseManager {
     async updatePayment(paymentId, updates) {
         try {
             if (db) {
-                await db.collection('payments').doc(paymentId).update({
-                    ...updates,
-                    last_updated: new Date().toISOString()
-                });
+                await db.collection('payments').doc(paymentId).update(updates);
             }
             const payment = paymentDatabase.get(paymentId);
             if (payment) {
@@ -369,16 +358,6 @@ class DatabaseManager {
                 const settingsDoc = await db.collection('settings').doc('config').get();
                 if (settingsDoc.exists) {
                     return settingsDoc.data();
-                } else {
-                    // إنشاء الإعدادات الافتراضية إذا لم تكن موجودة
-                    const defaultSettings = {
-                        prices: { ...CONFIG.SUBSCRIPTION_PRICES },
-                        payment_links: { ...CONFIG.PAYMENT_LINKS },
-                        maintenance_mode: false,
-                        updated_at: new Date().toISOString()
-                    };
-                    await db.collection('settings').doc('config').set(defaultSettings);
-                    return defaultSettings;
                 }
             }
             return settingsDatabase.get('config') || {
@@ -388,7 +367,6 @@ class DatabaseManager {
                 updated_at: new Date().toISOString()
             };
         } catch (error) {
-            console.error('Error getting settings:', error);
             return settingsDatabase.get('config') || {
                 prices: { ...CONFIG.SUBSCRIPTION_PRICES },
                 payment_links: { ...CONFIG.PAYMENT_LINKS },
@@ -407,13 +385,10 @@ class DatabaseManager {
 
             if (db) {
                 await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
-                console.log('✅ Settings updated in Firebase');
             }
             settingsDatabase.set('config', updatedSettings);
-            console.log('✅ Settings updated in local storage');
             return updatedSettings;
         } catch (error) {
-            console.error('Error updating settings:', error);
             const updatedSettings = {
                 ...newSettings,
                 updated_at: new Date().toISOString()
@@ -508,7 +483,8 @@ bot.use(session({
         searchQuery: null,
         broadcastMessage: null,
         adminSettingsStep: null,
-        selectedPaymentType: null
+        selectedPaymentType: null,
+        editingSubscriptionType: null
     })
 }));
 
@@ -563,9 +539,17 @@ const getAdminPaymentsKeyboard = () => {
 
 const getAdminSettingsKeyboard = () => {
     return Markup.keyboard([
-        ['💰 تعديل الأسعار', '🔗 تعديل روابط الدفع'],
-        ['🖼️ رفع صورة QR', '⚙️ الإعدادات العامة'],
-        ['🔄 إعادة التعيين', '🔙 رجوع']
+        ['💰 تعديل الأسعار', '🔗 تغيير معلومات الدفع'],
+        ['⚙️ الإعدادات العامة', '🔄 إعادة التعيين'],
+        ['🔙 رجوع']
+    ]).resize();
+};
+
+const getAdminPaymentTypesKeyboard = () => {
+    return Markup.keyboard([
+        ['💰 أسبوعي', '💰 شهري'],
+        ['💰 3 أشهر', '💰 سنوي'],
+        ['🔙 رجوع']
     ]).resize();
 };
 
@@ -729,15 +713,15 @@ bot.on('text', async (ctx) => {
             return;
         }
         
-        // معالجة تعديل الروابط
-        if (session.adminStep === 'link_edit') {
-            await handleAdminLinkEdit(ctx, text);
+        // معالجة تغيير معلومات الدفع
+        if (session.adminStep === 'payment_info_edit') {
+            await handleAdminPaymentInfoEdit(ctx, text);
             return;
         }
 
-        // معالجة رفع صورة QR
-        if (session.adminStep === 'qr_upload') {
-            await handleAdminQRUpload(ctx, text);
+        // معالجة اختيار نوع الاشتراك للتعديل
+        if (session.adminStep === 'select_subscription_edit') {
+            await handleAdminSelectSubscriptionEdit(ctx, text);
             return;
         }
 
@@ -951,9 +935,9 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        // 🖼️ معالجة رفع صورة QR في الإدمن
-        if (session.adminStep === 'qr_upload') {
-            await handleAdminQRImageUpload(ctx, userId);
+        // 🖼️ معالجة رفع صورة للدفع في الإدمن
+        if (session.adminStep === 'payment_info_edit' && session.editingSubscriptionType) {
+            await handleAdminPaymentImageUpload(ctx, userId);
             return;
         }
 
@@ -1463,7 +1447,7 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🔧 ADMIN HANDLERS - COMPLETELY REWRITTEN
+// 🔧 ADMIN HANDLERS - UPDATED
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
@@ -1484,8 +1468,13 @@ async function handleAdminCommands(ctx, text) {
             return;
         }
         
-        if (session.adminStep === 'link_edit') {
-            await handleAdminLinkEdit(ctx, text);
+        if (session.adminStep === 'payment_info_edit') {
+            await handleAdminPaymentInfoEdit(ctx, text);
+            return;
+        }
+
+        if (session.adminStep === 'select_subscription_edit') {
+            await handleAdminSelectSubscriptionEdit(ctx, text);
             return;
         }
 
@@ -1538,12 +1527,8 @@ async function handleAdminCommands(ctx, text) {
                 await handleAdminPriceSettings(ctx);
                 break;
                 
-            case '🔗 تعديل روابط الدفع':
-                await handleAdminPaymentLinks(ctx);
-                break;
-
-            case '🖼️ رفع صورة QR':
-                await handleAdminQRSettings(ctx);
+            case '🔗 تغيير معلومات الدفع':
+                await handleAdminPaymentSettings(ctx);
                 break;
                 
             case '⚙️ الإعدادات العامة':
@@ -1607,7 +1592,7 @@ async function handleAdminCommands(ctx, text) {
     }
 }
 
-// البحث عن مستخدم - الإصلاح الكامل
+// البحث عن مستخدم
 async function handleAdminSearchUser(ctx, query) {
     try {
         console.log('🔍 Searching for users with query:', query);
@@ -1648,7 +1633,7 @@ async function handleAdminSearchUser(ctx, query) {
     }
 }
 
-// الإشعار الجماعي - الإصلاح الكامل
+// الإشعار الجماعي
 async function handleAdminBroadcast(ctx, message) {
     try {
         console.log('📢 Starting broadcast to all users');
@@ -2030,12 +2015,8 @@ async function handleAdminSettings(ctx, text) {
                 await handleAdminPriceSettings(ctx);
                 break;
                 
-            case '🔗 تعديل روابط الدفع':
-                await handleAdminPaymentLinks(ctx);
-                break;
-                
-            case '🖼️ رفع صورة QR':
-                await handleAdminQRSettings(ctx);
+            case '🔗 تغيير معلومات الدفع':
+                await handleAdminPaymentSettings(ctx);
                 break;
                 
             case '⚙️ الإعدادات العامة':
@@ -2092,95 +2073,146 @@ year 300  (لتغيير السعر السنوي لـ 300)
     }
 }
 
-// تعديل الروابط - الإصلاح الكامل
-async function handleAdminPaymentLinks(ctx) {
+// تغيير معلومات الدفع - النظام الجديد
+async function handleAdminPaymentSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
         const payment_links = settings.payment_links || CONFIG.PAYMENT_LINKS;
         
-        const linksMessage = `
-🔗 *روابط الدفع الحالية*
+        const paymentMessage = `
+🔗 *معلومات الدفع الحالية*
 
-أسبوعي: ${payment_links.week}
-شهري: ${payment_links.month}
-3 أشهر: ${payment_links.three_months}
-سنوي: ${payment_links.year}
+💰 *أسبوعي:* ${payment_links.week}
+💰 *شهري:* ${payment_links.month}  
+💰 *3 أشهر:* ${payment_links.three_months}
+💰 *سنوي:* ${payment_links.year}
 
-📝 *للتعديل:* 
-أرسل الرابط الجديد بالصيغة التالية:
-
-week https://new-link.com
-month https://new-link.com  
-three_months https://new-link.com
-year https://new-link.com
-
-💡 *يمكنك أيضاً إرسال صورة QR بدلاً من الرابط*
+📝 *اختر نوع الاشتراك الذي تريد تعديله:*
         `;
         
-        await ctx.replyWithMarkdown(linksMessage);
-        ctx.session.adminStep = 'link_edit';
+        await ctx.replyWithMarkdown(paymentMessage, getAdminPaymentTypesKeyboard());
+        ctx.session.adminStep = 'select_subscription_edit';
     } catch (error) {
-        console.error('Admin payment links error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب روابط الدفع', getAdminSettingsKeyboard());
+        console.error('Admin payment settings error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب معلومات الدفع', getAdminSettingsKeyboard());
     }
 }
 
-// إعدادات صورة QR - جديد
-async function handleAdminQRSettings(ctx) {
+// معالجة اختيار نوع الاشتراك للتعديل
+async function handleAdminSelectSubscriptionEdit(ctx, text) {
     try {
+        const subscriptionTypeMap = {
+            '💰 أسبوعي': 'week',
+            '💰 شهري': 'month', 
+            '💰 3 أشهر': 'three_months',
+            '💰 سنوي': 'year'
+        };
+
+        if (text === '🔙 رجوع') {
+            ctx.session.adminStep = 'settings';
+            await ctx.replyWithMarkdown('🔙 *العودة للإعدادات*', getAdminSettingsKeyboard());
+            return;
+        }
+
+        const subscriptionType = subscriptionTypeMap[text];
+        if (!subscriptionType) {
+            await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getAdminPaymentTypesKeyboard());
+            return;
+        }
+
+        ctx.session.editingSubscriptionType = subscriptionType;
+        ctx.session.adminStep = 'payment_info_edit';
+
         const settings = await dbManager.getSettings();
-        
-        const qrMessage = `
-🖼️ *إعدادات صورة QR*
+        const currentLink = settings.payment_links[subscriptionType] || 'غير محدد';
 
-📸 يمكنك رفع صورة QR جديدة للدفع
+        await ctx.replyWithMarkdown(
+            `🔗 *تعديل معلومات الدفع للاشتراك ${text}*\n\n` +
+            `📎 الرابط الحالي: ${currentLink}\n\n` +
+            `📝 *الآن يمكنك:*\n` +
+            `• إرسال رابط دفع جديد\n` +
+            `• أو إرسال صورة QR\n` +
+            `• أو كتابة "إلغاء" للرجوع\n\n` +
+            `💡 *مثال للرابط:* https://example.com/payment`
+        );
 
-📝 *لرفع صورة جديدة:*
-أرسل صورة QR الآن وسيتم حفظها
-
-💡 *ملاحظة:* سيتم استخدام الصورة في صفحة الاشتراكات
-        `;
-        
-        await ctx.replyWithMarkdown(qrMessage);
-        ctx.session.adminStep = 'qr_upload';
     } catch (error) {
-        console.error('Admin QR settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إعدادات الصورة', getAdminSettingsKeyboard());
-    }
-}
-
-// معالجة رفع صورة QR
-async function handleAdminQRUpload(ctx, text) {
-    try {
-        // هذه الدالة ستتم معالجتها في handler الصور
-        await ctx.replyWithMarkdown('📸 *الآن يرجى إرسال صورة QR*');
-    } catch (error) {
-        console.error('Admin QR upload error:', error);
+        console.error('Admin select subscription edit error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ', getAdminSettingsKeyboard());
     }
 }
 
-// معالجة رفع صورة QR
-async function handleAdminQRImageUpload(ctx, userId) {
+// معالجة تغيير معلومات الدفع
+async function handleAdminPaymentInfoEdit(ctx, text) {
     try {
-        const photo = ctx.message.photo[ctx.message.photo.length - 1];
-        const fileLink = await bot.telegram.getFileLink(photo.file_id);
-        const imageUrl = fileLink.href;
+        if (text === 'إلغاء') {
+            ctx.session.adminStep = 'settings';
+            ctx.session.editingSubscriptionType = null;
+            await ctx.replyWithMarkdown('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            return;
+        }
+
+        const subscriptionType = ctx.session.editingSubscriptionType;
+        if (!subscriptionType) {
+            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
+            return;
+        }
+
+        // التحقق إذا كان الرابط صالحاً
+        if (!text.startsWith('http')) {
+            await ctx.replyWithMarkdown('❌ *رابط غير صحيح!*\n\nيجب أن يبدأ الرابط بـ http أو https');
+            return;
+        }
 
         const settings = await dbManager.getSettings();
-        settings.qr_image = imageUrl;
+        settings.payment_links[subscriptionType] = text;
         await dbManager.updateSettings(settings);
 
         await ctx.replyWithMarkdown(
-            `✅ *تم رفع صورة QR بنجاح*\n\n` +
-            `🖼️ الرابط: ${imageUrl}\n\n` +
-            `🔄 تم حفظ التغييرات`,
+            `✅ *تم تحديث معلومات الدفع بنجاح*\n\n` +
+            `📦 ${subscriptionType}: ${text}\n\n` +
+            `🔄 تم حفظ التغييرات في Firebase`,
             getAdminSettingsKeyboard()
         );
 
         ctx.session.adminStep = 'settings';
+        ctx.session.editingSubscriptionType = null;
     } catch (error) {
-        console.error('Admin QR image upload error:', error);
+        console.error('Admin payment info edit error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل معلومات الدفع', getAdminSettingsKeyboard());
+    }
+}
+
+// معالجة رفع صورة للدفع
+async function handleAdminPaymentImageUpload(ctx, userId) {
+    try {
+        const subscriptionType = ctx.session.editingSubscriptionType;
+        if (!subscriptionType) {
+            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
+            return;
+        }
+
+        const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const fileLink = await bot.telegram.getFileLink(photo.file_id);
+        const imageUrl = fileLink.href;
+
+        // استخدام الرابط المباشر للصورة
+        const settings = await dbManager.getSettings();
+        settings.payment_links[subscriptionType] = imageUrl;
+        await dbManager.updateSettings(settings);
+
+        await ctx.replyWithMarkdown(
+            `✅ *تم تحديث معلومات الدفع بنجاح*\n\n` +
+            `📦 ${subscriptionType}: ${imageUrl}\n\n` +
+            `🖼️ تم استخدام صورة QR للدفع\n` +
+            `🔄 تم حفظ التغييرات في Firebase`,
+            getAdminSettingsKeyboard()
+        );
+
+        ctx.session.adminStep = 'settings';
+        ctx.session.editingSubscriptionType = null;
+    } catch (error) {
+        console.error('Admin payment image upload error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
@@ -2243,7 +2275,7 @@ async function handleAdminReset(ctx) {
     }
 }
 
-// معالجة تعديل الأسعار - الإصلاح الكامل
+// معالجة تعديل الأسعار
 async function handleAdminPriceEdit(ctx, text) {
     try {
         const parts = text.split(' ');
@@ -2281,47 +2313,6 @@ async function handleAdminPriceEdit(ctx, text) {
     } catch (error) {
         console.error('Admin price edit error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل السعر', getAdminSettingsKeyboard());
-    }
-}
-
-// معالجة تعديل الروابط - الإصلاح الكامل
-async function handleAdminLinkEdit(ctx, text) {
-    try {
-        const parts = text.split(' ');
-        if (parts.length !== 2) {
-            await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة!*\n\nاستخدم: week https://link.com أو month https://link.com إلخ...');
-            return;
-        }
-
-        const [type, link] = parts;
-
-        const validTypes = ['week', 'month', 'three_months', 'year'];
-        if (!validTypes.includes(type)) {
-            await ctx.replyWithMarkdown('❌ *نوع غير صحيح!*\n\nالأنواع المسموحة: week, month, three_months, year');
-            return;
-        }
-
-        // قبول أي رابط يبدأ بـ http
-        if (!link.startsWith('http')) {
-            await ctx.replyWithMarkdown('❌ *رابط غير صحيح!*\n\nيجب أن يبدأ الرابط بـ http أو https');
-            return;
-        }
-
-        const settings = await dbManager.getSettings();
-        settings.payment_links[type] = link;
-        await dbManager.updateSettings(settings);
-
-        await ctx.replyWithMarkdown(
-            `✅ *تم تحديث الرابط بنجاح*\n\n` +
-            `🔗 ${type}: ${link}\n\n` +
-            `🔄 تم حفظ التغييرات في Firebase`,
-            getAdminSettingsKeyboard()
-        );
-
-        ctx.session.adminStep = 'settings';
-    } catch (error) {
-        console.error('Admin link edit error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل الرابط', getAdminSettingsKeyboard());
     }
 }
 
@@ -2372,7 +2363,6 @@ async function handlePaymentAccept(ctx, paymentId) {
         
         await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         
-        // تعديل الرسالة الأصلية بدلاً من حذفها
         try {
             await ctx.editMessageText(
                 `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
@@ -2421,7 +2411,6 @@ async function handlePaymentReject(ctx, paymentId) {
         
         await ctx.answerCbQuery('❌ تم رفض الطلب');
         
-        // تعديل الرسالة الأصلية بدلاً من حذفها
         try {
             await ctx.editMessageText(
                 `❌ *تم رفض طلب الدفع*\n\n` +
@@ -2443,13 +2432,12 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v11.0 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v12.0 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
     console.log('🖼️ Image verification system: ACTIVE');
-    console.log('🔥 Firebase: CONNECTED AND SYNCED');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
