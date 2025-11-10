@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.4
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.5
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v10.4...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v10.5...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "10.4.0",
+    VERSION: "10.5.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -194,7 +194,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "10.4";
+        this.algorithmVersion = "10.5";
     }
 
     generateSmartPrediction(userId) {
@@ -473,7 +473,8 @@ bot.use(session({
         lastImageUrl: null,
         searchQuery: null,
         broadcastMessage: null,
-        adminSettingsStep: null
+        adminSettingsStep: null,
+        selectedPaymentType: null
     })
 }));
 
@@ -529,8 +530,8 @@ const getAdminPaymentsKeyboard = () => {
 const getAdminSettingsKeyboard = () => {
     return Markup.keyboard([
         ['💰 تعديل الأسعار', '🔗 تعديل روابط الدفع'],
-        ['🖼️ تعديل صورة QR', '⚙️ الإعدادات العامة'],
-        ['🔄 إعادة التعيين', '🔙 رجوع']
+        ['⚙️ الإعدادات العامة', '🔄 إعادة التعيين'],
+        ['🔙 رجوع']
     ]).resize();
 };
 
@@ -1239,15 +1240,19 @@ async function handleSubscriptions(ctx, userData) {
 
 💰 *أسبوعي:* ${prices.week}$
 ⏰ مدة: 7 أيام
+🔗 ${payment_links.week}
 
 💰 *شهري:* ${prices.month}$  
 ⏰ مدة: 30 يوماً
+🔗 ${payment_links.month}
 
 💰 *3 أشهر:* ${prices.three_months}$
 ⏰ مدة: 90 يوماً
+🔗 ${payment_links.three_months}
 
 💰 *سنوي:* ${prices.year}$
 ⏰ مدة: 365 يوماً
+🔗 ${payment_links.year}
 
 📋 *طريقة الدفع:*
 1. اختر الباقة المناسبة
@@ -1414,12 +1419,6 @@ async function handleAdminCommands(ctx, text) {
         // معالجة تعديل الروابط
         if (session.adminStep === 'link_edit') {
             await handleAdminLinkEdit(ctx, text);
-            return;
-        }
-        
-        // معالجة تعديل صورة QR
-        if (session.adminStep === 'qr_edit') {
-            await handleAdminQREdit(ctx, text);
             return;
         }
 
@@ -1923,10 +1922,6 @@ async function handleAdminSettings(ctx, text) {
                 await handleAdminPaymentLinks(ctx);
                 break;
                 
-            case '🖼️ تعديل صورة QR':
-                await handleAdminQRSettings(ctx);
-                break;
-                
             case '⚙️ الإعدادات العامة':
                 await handleAdminGeneralSettings(ctx);
                 break;
@@ -2010,29 +2005,6 @@ year https://new-link.com
     }
 }
 
-async function handleAdminQRSettings(ctx) {
-    try {
-        const settings = await dbManager.getSettings();
-        
-        const qrMessage = `
-🖼️ *إعدادات صورة QR الحالية*
-
-📸 صورة التحليل: ${CONFIG.ANALYSIS_IMAGE}
-
-📝 *للتعديل:* 
-أرسل رابط الصورة الجديدة:
-
-qr https://example.com/new-image.jpg
-        `;
-        
-        await ctx.replyWithMarkdown(qrMessage);
-        ctx.session.adminStep = 'qr_edit';
-    } catch (error) {
-        console.error('Admin QR settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إعدادات الصورة', getAdminSettingsKeyboard());
-    }
-}
-
 async function handleAdminGeneralSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
@@ -2052,6 +2024,8 @@ async function handleAdminGeneralSettings(ctx) {
 🔗 *روابط الدفع:*
 • أسبوعي: ${settings.payment_links.week}
 • شهري: ${settings.payment_links.month}
+• 3 أشهر: ${settings.payment_links.three_months}
+• سنوي: ${settings.payment_links.year}
         `;
         
         await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
@@ -2168,44 +2142,6 @@ async function handleAdminLinkEdit(ctx, text) {
     } catch (error) {
         console.error('Admin link edit error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل الرابط', getAdminSettingsKeyboard());
-    }
-}
-
-// معالجة تعديل صورة QR
-async function handleAdminQREdit(ctx, text) {
-    try {
-        if (!text.startsWith('qr ')) {
-            await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة!*\n\nاستخدم: qr https://example.com/new-image.jpg');
-            return;
-        }
-
-        const link = text.replace('qr ', '').trim();
-
-        // قبول أي رابط صورة
-        if (!link.startsWith('http')) {
-            await ctx.replyWithMarkdown('❌ *رابط غير صحيح!*\n\nيجب أن يبدأ الرابط بـ http أو https');
-            return;
-        }
-
-        // تحديث رابط الصورة في الإعدادات
-        const settings = await dbManager.getSettings();
-        settings.analysis_image = link;
-        await dbManager.updateSettings(settings);
-
-        // تحديث الكونفج أيضاً
-        CONFIG.ANALYSIS_IMAGE = link;
-
-        await ctx.replyWithMarkdown(
-            `✅ *تم تحديث صورة QR بنجاح*\n\n` +
-            `🖼️ الرابط الجديد: ${link}\n\n` +
-            `🔄 تم حفظ التغييرات`,
-            getAdminSettingsKeyboard()
-        );
-
-        ctx.session.adminStep = 'settings';
-    } catch (error) {
-        console.error('Admin QR edit error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تعديل صورة QR', getAdminSettingsKeyboard());
     }
 }
 
@@ -2327,7 +2263,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v10.4 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v10.5 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
