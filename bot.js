@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.6
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v10.6...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v11.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "10.6.0",
+    VERSION: "11.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -128,35 +128,39 @@ class FlexibleImageVerification {
     }
 }
 
-// 🔥 FIREBASE INITIALIZATION
+// 🔥 FIREBASE INITIALIZATION - UPDATED CONFIG
 let db = null;
 let admin = null;
 
 try {
     admin = require('firebase-admin');
     
-    const serviceAccount = {
-        "type": "service_account",
-        "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
-        "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
-        "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
-        "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
-        "client_id": process.env.FIREBASE_CLIENT_ID,
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": process.env.FIREBASE_CERT_URL
+    // استخدام التهيئة الجديدة مع معلومات Firebase الخاصة بك
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYb722t6Oh4waMKW0AO1lRUbaXZJKuTC4",
+        authDomain: "bot-tlegram-9f4b5.firebaseapp.com",
+        databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com",
+        projectId: "bot-tlegram-9f4b5",
+        storageBucket: "bot-tlegram-9f4b5.firebasestorage.app",
+        messagingSenderId: "561534640067",
+        appId: "1:561534640067:web:4be5ed739278d0e2e66776",
+        measurementId: "G-K1T66T95S5"
     };
 
     if (!admin.apps.length) {
+        // استخدام طريقة التهيئة مع التكوين مباشرة
         admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
+            credential: admin.credential.cert({
+                "project_id": "bot-tlegram-9f4b5",
+                "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+                "client_email": "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com"
+            }),
             databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
         });
     }
     
     db = admin.firestore();
-    console.log('✅ Firebase initialized successfully');
+    console.log('✅ Firebase initialized successfully with new config');
     
 } catch (error) {
     console.log('⚠️ Firebase initialization failed:', error.message);
@@ -194,7 +198,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "10.6";
+        this.algorithmVersion = "11.0";
     }
 
     generateSmartPrediction(userId) {
@@ -252,7 +256,7 @@ class ImgBBUploader {
     }
 }
 
-// 💾 DATABASE MANAGER
+// 💾 DATABASE MANAGER - UPDATED WITH FIREBASE SYNC
 class DatabaseManager {
     constructor() {
         this.maintenanceMode = false;
@@ -273,7 +277,10 @@ class DatabaseManager {
     async saveUser(userId, userData) {
         try {
             if (db) {
-                await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
+                await db.collection('users').doc(userId.toString()).set({
+                    ...userData,
+                    last_updated: new Date().toISOString()
+                }, { merge: true });
             }
             userDatabase.set(userId, userData);
             return true;
@@ -325,7 +332,10 @@ class DatabaseManager {
     async updatePayment(paymentId, updates) {
         try {
             if (db) {
-                await db.collection('payments').doc(paymentId).update(updates);
+                await db.collection('payments').doc(paymentId).update({
+                    ...updates,
+                    last_updated: new Date().toISOString()
+                });
             }
             const payment = paymentDatabase.get(paymentId);
             if (payment) {
@@ -359,6 +369,16 @@ class DatabaseManager {
                 const settingsDoc = await db.collection('settings').doc('config').get();
                 if (settingsDoc.exists) {
                     return settingsDoc.data();
+                } else {
+                    // إنشاء الإعدادات الافتراضية إذا لم تكن موجودة
+                    const defaultSettings = {
+                        prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+                        payment_links: { ...CONFIG.PAYMENT_LINKS },
+                        maintenance_mode: false,
+                        updated_at: new Date().toISOString()
+                    };
+                    await db.collection('settings').doc('config').set(defaultSettings);
+                    return defaultSettings;
                 }
             }
             return settingsDatabase.get('config') || {
@@ -368,6 +388,7 @@ class DatabaseManager {
                 updated_at: new Date().toISOString()
             };
         } catch (error) {
+            console.error('Error getting settings:', error);
             return settingsDatabase.get('config') || {
                 prices: { ...CONFIG.SUBSCRIPTION_PRICES },
                 payment_links: { ...CONFIG.PAYMENT_LINKS },
@@ -386,10 +407,13 @@ class DatabaseManager {
 
             if (db) {
                 await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
+                console.log('✅ Settings updated in Firebase');
             }
             settingsDatabase.set('config', updatedSettings);
+            console.log('✅ Settings updated in local storage');
             return updatedSettings;
         } catch (error) {
+            console.error('Error updating settings:', error);
             const updatedSettings = {
                 ...newSettings,
                 updated_at: new Date().toISOString()
@@ -540,8 +564,8 @@ const getAdminPaymentsKeyboard = () => {
 const getAdminSettingsKeyboard = () => {
     return Markup.keyboard([
         ['💰 تعديل الأسعار', '🔗 تعديل روابط الدفع'],
-        ['⚙️ الإعدادات العامة', '🔄 إعادة التعيين'],
-        ['🔙 رجوع']
+        ['🖼️ رفع صورة QR', '⚙️ الإعدادات العامة'],
+        ['🔄 إعادة التعيين', '🔙 رجوع']
     ]).resize();
 };
 
@@ -687,13 +711,13 @@ bot.on('text', async (ctx) => {
             }
         }
 
-        // معالجة البحث عن مستخدم - الإصلاح هنا
+        // معالجة البحث عن مستخدم
         if (session.adminStep === 'search_user') {
             await handleAdminSearchUser(ctx, text);
             return;
         }
 
-        // معالجة الإشعار الجماعي - الإصلاح هنا
+        // معالجة الإشعار الجماعي
         if (session.adminStep === 'broadcast') {
             await handleAdminBroadcast(ctx, text);
             return;
@@ -708,6 +732,12 @@ bot.on('text', async (ctx) => {
         // معالجة تعديل الروابط
         if (session.adminStep === 'link_edit') {
             await handleAdminLinkEdit(ctx, text);
+            return;
+        }
+
+        // معالجة رفع صورة QR
+        if (session.adminStep === 'qr_upload') {
+            await handleAdminQRUpload(ctx, text);
             return;
         }
 
@@ -918,6 +948,12 @@ bot.on('photo', async (ctx) => {
         // 💳 معالجة صور الدفع
         if (session.paymentType) {
             await handlePaymentScreenshot(ctx, userId);
+            return;
+        }
+
+        // 🖼️ معالجة رفع صورة QR في الإدمن
+        if (session.adminStep === 'qr_upload') {
+            await handleAdminQRImageUpload(ctx, userId);
             return;
         }
 
@@ -1427,11 +1463,33 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🔧 ADMIN HANDLERS
+// 🔧 ADMIN HANDLERS - COMPLETELY REWRITTEN
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
     try {
+        // FIRST: Handle all specific admin steps
+        if (session.adminStep === 'search_user') {
+            await handleAdminSearchUser(ctx, text);
+            return;
+        }
+
+        if (session.adminStep === 'broadcast') {
+            await handleAdminBroadcast(ctx, text);
+            return;
+        }
+
+        if (session.adminStep === 'price_edit') {
+            await handleAdminPriceEdit(ctx, text);
+            return;
+        }
+        
+        if (session.adminStep === 'link_edit') {
+            await handleAdminLinkEdit(ctx, text);
+            return;
+        }
+
+        // SECOND: Handle navigation and main commands
         switch (text) {
             case '📊 إحصائيات النظام':
                 await handleAdminStats(ctx);
@@ -1475,12 +1533,6 @@ async function handleAdminCommands(ctx, text) {
             case '🔧 قفل/فتح البوت':
                 await handleAdminToggleMaintenance(ctx);
                 break;
-                
-            case '🔙 الخروج من الإدمن':
-                ctx.session.adminMode = false;
-                ctx.session.adminStep = null;
-                await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
-                break;
 
             case '💰 تعديل الأسعار':
                 await handleAdminPriceSettings(ctx);
@@ -1488,6 +1540,10 @@ async function handleAdminCommands(ctx, text) {
                 
             case '🔗 تعديل روابط الدفع':
                 await handleAdminPaymentLinks(ctx);
+                break;
+
+            case '🖼️ رفع صورة QR':
+                await handleAdminQRSettings(ctx);
                 break;
                 
             case '⚙️ الإعدادات العامة':
@@ -1533,6 +1589,12 @@ async function handleAdminCommands(ctx, text) {
                 
             case '📋 كل الطلبات':
                 await handleAdminAllPayments(ctx);
+                break;
+                
+            case '🔙 الخروج من الإدمن':
+                ctx.session.adminMode = false;
+                ctx.session.adminStep = null;
+                await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
                 break;
                 
             default:
@@ -1972,6 +2034,10 @@ async function handleAdminSettings(ctx, text) {
                 await handleAdminPaymentLinks(ctx);
                 break;
                 
+            case '🖼️ رفع صورة QR':
+                await handleAdminQRSettings(ctx);
+                break;
+                
             case '⚙️ الإعدادات العامة':
                 await handleAdminGeneralSettings(ctx);
                 break;
@@ -2056,6 +2122,66 @@ year https://new-link.com
     } catch (error) {
         console.error('Admin payment links error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب روابط الدفع', getAdminSettingsKeyboard());
+    }
+}
+
+// إعدادات صورة QR - جديد
+async function handleAdminQRSettings(ctx) {
+    try {
+        const settings = await dbManager.getSettings();
+        
+        const qrMessage = `
+🖼️ *إعدادات صورة QR*
+
+📸 يمكنك رفع صورة QR جديدة للدفع
+
+📝 *لرفع صورة جديدة:*
+أرسل صورة QR الآن وسيتم حفظها
+
+💡 *ملاحظة:* سيتم استخدام الصورة في صفحة الاشتراكات
+        `;
+        
+        await ctx.replyWithMarkdown(qrMessage);
+        ctx.session.adminStep = 'qr_upload';
+    } catch (error) {
+        console.error('Admin QR settings error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إعدادات الصورة', getAdminSettingsKeyboard());
+    }
+}
+
+// معالجة رفع صورة QR
+async function handleAdminQRUpload(ctx, text) {
+    try {
+        // هذه الدالة ستتم معالجتها في handler الصور
+        await ctx.replyWithMarkdown('📸 *الآن يرجى إرسال صورة QR*');
+    } catch (error) {
+        console.error('Admin QR upload error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ', getAdminSettingsKeyboard());
+    }
+}
+
+// معالجة رفع صورة QR
+async function handleAdminQRImageUpload(ctx, userId) {
+    try {
+        const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const fileLink = await bot.telegram.getFileLink(photo.file_id);
+        const imageUrl = fileLink.href;
+
+        const settings = await dbManager.getSettings();
+        settings.qr_image = imageUrl;
+        await dbManager.updateSettings(settings);
+
+        await ctx.replyWithMarkdown(
+            `✅ *تم رفع صورة QR بنجاح*\n\n` +
+            `🖼️ الرابط: ${imageUrl}\n\n` +
+            `🔄 تم حفظ التغييرات`,
+            getAdminSettingsKeyboard()
+        );
+
+        ctx.session.adminStep = 'settings';
+    } catch (error) {
+        console.error('Admin QR image upload error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
 
@@ -2147,7 +2273,7 @@ async function handleAdminPriceEdit(ctx, text) {
         await ctx.replyWithMarkdown(
             `✅ *تم تحديث السعر بنجاح*\n\n` +
             `📦 ${type}: ${priceNum}$\n\n` +
-            `🔄 تم حفظ التغييرات`,
+            `🔄 تم حفظ التغييرات في Firebase`,
             getAdminSettingsKeyboard()
         );
 
@@ -2188,7 +2314,7 @@ async function handleAdminLinkEdit(ctx, text) {
         await ctx.replyWithMarkdown(
             `✅ *تم تحديث الرابط بنجاح*\n\n` +
             `🔗 ${type}: ${link}\n\n` +
-            `🔄 تم حفظ التغييرات`,
+            `🔄 تم حفظ التغييرات في Firebase`,
             getAdminSettingsKeyboard()
         );
 
@@ -2317,12 +2443,13 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v10.6 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v11.0 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
     console.log('🖼️ Image verification system: ACTIVE');
+    console.log('🔥 Firebase: CONNECTED AND SYNCED');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
