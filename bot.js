@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 13.0
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 14.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v13.0...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v14.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -35,7 +35,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "13.0.0",
+    VERSION: "14.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -69,8 +69,18 @@ app.get('/', (req, res) => {
     });
 });
 
+// 🔄 KEEP ALIVE ENDPOINT FOR RENDER
+app.get('/keep-alive', (req, res) => {
+    res.json({ 
+        status: 'ALIVE', 
+        timestamp: new Date().toISOString(),
+        message: 'Bot is alive and running'
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
+    console.log(`🔄 Keep alive endpoint: http://localhost:${PORT}/keep-alive`);
 });
 
 // 🔥 FIREBASE INITIALIZATION
@@ -121,25 +131,53 @@ settingsDatabase.set('config', {
     updated_at: new Date().toISOString()
 });
 
-// 📊 FAKE STATISTICS SYSTEM
-class FakeStatistics {
+// 📊 DYNAMIC STATISTICS SYSTEM
+class DynamicStatistics {
     constructor() {
         this.totalUsers = 78542;
-        this.activeUsers = 287;
+        this.activeUsers = 300; // يبدأ من 300
+        this.lastUpdate = Date.now();
+        this.increaseInterval = 5000; // كل 5 ثواني
     }
 
     getStats() {
+        const now = Date.now();
+        const timePassed = now - this.lastUpdate;
+        
+        // زيادة عدد المستخدمين النشطين كل 5 ثواني
+        if (timePassed >= this.increaseInterval) {
+            const increments = Math.floor(timePassed / this.increaseInterval);
+            this.activeUsers += increments;
+            
+            // الحد الأقصى 1005
+            if (this.activeUsers > 1005) {
+                this.activeUsers = 300; // إعادة الضبط
+            }
+            
+            this.lastUpdate = now;
+        }
+
         return {
             totalUsers: this.totalUsers,
             activeUsers: this.activeUsers
         };
+    }
+
+    // تحديث إحصائية عند الطلب
+    updateStats() {
+        this.activeUsers += 1;
+        if (this.activeUsers > 1005) {
+            this.activeUsers = 300;
+        }
+        this.lastUpdate = Date.now();
+        return this.getStats();
     }
 }
 
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "13.0";
+        this.algorithmVersion = "14.0";
     }
 
     generateSmartPrediction(userId) {
@@ -147,7 +185,7 @@ class GoalPredictionAI {
         const probability = Math.floor(Math.random() * 30) + 60;
         
         const prediction = {
-            type: isGoal ? '⚽ هدف مؤكد' : '🛡️ دفاع قوي',
+            type: isGoal ? '⚽ GOOL' : '🛑 NO GOOL',
             probability: probability,
             confidence: 100,
             reasoning: isGoal ? 
@@ -165,21 +203,60 @@ class GoalPredictionAI {
     }
 }
 
-// 📤 IMGBB UPLOADER
+// 📤 IMGBB UPLOADER - ENHANCED
 class ImgBBUploader {
     constructor(apiKey) {
         this.apiKey = apiKey;
+        this.baseUrl = 'https://api.imgbb.com/1/upload';
     }
 
-    async uploadImage(imageUrl) {
+    async uploadImage(imageBuffer) {
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return {
-                success: true,
-                url: imageUrl,
-                delete_url: imageUrl
-            };
+            const FormData = require('form-data');
+            const formData = new FormData();
+            
+            // تحويل Buffer إلى blob
+            const blob = Buffer.from(imageBuffer);
+            formData.append('image', blob.toString('base64'));
+            
+            const response = await axios.post(`${this.baseUrl}?key=${this.apiKey}`, formData, {
+                headers: {
+                    ...formData.getHeaders()
+                }
+            });
+            
+            if (response.data && response.data.success) {
+                return {
+                    success: true,
+                    url: response.data.data.url,
+                    delete_url: response.data.data.delete_url,
+                    thumb_url: response.data.data.thumb?.url || response.data.data.url
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'Upload failed'
+                };
+            }
         } catch (error) {
+            console.error('ImgBB upload error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async uploadImageFromUrl(imageUrl) {
+        try {
+            const response = await axios.get(imageUrl, { 
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+            const imageBuffer = Buffer.from(response.data);
+            return await this.uploadImage(imageBuffer);
+        } catch (error) {
+            console.error('ImgBB upload from URL error:', error);
             return {
                 success: false,
                 error: error.message
@@ -396,7 +473,7 @@ class DatabaseManager {
 // INITIALIZE SYSTEMS
 const goalAI = new GoalPredictionAI();
 const dbManager = new DatabaseManager();
-const fakeStats = new FakeStatistics();
+const dynamicStats = new DynamicStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 
 // 📢 CHANNEL NOTIFICATION SYSTEM
@@ -1017,6 +1094,18 @@ bot.on('callback_query', async (ctx) => {
             await handlePaymentReject(ctx, paymentId);
         }
         
+        // معالجة زر المتابعة للاشتراك
+        else if (callbackData.startsWith('confirm_')) {
+            const subscriptionType = callbackData.split('_')[1];
+            await handleSubscriptionConfirmation(ctx, subscriptionType);
+        }
+        
+        // معالجة زر الرجوع للاشتراكات
+        else if (callbackData === 'back_to_subscriptions') {
+            await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+            await ctx.replyWithMarkdown('💳 *باقات الاشتراك المتاحة*', getSubscriptionKeyboard());
+        }
+        
     } catch (error) {
         console.error('Callback query error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
@@ -1048,18 +1137,31 @@ async function handleGetPrediction(ctx, userData) {
             return;
         }
 
-        // إرسال رسالة الانتظار المتحركة
-        const loadingMessage = await ctx.replyWithMarkdown(
-            '🎯 *جاري جلب التحليل...*\n\n' +
-            '⚽ جاري البحث عن فرص الهدف...\n' +
-            '🔄 جاري تحليل إحصائيات الفريقين...\n' +
-            '📊 جاري معالجة البيانات...\n' +
-            '🤖 جاري تطبيق خوارزمية الذكاء الاصطناعي...\n\n' +
-            '⏳ قد تستغرق العملية بضع ثوان...'
-        );
+        // إرسال رسالة الانتظار المتحركة مع كرة متحركة
+        const loadingMessages = [
+            '🎯 *جاري جلب التحليل...*\n\n⚽ جاري البحث عن فرص الهدف...',
+            '🎯 *جاري جلب التحليل...*\n\n🔄 جاري تحليل إحصائيات الفريقين...',
+            '🎯 *جاري جلب التحليل...*\n\n📊 جاري معالجة البيانات...',
+            '🎯 *جاري جلب التحليل...*\n\n🤖 جاري تطبيق خوارزمية الذكاء الاصطناعي...'
+        ];
 
-        // محاكاة الانتظار لمدة 4 ثواني
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        let loadingMsg = await ctx.replyWithMarkdown(loadingMessages[0]);
+        
+        // محاكاة الانتظار المتحرك لمدة 4 ثواني
+        for (let i = 1; i < loadingMessages.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                await ctx.telegram.editMessageText(
+                    ctx.chat.id,
+                    loadingMsg.message_id,
+                    null,
+                    loadingMessages[i],
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (editError) {
+                console.log('Error editing loading message:', editError);
+            }
+        }
 
         // توليد التوقع
         const prediction = goalAI.generateSmartPrediction(userData.user_id);
@@ -1119,7 +1221,7 @@ ${userData.subscription_status !== 'active' ?
         );
 
         // حذف رسالة الانتظار
-        await ctx.deleteMessage(loadingMessage.message_id);
+        await ctx.deleteMessage(loadingMsg.message_id);
 
     } catch (error) {
         console.error('Get prediction error:', error);
@@ -1157,7 +1259,7 @@ async function handleUserStats(ctx, userData) {
 }
 
 async function handleBotStats(ctx) {
-    const stats = fakeStats.getStats();
+    const stats = dynamicStats.updateStats(); // تحديث الإحصائيات ديناميكياً
     await ctx.replyWithMarkdown(
         `👥 *إحصائيات البوت*\n\n` +
         `👤 إجمالي المستخدمين: ${stats.totalUsers.toLocaleString()}\n` +
@@ -1212,15 +1314,19 @@ async function handleSubscriptionSelection(ctx, userData, text) {
         subscriptionMessage += `💰 السعر: ${prices[subscriptionType]}$\n`;
         subscriptionMessage += `⏰ المدة: ${subscriptionType === 'week' ? '7 أيام' : subscriptionType === 'month' ? '30 يوماً' : subscriptionType === 'three_months' ? '90 يوماً' : '365 يوماً'}\n\n`;
         
-        if (payment_links[subscriptionType].startsWith('http')) {
-            subscriptionMessage += `🖼️ *طريقة الدفع:*\n`;
-            subscriptionMessage += `📎 ${payment_links[subscriptionType]}\n\n`;
+        // التحقق إذا كان الرابط صورة أو رابط عادي
+        const paymentLink = payment_links[subscriptionType];
+        const isImage = paymentLink && (paymentLink.includes('.jpg') || paymentLink.includes('.png') || paymentLink.includes('.jpeg') || paymentLink.includes('.gif') || paymentLink.includes('imgbb') || paymentLink.includes('i.ibb.co'));
+        
+        if (isImage) {
+            subscriptionMessage += `🖼️ *صورة الدفع:*\n`;
+            // سنعرض الصورة في الرسالة التالية
         } else {
-            subscriptionMessage += `🔗 *رابط الدفع:* ${payment_links[subscriptionType]}\n\n`;
+            subscriptionMessage += `🔗 *رابط الدفع:* ${paymentLink}\n\n`;
         }
         
         subscriptionMessage += `📋 *خطوات الإكمال:*\n`;
-        subscriptionMessage += `1. ادفع عبر الرابط/الصورة أعلاه\n`;
+        subscriptionMessage += `1. ادفع عبر ${isImage ? 'الصورة' : 'الرابط'} أعلاه\n`;
         subscriptionMessage += `2. أرسل رقم حساب 1xBet (10 أرقام)\n`;
         subscriptionMessage += `3. أرسل صورة إثبات الدفع\n`;
         subscriptionMessage += `4. انتظر التفعيل من الإدارة\n\n`;
@@ -1231,11 +1337,57 @@ async function handleSubscriptionSelection(ctx, userData, text) {
             [Markup.button.callback('🔙 رجوع', 'back_to_subscriptions')]
         ]);
 
+        // إذا كان رابط دفع عبارة عن صورة، نرسل الصورة أولاً ثم الرسالة
+        if (isImage) {
+            try {
+                await ctx.replyWithPhoto(paymentLink, {
+                    caption: `🖼️ *صورة الدفع للباقة ${displayName}*`
+                });
+            } catch (photoError) {
+                console.error('Error sending payment image:', photoError);
+                subscriptionMessage += `\n\n❌ *تعذر تحميل صورة الدفع*`;
+            }
+        }
+
         await ctx.replyWithMarkdown(subscriptionMessage, subscriptionKeyboard);
 
     } catch (error) {
         console.error('Subscription selection error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getSubscriptionKeyboard());
+    }
+}
+
+// معالجة تأكيد الاشتراك
+async function handleSubscriptionConfirmation(ctx, subscriptionType) {
+    try {
+        const userId = ctx.from.id.toString();
+        const userData = await dbManager.getUser(userId);
+
+        if (!userData) {
+            await ctx.answerCbQuery('❌ لم يتم العثور على بيانات المستخدم');
+            return;
+        }
+
+        const settings = await dbManager.getSettings();
+        const prices = settings.prices;
+
+        ctx.session.paymentType = subscriptionType;
+        ctx.session.awaitingPaymentAccount = true;
+
+        await ctx.answerCbQuery('✅ تم تأكيد الاختيار');
+        
+        // حذف الرسالة السابقة
+        await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+
+        await ctx.replyWithMarkdown(
+            `💳 *باقة ${subscriptionType}*\n\n` +
+            `💰 السعر: ${prices[subscriptionType]}$\n\n` +
+            `🔢 *الآن أرسل رقم حساب 1xBet المكون من 10 أرقام:*`
+        );
+
+    } catch (error) {
+        console.error('Subscription confirmation error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 }
 
@@ -1275,8 +1427,14 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const accountNumber = ctx.session.paymentAccount || userData.onexbet;
 
-        const uploadResult = await imgbbUploader.uploadImage(imageUrl);
+        // رفع الصورة إلى imgbb
+        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
+        if (!uploadResult.success) {
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            return;
+        }
+
         const paymentData = {
             user_id: userId,
             onexbet: accountNumber,
@@ -2021,15 +2179,23 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
+        // رفع الصورة إلى imgbb
+        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
+        
+        if (!uploadResult.success) {
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            return;
+        }
+
         const settings = await dbManager.getSettings();
-        settings.payment_links[subscriptionType] = imageUrl;
+        settings.payment_links[subscriptionType] = uploadResult.url;
         await dbManager.updateSettings(settings);
 
         await ctx.replyWithMarkdown(
             `✅ *تم التحديث بنجاح!*\n\n` +
             `📦 ${subscriptionType}\n` +
             `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
-            `🖼️ صورة الدفع: [اضغط هنا](${imageUrl})\n\n` +
+            `🖼️ صورة الدفع: [اضغط هنا](${uploadResult.url})\n\n` +
             `🔄 تم حفظ التغييرات في النظام`,
             getAdminSettingsKeyboard()
         );
@@ -2219,13 +2385,15 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v13.0 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v14.0 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('📢 Channel ID:', CONFIG.CHANNEL_ID);
     console.log('🌐 Health check: http://localhost:' + PORT);
+    console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
-    console.log('📤 Channel Notifier: ACTIVE');
+    console.log('📤 ImgBB Uploader: ACTIVE');
+    console.log('📊 Dynamic Statistics: ACTIVE');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
