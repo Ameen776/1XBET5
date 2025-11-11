@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.2
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.3
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL + CHANNEL VERIFICATION
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v15.2...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v15.3...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -36,7 +36,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "15.2.0",
+    VERSION: "15.3.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -169,7 +169,7 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "15.2";
+        this.algorithmVersion = "15.3";
     }
 
     generateSmartPrediction(userId) {
@@ -527,6 +527,44 @@ class DatabaseManager {
         } catch (error) {
             console.error('Set channel subscription error:', error);
             return false;
+        }
+    }
+
+    // دالة جديدة للحصول على جميع الإحصائيات
+    async getAllStats() {
+        try {
+            const users = await this.getAllUsers();
+            const payments = await this.getAllPayments();
+            
+            const activeUsers = users.filter(u => u.subscription_status === 'active');
+            const freeUsers = users.filter(u => u.subscription_status === 'free');
+            
+            const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
+            const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
+            const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
+            
+            return {
+                totalUsers: users.length,
+                activeUsers: activeUsers.length,
+                freeUsers: freeUsers.length,
+                totalPredictions,
+                totalProfit,
+                totalBets,
+                totalPayments: payments.length,
+                pendingPayments: payments.filter(p => p.status === 'pending').length
+            };
+        } catch (error) {
+            console.error('Get all stats error:', error);
+            return {
+                totalUsers: 0,
+                activeUsers: 0,
+                freeUsers: 0,
+                totalPredictions: 0,
+                totalProfit: 0,
+                totalBets: 0,
+                totalPayments: 0,
+                pendingPayments: 0
+            };
         }
     }
 }
@@ -2366,13 +2404,13 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         if (text === 'إلغاء') {
             ctx.session.adminStep = 'settings';
             ctx.session.editingSubscriptionType = null;
-            await ctx.replyWithMarkdown('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
             return;
         }
 
         const subscriptionType = ctx.session.editingSubscriptionType;
         if (!subscriptionType) {
-            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
+            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2388,7 +2426,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
             settings.prices[subscriptionType] = priceNum;
             await dbManager.updateSettings(settings);
 
-            await ctx.replyWithMarkdown(
+            await ctx.reply(
                 `✅ *تم تحديث السعر بنجاح*\n\n` +
                 `💰 ${subscriptionType}: ${priceNum}$\n\n` +
                 `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
@@ -2405,7 +2443,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
             settings.payment_links[subscriptionType] = text;
             await dbManager.updateSettings(settings);
 
-            await ctx.replyWithMarkdown(
+            await ctx.reply(
                 `✅ *تم التحديث بنجاح!*\n\n` +
                 `📦 ${subscriptionType}\n` +
                 `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
@@ -2421,7 +2459,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         }
     } catch (error) {
         console.error('Admin edit price and payment error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل: ' + error.message);
+        await ctx.reply('❌ حدث خطأ في التعديل');
     }
 }
 
@@ -2430,7 +2468,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
     try {
         const subscriptionType = ctx.session.editingSubscriptionType;
         if (!subscriptionType) {
-            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
+            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2442,7 +2480,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
         if (!uploadResult.success) {
-            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            await ctx.reply('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
             return;
         }
 
@@ -2454,7 +2492,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         settings.payment_links[subscriptionType] = uploadResult.url;
         await dbManager.updateSettings(settings);
 
-        await ctx.replyWithMarkdown(
+        await ctx.reply(
             `✅ *تم التحديث بنجاح!*\n\n` +
             `📦 ${subscriptionType}\n` +
             `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
@@ -2467,7 +2505,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         ctx.session.editingSubscriptionType = null;
     } catch (error) {
         console.error('Admin payment image upload error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
+        await ctx.reply('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
 
@@ -2648,7 +2686,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v15.2 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v15.3 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('📢 Channel ID:', CONFIG.CHANNEL_ID);
