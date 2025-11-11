@@ -1,16 +1,17 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 12.1
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 13.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v12.1...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v13.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
 const CONFIG = {
     BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU",
     ADMIN_ID: process.env.ADMIN_ID || "6565594143",
+    CHANNEL_ID: process.env.CHANNEL_ID || "-1003283663811",
     
     // 🧠 AI APIS
     AI_APIS: {
@@ -34,11 +35,12 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "12.1.0",
+    VERSION: "13.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
+    PREDICTION_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
 };
 
@@ -70,62 +72,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
 });
-
-// 🖼️ FLEXIBLE IMAGE VERIFICATION SYSTEM 
-class FlexibleImageVerification {
-    constructor() {
-        this.requiredKeywords = [
-            "goal", "هدف", "رهان", "match", "مباراة", "football", 
-            "كرة قدم", "جول", "goalzz", "1xbet", "1xbet", "bet",
-            "مراهنة", "توقع", "تنبؤ", "فوز", "خسارة", 
-            "messi", "ميسي", "ronaldo", "رونالدو", "neymar", "نيمار",
-            "mbappe", "مبابي", "salah", "صلاح", "halland", "هالاند"
-        ];
-    }
-
-    async verifyImage(imageUrl) {
-        try {
-            console.log(`🔍 Verifying image: ${imageUrl}`);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            const randomCheck = Math.random() < 0.95;
-            const personCount = Math.floor(Math.random() * 3) + 1;
-            const foundKeywords = this.getRandomKeywords();
-            
-            if (randomCheck) {
-                return {
-                    decision: "ACCEPT",
-                    reason: "تم التحقق من الصورة بنجاح",
-                    persons_count: personCount,
-                    keywords_found: foundKeywords,
-                    text_sample: "تحليل النص: " + foundKeywords.join(", ")
-                };
-            } else {
-                return {
-                    decision: "REJECT",
-                    reason: "لم يتم العثور على محتوى اللعبة المطلوب",
-                    persons_count: personCount,
-                    keywords_found: foundKeywords,
-                    text_sample: "لم يتم استيفاء الشروط"
-                };
-            }
-        } catch (error) {
-            return {
-                decision: "ACCEPT",
-                reason: "تم قبول الصورة تلقائياً",
-                persons_count: 2,
-                keywords_found: ["goal", "هدف"],
-                text_sample: "تحليل تلقائي"
-            };
-        }
-    }
-
-    getRandomKeywords() {
-        const count = Math.floor(Math.random() * 3) + 1;
-        const shuffled = [...this.requiredKeywords].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, count);
-    }
-}
 
 // 🔥 FIREBASE INITIALIZATION
 let db = null;
@@ -193,7 +139,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "12.1";
+        this.algorithmVersion = "13.0";
     }
 
     generateSmartPrediction(userId) {
@@ -214,67 +160,26 @@ class GoalPredictionAI {
         return prediction;
     }
 
-    async analyzeImageWithAI(imageUrl) {
-        try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return this.generateSmartPrediction('image_analysis');
-        } catch (error) {
-            return this.generateSmartPrediction('fallback');
-        }
-    }
-
     generateNextPrediction(userId) {
         return this.generateSmartPrediction(userId);
     }
 }
 
-// 📤 IMGBB UPLOADER - UPDATED
+// 📤 IMGBB UPLOADER
 class ImgBBUploader {
     constructor(apiKey) {
         this.apiKey = apiKey;
-        this.baseUrl = 'https://api.imgbb.com/1/upload';
     }
 
-    async uploadImage(imageBuffer) {
+    async uploadImage(imageUrl) {
         try {
-            const formData = new FormData();
-            const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
-            formData.append('image', blob);
-            
-            const response = await axios.post(`${this.baseUrl}?key=${this.apiKey}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-            
-            if (response.data && response.data.success) {
-                return {
-                    success: true,
-                    url: response.data.data.url,
-                    delete_url: response.data.data.delete_url
-                };
-            } else {
-                return {
-                    success: false,
-                    error: 'Upload failed'
-                };
-            }
-        } catch (error) {
-            console.error('ImgBB upload error:', error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return {
-                success: false,
-                error: error.message
+                success: true,
+                url: imageUrl,
+                delete_url: imageUrl
             };
-        }
-    }
-
-    async uploadImageFromUrl(imageUrl) {
-        try {
-            const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-            const imageBuffer = Buffer.from(response.data);
-            return await this.uploadImage(imageBuffer);
         } catch (error) {
-            console.error('ImgBB upload from URL error:', error);
             return {
                 success: false,
                 error: error.message
@@ -493,7 +398,62 @@ const goalAI = new GoalPredictionAI();
 const dbManager = new DatabaseManager();
 const fakeStats = new FakeStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
-const imageVerification = new FlexibleImageVerification();
+
+// 📢 CHANNEL NOTIFICATION SYSTEM
+class ChannelNotifier {
+    constructor(bot, channelId) {
+        this.bot = bot;
+        this.channelId = channelId;
+    }
+
+    async sendSubscriptionNotification(userData, subscriptionType, amount) {
+        try {
+            const message = `
+🎉 *اشتراك جديد في البوت*
+
+👤 *المستخدم:* ${userData.username}
+🔐 *الحساب:* ${userData.onexbet}
+📦 *الباقة:* ${subscriptionType}
+💰 *المبلغ:* ${amount}$
+
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
+            `;
+
+            await this.bot.telegram.sendMessage(this.channelId, message, {
+                parse_mode: 'Markdown'
+            });
+        } catch (error) {
+            console.error('Error sending subscription notification:', error);
+        }
+    }
+
+    async sendPredictionNotification(userData, prediction, betAmount) {
+        try {
+            const message = `
+🎯 *توقع جديد في البوت*
+
+👤 *المستخدم:* ${userData.username}
+🔐 *الحساب:* ${userData.onexbet}
+🎯 *التوقع:* ${prediction.type}
+📈 *الاحتمالية:* ${prediction.probability}%
+💰 *مبلغ الرهان:* ${betAmount}$
+
+💡 *التحليل:*
+${prediction.reasoning}
+
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
+            `;
+
+            await this.bot.telegram.sendMessage(this.channelId, message, {
+                parse_mode: 'Markdown'
+            });
+        } catch (error) {
+            console.error('Error sending prediction notification:', error);
+        }
+    }
+}
+
+const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -511,7 +471,6 @@ bot.use(session({
         originalBet: 0,
         totalProfit: 0,
         awaitingBetAmount: false,
-        lastImageUrl: null,
         searchQuery: null,
         broadcastMessage: null,
         adminSettingsStep: null,
@@ -523,10 +482,9 @@ bot.use(session({
 // 🎯 لوحة المفاتيح الثابتة
 const getMainKeyboard = () => {
     return Markup.keyboard([
-        ['🎯 التوقع التالي', '📊 إحصائياتي'],
-        ['📸 إرسال صورة', '💳 الاشتراكات'],
-        ['👥 إحصائيات البوت', '👤 حالة الاشتراك'],
-        ['🆘 الدعم الفني']
+        ['🎯 جلب التحليل', '📊 إحصائياتي'],
+        ['💳 الاشتراكات', '👥 إحصائيات البوت'],
+        ['👤 حالة الاشتراك', '🆘 الدعم الفني']
     ]).resize();
 };
 
@@ -628,21 +586,11 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // إرسال الصورة أولاً
-        try {
-            await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
-                caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
-                        `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
-                        `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                        `📢 *القناة:* ${CONFIG.CHANNEL}`
-            });
-        } catch (photoError) {
-            await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
-        }
-
+        // التحقق إذا كان المستخدم مسجل مسبقاً
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
+            // المستخدم مسجل مسبقاً - دخول مباشر
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
 
@@ -650,17 +598,20 @@ bot.start(async (ctx) => {
             
             let statusMessage = '';
             if (existingUser.subscription_status === 'active' && remainingDays > 0) {
-                statusMessage = `✅ *اشتراكك نشط*\n\n` +
+                statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
+                               `✅ *اشتراكك نشط*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
                                `📦 النوع: ${existingUser.subscription_type}\n` +
                                `📅 الانتهاء: ${new Date(existingUser.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                                `⏳ متبقي: ${remainingDays} يوم`;
             } else if (existingUser.free_attempts > 0) {
-                statusMessage = `🎯 *محاولات مجانية متاحة*\n\n` +
+                statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
+                               `🎯 *محاولات مجانية متاحة*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
                                `🆓 محاولات مجانية: ${existingUser.free_attempts}`;
             } else {
-                statusMessage = `🚫 *انتهت المحاولات*\n\n` +
+                statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
+                               `🚫 *انتهت المحاولات*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
                                `💳 يرجى الاشتراك للمتابعة`;
             }
@@ -668,8 +619,21 @@ bot.start(async (ctx) => {
             await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
             
         } else {
+            // مستخدم جديد - عملية التسجيل
             ctx.session.step = 'start';
             ctx.session.userData = { userId, userName };
+
+            // إرسال الصورة أولاً
+            try {
+                await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
+                    caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
+                            `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
+                            `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
+                            `📢 *القناة:* ${CONFIG.CHANNEL}`
+                });
+            } catch (photoError) {
+                await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
+            }
 
             const welcomeMessage = `
 🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
@@ -764,7 +728,7 @@ bot.on('text', async (ctx) => {
 
             await ctx.replyWithMarkdown(
                 `✅ *تم تحديد مبلغ الرهان:* ${betAmount}$\n\n` +
-                `📸 *الآن يرجى إرسال صورة المباراة للتحليل*`,
+                `🎯 *الآن اضغط على "جلب التحليل" للحصول على التوقع*`,
                 getMainKeyboard()
             );
             return;
@@ -809,9 +773,10 @@ bot.on('text', async (ctx) => {
                 // إرسال رسالة الانتظار المتحركة
                 const waitingMessage = await ctx.replyWithMarkdown(
                     '🔐 *جاري تسجيل الدخول...*\n\n' +
-                    '⏳ يرجى الانتظار mientras نقوم بتسجيل دخولك...\n' +
-                    '🔄 جاري البحث في السجلات...\n' +
+                    '⏳ جاري البحث في السجلات...\n' +
                     '📡 جاري الاتصال بالسيرفر...\n' +
+                    '⚡ جاري تفعيل الحساب...\n' +
+                    '🎯 جاري إعداد المحاولات المجانية...\n\n' +
                     '⏰ قد تستغرق العملية بضع ثوان...'
                 );
 
@@ -822,7 +787,7 @@ bot.on('text', async (ctx) => {
                     user_id: userId,
                     username: ctx.from.first_name,
                     onexbet: ctx.session.accountId,
-                    free_attempts: 2,
+                    free_attempts: 10, // 10 محاولات مجانية
                     subscription_status: 'free',
                     subscription_type: 'none',
                     subscription_start_date: null,
@@ -847,8 +812,8 @@ bot.on('text', async (ctx) => {
                     `🎉 *تم التحقق بنجاح!*\n\n` +
                     `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
                     `👤 *المستخدم:* ${ctx.session.userData.username}\n\n` +
-                    `🎁 *تحصل على محاولتين مجانيتين*\n\n` +
-                    `📸 *يمكنك الآن إرسال صورة المباراة للتحليل*`,
+                    `🎁 *تحصل على 10 محاولات مجانية*\n\n` +
+                    `🎯 *يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات*`,
                     getMainKeyboard()
                 );
 
@@ -885,17 +850,8 @@ bot.on('text', async (ctx) => {
             }
 
             switch (text) {
-                case '🎯 التوقع التالي':
-                    if (session.lastImageUrl) {
-                        await handleNextPrediction(ctx, userData);
-                    } else {
-                        ctx.session.awaitingBetAmount = true;
-                        await ctx.replyWithMarkdown(
-                            '💰 *أدخل مبلغ الرهان:*\n\n' +
-                            '💵 يرجى كتابة المبلغ الذي تريد الرهان عليه (بالدولار)\n' +
-                            '📝 مثال: 10 أو 25.5'
-                        );
-                    }
+                case '🎯 جلب التحليل':
+                    await handleGetPrediction(ctx, userData);
                     break;
 
                 case '📊 إحصائياتي':
@@ -904,14 +860,6 @@ bot.on('text', async (ctx) => {
 
                 case '👥 إحصائيات البوت':
                     await handleBotStats(ctx);
-                    break;
-
-                case '📸 إرسال صورة':
-                    await ctx.replyWithMarkdown(
-                        '📸 *يرجى إرسال صورة المباراة الآن*\n\n' +
-                        '🎯 *سيتم تحليل الصورة تلقائياً*',
-                        getMainKeyboard()
-                    );
                     break;
 
                 case '💳 الاشتراكات':
@@ -947,7 +895,7 @@ bot.on('text', async (ctx) => {
             }
         }
         // 🔐 إذا كان المستخدم غير مسجل وحاول استخدام الأزرار
-        else if (['🎯 التوقع التالي', '📊 إحصائياتي', '📸 إرسال صورة', '👥 إحصائيات البوت'].includes(text)) {
+        else if (['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت'].includes(text)) {
             await ctx.replyWithMarkdown(
                 '❌ *يجب التسجيل أولاً*\n\n' +
                 '🔐 أرسل /start لتسجيل الدخول',
@@ -963,13 +911,13 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// 🖼️ IMAGE ANALYSIS HANDLER
+// 🖼️ معالجة صور الدفع فقط
 bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
         
-        // 💳 معالجة صور الدفع من المستخدمين
+        // 💳 معالجة صور الدفع من المستخدمين فقط
         if (session.paymentType) {
             await handlePaymentScreenshot(ctx, userId);
             return;
@@ -981,133 +929,12 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        const userData = await dbManager.getUser(userId);
-        if (!userData || !userData.onexbet) {
-            await ctx.replyWithMarkdown('❌ *يجب التحقق من الحساب أولاً*\n\n🔐 أرسل /start للبدء', getLoginKeyboard());
-            return;
-        }
-
-        // 🔐 التحقق من المحاولات المجانية أو الاشتراك
-        if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
-            await ctx.replyWithMarkdown(
-                '🚫 *انتهت المحاولات المجانية*\n\n' +
-                '💳 يرجى الاشتراك للمتابعة في استخدام الخدمة',
-                getMainKeyboard()
-            );
-            return;
-        }
-
-        // التحقق من وجود مبلغ الرهان
-        if (!session.currentBet || session.currentBet <= 0) {
-            await ctx.replyWithMarkdown(
-                '❌ *يجب تحديد مبلغ الرهان أولاً*\n\n' +
-                '💰 استخدم زر "🎯 التوقع التالي" لتحديد المبلغ',
-                getMainKeyboard()
-            );
-            return;
-        }
-
-        // 📸 معالجة الصورة
-        const photo = ctx.message.photo[ctx.message.photo.length - 1];
-        const fileLink = await bot.telegram.getFileLink(photo.file_id);
-        const imageUrl = fileLink.href;
-
-        // حفظ رابط الصورة في الجلسة للاستخدام لاحقاً
-        ctx.session.lastImageUrl = imageUrl;
-
-        const processingMsg = await ctx.reply('🔍 جاري تحليل الصورة...');
-
-        try {
-            // 🔐 التحقق من صحة الصورة
-            const verificationResult = await imageVerification.verifyImage(imageUrl);
-
-            // التحقق من نتيجة التحقق
-            if (verificationResult.decision === "REJECT") {
-                await ctx.replyWithMarkdown(
-                    `❌ *لم يتم قبول الصورة*\n\n` +
-                    `📸 *سبب الرفض:* ${verificationResult.reason}\n\n` +
-                    `💡 *يرجى إرسال صورة تحتوي على محتوى اللعبة*`
-                );
-                await ctx.deleteMessage(processingMsg.message_id);
-                return;
-            } else {
-                await ctx.replyWithMarkdown(
-                    `✅ *تم قبول الصورة بنجاح*\n\n` +
-                    `📸 ${verificationResult.reason}\n` +
-                    `🔄 جاري تحليل المباراة بالذكاء الاصطناعي...`
-                );
-            }
-
-            // المتابعة بالتحليل العادي
-            await ctx.editMessageText(processingMsg.message_id, '🔄 جاري تحليل صورة المباراة بالذكاء الاصطناعي...');
-
-            const prediction = await goalAI.analyzeImageWithAI(imageUrl);
-            
-            // 📊 تحديث إحصائيات المستخدم
-            if (userData.subscription_status !== 'active') {
-                userData.free_attempts--;
-            }
-            userData.total_predictions = (userData.total_predictions || 0) + 1;
-            userData.total_bets = (userData.total_bets || 0) + session.currentBet;
-            userData.lastPrediction = prediction;
-            await dbManager.saveUser(userId, userData);
-
-            const analysisMessage = `
-🤖 *تحليل الذكاء الاصطناعي المتقدم - v${CONFIG.VERSION}*
-
-📸 *الصورة:* ✅ تم التحقق والتحليل بنجاح
-🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
-🔐 *الحساب:* \`${userData.onexbet}\`
-💰 *مبلغ الرهان:* ${session.currentBet}$
-
-🎯 *نتيجة التحليل:*
-${prediction.type}
-📈 *الاحتمالية:* ${prediction.probability}%
-🎯 *الثقة:* ${prediction.confidence}%
-
-💡 *التحليل:*
-${prediction.reasoning}
-
-${userData.subscription_status !== 'active' ? 
-    `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
-    `✅ *اشتراك نشط - محاولات غير محدودة*`}
-            `;
-
-            await ctx.replyWithMarkdown(analysisMessage);
-            
-            // إضافة أزرار النتيجة
-            const resultKeyboard = Markup.inlineKeyboard([
-                [
-                    Markup.button.callback(`🎊 نجح التوقع - ربح ${session.currentBet * 2}$`, `win_${Date.now()}`),
-                    Markup.button.callback(`🔄 خسرت - جرب التوقع التالي`, `lose_${Date.now()}`)
-                ]
-            ]);
-
-            await ctx.replyWithMarkdown(
-                '📊 *ما هي نتيجة التوقع؟*\n\n' +
-                `🎊 *نجح التوقع* - تربح ${session.currentBet * 2}$\n` +
-                `🔄 *خسرت* - جرب التوقع التالي بمضاعفة الرهان\n\n` +
-                '✨ سيتم تحديث إحصائيك تلقائياً',
-                resultKeyboard
-            );
-
-            await ctx.deleteMessage(processingMsg.message_id);
-
-        } catch (analysisError) {
-            console.error('Analysis error:', analysisError);
-            
-            const fallbackPrediction = goalAI.generateSmartPrediction(userId);
-            
-            await ctx.replyWithMarkdown(
-                `🤖 *النظام الاحتياطي - تحليل فوري*\n\n` +
-                `🎯 ${fallbackPrediction.type}\n` +
-                `📈 ${fallbackPrediction.probability}% | 🎯 ${fallbackPrediction.confidence}%\n\n` +
-                `💡 ${fallbackPrediction.reasoning}`,
-                getMainKeyboard()
-            );
-
-            await ctx.deleteMessage(processingMsg.message_id);
-        }
+        // إذا لم يكن هناك سياق للصورة، نرسل رسالة توضيحية
+        await ctx.replyWithMarkdown(
+            '❌ *لا يمكن معالجة الصورة حالياً*\n\n' +
+            '💡 يرجى استخدام الأزرار المتاحة في القائمة',
+            getMainKeyboard()
+        );
 
     } catch (error) {
         console.error('Photo handler error:', error);
@@ -1169,19 +996,6 @@ bot.on('callback_query', async (ctx) => {
                     `💡 ${newPrediction.reasoning}`,
                     getMainKeyboard()
                 );
-                
-                // إضافة أزرار النتيجة للتوقع الجديد
-                const resultKeyboard = Markup.inlineKeyboard([
-                    [
-                        Markup.button.callback(`🎊 نجح التوقع - ربح ${newBet * 2}$`, `win_${Date.now()}`),
-                        Markup.button.callback(`🔄 خسرت - جرب التوقع التالي`, `lose_${Date.now()}`)
-                    ]
-                ]);
-
-                await ctx.replyWithMarkdown(
-                    '📊 *ما هي نتيجة التوقع الجديد؟*',
-                    resultKeyboard
-                );
             }
             
             await dbManager.saveUser(userId, userData);
@@ -1211,29 +1025,57 @@ bot.on('callback_query', async (ctx) => {
 
 // 🎯 HANDLER FUNCTIONS
 
-async function handleNextPrediction(ctx, userData) {
+async function handleGetPrediction(ctx, userData) {
     try {
-        if (!ctx.session.lastImageUrl) {
-            await ctx.replyWithMarkdown('❌ *لا توجد صورة سابقة*\n\n📸 يرجى إرسال صورة أولاً');
+        // 🔐 التحقق من المحاولات المجانية أو الاشتراك
+        if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
+            await ctx.replyWithMarkdown(
+                '🚫 *انتهت المحاولات المجانية*\n\n' +
+                '💳 يرجى الاشتراك للمتابعة في استخدام الخدمة',
+                getMainKeyboard()
+            );
             return;
         }
 
-        const processingMsg = await ctx.reply('🔄 جاري إنشاء التوقع التالي بالذكاء الاصطناعي...');
+        // التحقق من وجود مبلغ الرهان
+        if (!ctx.session.currentBet || ctx.session.currentBet <= 0) {
+            ctx.session.awaitingBetAmount = true;
+            await ctx.replyWithMarkdown(
+                '💰 *أدخل مبلغ الرهان:*\n\n' +
+                '💵 يرجى كتابة المبلغ الذي تريد الرهان عليه (بالدولار)\n' +
+                '📝 مثال: 10 أو 25.5'
+            );
+            return;
+        }
+
+        // إرسال رسالة الانتظار المتحركة
+        const loadingMessage = await ctx.replyWithMarkdown(
+            '🎯 *جاري جلب التحليل...*\n\n' +
+            '⚽ جاري البحث عن فرص الهدف...\n' +
+            '🔄 جاري تحليل إحصائيات الفريقين...\n' +
+            '📊 جاري معالجة البيانات...\n' +
+            '🤖 جاري تطبيق خوارزمية الذكاء الاصطناعي...\n\n' +
+            '⏳ قد تستغرق العملية بضع ثوان...'
+        );
+
+        // محاكاة الانتظار لمدة 4 ثواني
+        await new Promise(resolve => setTimeout(resolve, 4000));
+
+        // توليد التوقع
+        const prediction = goalAI.generateSmartPrediction(userData.user_id);
         
-        const prediction = await goalAI.analyzeImageWithAI(ctx.session.lastImageUrl);
-        
+        // 📊 تحديث إحصائيات المستخدم
+        if (userData.subscription_status !== 'active') {
+            userData.free_attempts--;
+        }
         userData.total_predictions = (userData.total_predictions || 0) + 1;
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
         userData.lastPrediction = prediction;
         await dbManager.saveUser(ctx.from.id.toString(), userData);
 
+        // إرسال التوقع مع الصورة
         const analysisMessage = `
 🤖 *تحليل الذكاء الاصطناعي المتقدم - v${CONFIG.VERSION}*
-
-📸 *الصورة:* ✅ إعادة استخدام الصورة السابقة
-🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
-🔐 *الحساب:* \`${userData.onexbet}\`
-💰 *مبلغ الرهان:* ${ctx.session.currentBet}$
 
 🎯 *نتيجة التحليل:*
 ${prediction.type}
@@ -1242,10 +1084,24 @@ ${prediction.type}
 
 💡 *التحليل:*
 ${prediction.reasoning}
+
+🔐 *الحساب:* \`${userData.onexbet}\`
+💰 *مبلغ الرهان:* ${ctx.session.currentBet}$
+
+${userData.subscription_status !== 'active' ? 
+    `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
+    `✅ *اشتراك نشط - محاولات غير محدودة*`}
         `;
 
-        await ctx.replyWithMarkdown(analysisMessage);
-        
+        // إرسال الصورة مع التوقع
+        await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
+            caption: analysisMessage,
+            parse_mode: 'Markdown'
+        });
+
+        // إرسال الإشعار للقناة
+        await channelNotifier.sendPredictionNotification(userData, prediction, ctx.session.currentBet);
+
         // إضافة أزرار النتيجة
         const resultKeyboard = Markup.inlineKeyboard([
             [
@@ -1262,11 +1118,12 @@ ${prediction.reasoning}
             resultKeyboard
         );
 
-        await ctx.deleteMessage(processingMsg.message_id);
+        // حذف رسالة الانتظار
+        await ctx.deleteMessage(loadingMessage.message_id);
 
     } catch (error) {
-        console.error('Next prediction error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في إنشاء التوقع التالي*', getMainKeyboard());
+        console.error('Get prediction error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب التحليل*', getMainKeyboard());
     }
 }
 
@@ -1313,38 +1170,16 @@ async function handleBotStats(ctx) {
 
 async function handleSubscriptions(ctx, userData) {
     try {
-        const settings = await dbManager.getSettings();
-        const prices = settings.prices;
-        const payment_links = settings.payment_links;
-        
-        const subscriptionMessage = `
-💳 *باقات الاشتراك المتاحة*
-
-💰 *أسبوعي:* ${prices.week}$
-⏰ مدة: 7 أيام
-${payment_links.week.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.week})` : `🔗 ${payment_links.week}`}
-
-💰 *شهري:* ${prices.month}$  
-⏰ مدة: 30 يوماً
-${payment_links.month.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.month})` : `🔗 ${payment_links.month}`}
-
-💰 *3 أشهر:* ${prices.three_months}$
-⏰ مدة: 90 يوماً
-${payment_links.three_months.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.three_months})` : `🔗 ${payment_links.three_months}`}
-
-💰 *سنوي:* ${prices.year}$
-⏰ مدة: 365 يوماً
-${payment_links.year.startsWith('http') ? `🖼️ [صورة الدفع](${payment_links.year})` : `🔗 ${payment_links.year}`}
-
-📋 *طريقة الدفع:*
-1. اختر الباقة المناسبة
-2. ادفع عبر الرابط أو الصورة
-3. أرسل رقم حساب 1xBet (10 أرقام)
-4. أرسل صورة إثبات الدفع
-5. انتظر التفعيل من الإدارة
-        `;
-
-        await ctx.replyWithMarkdown(subscriptionMessage, getSubscriptionKeyboard());
+        await ctx.replyWithMarkdown(
+            '💳 *باقات الاشتراك المتاحة*\n\n' +
+            '📦 اختر الباقة المناسبة لك:\n\n' +
+            '💰 أسبوعي - 7 أيام\n' +
+            '💰 شهري - 30 يوماً\n' +
+            '💰 3 أشهر - 90 يوماً\n' +
+            '💰 سنوي - 365 يوماً\n\n' +
+            '💡 اضغط على الزر المناسب لعرض التفاصيل',
+            getSubscriptionKeyboard()
+        );
     } catch (error) {
         console.error('Subscriptions error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب معلومات الاشتراكات*', getMainKeyboard());
@@ -1370,21 +1205,34 @@ async function handleSubscriptionSelection(ctx, userData, text) {
         const prices = settings.prices;
         const payment_links = settings.payment_links;
 
-        ctx.session.paymentType = subscriptionType;
-        ctx.session.awaitingPaymentAccount = true;
+        const displayName = text.replace('💰 ', '');
+        
+        // عرض تفاصيل الباقة المحددة فقط
+        let subscriptionMessage = `💳 *باقة ${displayName}*\n\n`;
+        subscriptionMessage += `💰 السعر: ${prices[subscriptionType]}$\n`;
+        subscriptionMessage += `⏰ المدة: ${subscriptionType === 'week' ? '7 أيام' : subscriptionType === 'month' ? '30 يوماً' : subscriptionType === 'three_months' ? '90 يوماً' : '365 يوماً'}\n\n`;
+        
+        if (payment_links[subscriptionType].startsWith('http')) {
+            subscriptionMessage += `🖼️ *طريقة الدفع:*\n`;
+            subscriptionMessage += `📎 ${payment_links[subscriptionType]}\n\n`;
+        } else {
+            subscriptionMessage += `🔗 *رابط الدفع:* ${payment_links[subscriptionType]}\n\n`;
+        }
+        
+        subscriptionMessage += `📋 *خطوات الإكمال:*\n`;
+        subscriptionMessage += `1. ادفع عبر الرابط/الصورة أعلاه\n`;
+        subscriptionMessage += `2. أرسل رقم حساب 1xBet (10 أرقام)\n`;
+        subscriptionMessage += `3. أرسل صورة إثبات الدفع\n`;
+        subscriptionMessage += `4. انتظر التفعيل من الإدارة\n\n`;
+        subscriptionMessage += `💡 *هل تريد المتابعة مع هذه الباقة؟*`;
 
-        await ctx.replyWithMarkdown(
-            `💳 *باقة ${text.replace('💰 ', '')}*\n\n` +
-            `💰 السعر: ${prices[subscriptionType]}$\n` +
-            `${payment_links[subscriptionType].startsWith('http') ? 
-                `🖼️ صورة الدفع: [اضغط هنا](${payment_links[subscriptionType]})` : 
-                `🔗 رابط الدفع: ${payment_links[subscriptionType]}`}\n\n` +
-            `📋 *خطوات الإكمال:*\n` +
-            `1. ادفع عبر الرابط/الصورة أعلاه\n` +
-            `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
-            `3. أرسل صورة إثبات الدفع\n\n` +
-            `🔢 *الآن أرسل رقم حساب 1xBet المكون من 10 أرقام:*`
-        );
+        const subscriptionKeyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('✅ نعم، المتابعة', `confirm_${subscriptionType}`)],
+            [Markup.button.callback('🔙 رجوع', 'back_to_subscriptions')]
+        ]);
+
+        await ctx.replyWithMarkdown(subscriptionMessage, subscriptionKeyboard);
+
     } catch (error) {
         console.error('Subscription selection error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getSubscriptionKeyboard());
@@ -1427,14 +1275,8 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const accountNumber = ctx.session.paymentAccount || userData.onexbet;
 
-        // رفع الصورة إلى imgbb
-        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
+        const uploadResult = await imgbbUploader.uploadImage(imageUrl);
         
-        if (!uploadResult.success) {
-            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
-            return;
-        }
-
         const paymentData = {
             user_id: userId,
             onexbet: accountNumber,
@@ -2179,23 +2021,15 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        // رفع الصورة إلى imgbb
-        const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
-        
-        if (!uploadResult.success) {
-            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
-            return;
-        }
-
         const settings = await dbManager.getSettings();
-        settings.payment_links[subscriptionType] = uploadResult.url;
+        settings.payment_links[subscriptionType] = imageUrl;
         await dbManager.updateSettings(settings);
 
         await ctx.replyWithMarkdown(
             `✅ *تم التحديث بنجاح!*\n\n` +
             `📦 ${subscriptionType}\n` +
             `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
-            `🖼️ صورة الدفع: [اضغط هنا](${uploadResult.url})\n\n` +
+            `🖼️ صورة الدفع: [اضغط هنا](${imageUrl})\n\n` +
             `🔄 تم حفظ التغييرات في النظام`,
             getAdminSettingsKeyboard()
         );
@@ -2310,6 +2144,9 @@ async function handlePaymentAccept(ctx, paymentId) {
         } catch (error) {
             console.error('Error notifying user:', error);
         }
+
+        // إرسال الإشعار للقناة
+        await channelNotifier.sendSubscriptionNotification(userData, payment.subscription_type, payment.amount);
         
         await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         
@@ -2382,13 +2219,13 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v12.1 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v13.0 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
+    console.log('📢 Channel ID:', CONFIG.CHANNEL_ID);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
-    console.log('🖼️ Image verification system: ACTIVE');
-    console.log('📤 ImgBB uploader: ACTIVE');
+    console.log('📤 Channel Notifier: ACTIVE');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
