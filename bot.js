@@ -1,76 +1,48 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.1
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.3
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
-// 🔥 FEATURES: SMART AI + DUAL PAYMENT SYSTEM + FIREBASE + FULL ADMIN PANEL + DEEP STORAGE
+// 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL + CHANNEL VERIFICATION
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v16.1...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v15.3...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
 const CONFIG = {
-    BOT_TOKEN: process.env.BOT_TOKEN,
-    ADMIN_ID: process.env.ADMIN_ID,
-    CHANNEL_ID: process.env.CHANNEL_ID,
-    CHANNEL_USERNAME: process.env.CHANNEL_USERNAME,
+    BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU",
+    ADMIN_ID: process.env.ADMIN_ID || "6565594143",
+    CHANNEL_ID: process.env.CHANNEL_ID || "-1003283663811",
+    CHANNEL_USERNAME: process.env.CHANNEL_USERNAME || "@GEMZGOOL",
     
     // 🧠 AI APIS
     AI_APIS: {
-        GEMINI: process.env.GEMINI_API_KEY,
-        OPENAI: process.env.OPENAI_API_KEY
+        GEMINI: process.env.GEMINI_API_KEY || "AIzaSyCtjtT98-M5v6t8qICPSDw-1TLwPneyaQc",
+        OPENAI: process.env.OPENAI_API_KEY || "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"
     },
 
-    // 💰 DEFAULT PRICING - DUAL PAYMENT SYSTEM
+    // 💰 DEFAULT PRICING
     SUBSCRIPTION_PRICES: {
-        binance: {
-            week: 10,
-            month: 30,
-            three_months: 80,
-            year: 250
-        },
-        bank: {
-            week: 10,
-            month: 30,
-            three_months: 80,
-            year: 250
-        }
+        week: 10,
+        month: 30,
+        three_months: 80,
+        year: 250
     },
 
-    // 🔐 DEFAULT PAYMENT METHODS
-    PAYMENT_METHODS: {
-        binance: {
-            week: process.env.PAYMENT_WEEK,
-            month: process.env.PAYMENT_MONTH,
-            three_months: process.env.PAYMENT_3MONTHS,
-            year: process.env.PAYMENT_YEAR
-        },
-        bank: {
-            week: { 
-                account: process.env.BANK_WEEK_ACCOUNT,
-                image: process.env.BANK_WEEK_IMAGE
-            },
-            month: { 
-                account: process.env.BANK_MONTH_ACCOUNT,
-                image: process.env.BANK_MONTH_IMAGE
-            },
-            three_months: { 
-                account: process.env.BANK_3MONTHS_ACCOUNT,
-                image: process.env.BANK_3MONTHS_IMAGE
-            },
-            year: { 
-                account: process.env.BANK_YEAR_ACCOUNT,
-                image: process.env.BANK_YEAR_IMAGE
-            }
-        }
+    // 🔐 DEFAULT PAYMENT LINKS
+    PAYMENT_LINKS: {
+        week: process.env.PAYMENT_WEEK || "https://binance.com/payment/weekly",
+        month: process.env.PAYMENT_MONTH || "https://binance.com/payment/monthly", 
+        three_months: process.env.PAYMENT_3MONTHS || "https://binance.com/payment/3months",
+        year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "16.1.0",
+    VERSION: "15.3.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
     PREDICTION_IMAGE: "https://i.ibb.co/rGTZm2mB/IMG.jpg",
-    IMGBB_API_KEY: process.env.IMGBB_API_KEY
+    IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
 };
 
 console.log('✅ Configuration loaded successfully');
@@ -112,30 +84,19 @@ app.listen(PORT, () => {
     console.log(`🔄 Keep alive endpoint: http://localhost:${PORT}/keep-alive`);
 });
 
-// 🔥 FIREBASE INITIALIZATION - ENHANCED FOR DEEP STORAGE
+// 🔥 FIREBASE INITIALIZATION
 let db = null;
 let admin = null;
 
 try {
     admin = require('firebase-admin');
     
-    // التحقق من وجود جميع متغيرات Firebase المطلوبة
-    const firebaseConfig = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL
-    };
-
-    if (!firebaseConfig.privateKey || !firebaseConfig.clientEmail || !firebaseConfig.projectId) {
-        throw new Error('Firebase environment variables are missing');
-    }
-
     const serviceAccount = {
         "type": "service_account",
-        "project_id": firebaseConfig.projectId,
+        "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
         "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
-        "private_key": firebaseConfig.privateKey,
-        "client_email": firebaseConfig.clientEmail,
+        "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+        "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
         "client_id": process.env.FIREBASE_CLIENT_ID,
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
@@ -146,152 +107,30 @@ try {
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
-            databaseURL: `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`
+            databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
         });
     }
     
     db = admin.firestore();
-    
-    // 🔄 اختبار اتصال Firebase
-    const testRef = db.collection('system').doc('connection_test');
-    await testRef.set({ 
-        timestamp: new Date().toISOString(),
-        status: 'connected',
-        version: CONFIG.VERSION
-    });
-    
-    console.log('✅ Firebase initialized successfully with deep storage');
+    console.log('✅ Firebase initialized successfully');
     
 } catch (error) {
-    console.log('❌ Firebase initialization failed:', error.message);
-    console.log('🔄 Using enhanced local storage with persistence');
+    console.log('⚠️ Firebase initialization failed:', error.message);
+    console.log('🔄 Using local storage instead');
 }
 
-// 🗄️ ENHANCED LOCAL STORAGE WITH PERSISTENCE
-class EnhancedStorage {
-    constructor() {
-        this.users = new Map();
-        this.payments = new Map();
-        this.settings = new Map();
-        this.backupInterval = null;
-        this.init();
-    }
+// 🗄️ LOCAL STORAGE FALLBACK
+const userDatabase = new Map();
+const paymentDatabase = new Map();
+const settingsDatabase = new Map();
 
-    init() {
-        // تحميل البيانات المحفوظة من الذاكرة
-        this.loadFromMemory();
-        
-        // نسخ احتياطي تلقائي كل 5 دقائق
-        this.backupInterval = setInterval(() => {
-            this.backupToMemory();
-        }, 5 * 60 * 1000);
-        
-        console.log('✅ Enhanced storage initialized with auto-backup');
-    }
-
-    loadFromMemory() {
-        try {
-            // في بيئة الإنتاج، يمكن استخدام ملفات أو قاعدة بيانات
-            // هنا نستخدم ذاكرة التخزين المؤقت مع نسخ احتياطي
-            const savedData = process.env.STORAGE_BACKUP ? 
-                JSON.parse(process.env.STORAGE_BACKUP) : null;
-            
-            if (savedData) {
-                this.users = new Map(savedData.users);
-                this.payments = new Map(savedData.payments);
-                this.settings = new Map(savedData.settings);
-                console.log('✅ Loaded data from backup');
-            }
-        } catch (error) {
-            console.log('❌ No backup data found, starting fresh');
-        }
-    }
-
-    backupToMemory() {
-        try {
-            const backupData = {
-                users: Array.from(this.users.entries()),
-                payments: Array.from(this.payments.entries()),
-                settings: Array.from(this.settings.entries()),
-                timestamp: new Date().toISOString()
-            };
-            
-            // في بيئة حقيقية، يمكن حفظها في متغير بيئة أو ملف
-            process.env.STORAGE_BACKUP = JSON.stringify(backupData);
-            console.log('✅ Storage backup completed');
-        } catch (error) {
-            console.log('❌ Backup failed:', error.message);
-        }
-    }
-
-    // إدارة المستخدمين
-    setUser(userId, userData) {
-        this.users.set(userId.toString(), {
-            ...userData,
-            last_updated: new Date().toISOString(),
-            version: CONFIG.VERSION
-        });
-    }
-
-    getUser(userId) {
-        return this.users.get(userId.toString());
-    }
-
-    getAllUsers() {
-        return Array.from(this.users.entries()).map(([id, data]) => ({ id, ...data }));
-    }
-
-    // إدارة الدفعات
-    setPayment(paymentId, paymentData) {
-        this.payments.set(paymentId, {
-            ...paymentData,
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    getPayment(paymentId) {
-        return this.payments.get(paymentId);
-    }
-
-    getAllPayments() {
-        return Array.from(this.payments.values());
-    }
-
-    // الإعدادات
-    setSettings(key, settings) {
-        this.settings.set(key, {
-            ...settings,
-            updated_at: new Date().toISOString()
-        });
-    }
-
-    getSettings(key) {
-        return this.settings.get(key);
-    }
-
-    // البحث في المستخدمين
-    searchUsers(query) {
-        const users = this.getAllUsers();
-        const lowerQuery = query.toLowerCase();
-        
-        return users.filter(user => 
-            (user.user_id && user.user_id.toString().includes(query)) ||
-            (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
-            (user.onexbet && user.onexbet.toString().includes(query))
-        );
-    }
-
-    // تنظيف الذاكرة
-    cleanup() {
-        if (this.backupInterval) {
-            clearInterval(this.backupInterval);
-        }
-        this.backupToMemory();
-    }
-}
-
-// تهيئة التخزين المحسن
-const enhancedStorage = new EnhancedStorage();
+// تهيئة الإعدادات الافتراضية
+settingsDatabase.set('config', {
+    prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+    payment_links: { ...CONFIG.PAYMENT_LINKS },
+    maintenance_mode: false,
+    updated_at: new Date().toISOString()
+});
 
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
@@ -305,14 +144,19 @@ class DynamicStatistics {
     getStats() {
         const now = Date.now();
         
+        // زيادة عدد المستخدمين النشطين عند كل طلب مباشرة
         this.callCount++;
+        
+        // زيادة عشوائية بين 1-5 عند كل طلب
         const randomIncrement = Math.floor(Math.random() * 5) + 1;
         this.activeUsers += randomIncrement;
         
+        // الحد الأقصى 5000 ثم العودة لـ 300
         if (this.activeUsers > 5000) {
             this.activeUsers = 300;
         }
         
+        // تحديث الوقت عند كل طلب
         this.lastCallTime = now;
 
         return {
@@ -325,40 +169,22 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "16.1";
-    }
-
-    getSaudiTime() {
-        const now = new Date();
-        const saudiTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-        return saudiTime.toLocaleTimeString('ar-SA', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false 
-        });
-    }
-
-    getSaudiDateTime() {
-        const now = new Date();
-        const saudiTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-        return saudiTime.toLocaleString('ar-SA', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
+        this.algorithmVersion = "15.3";
     }
 
     generateSmartPrediction(userId) {
         const isGoal = Math.random() > 0.5;
         const probability = Math.floor(Math.random() * 30) + 60;
         
-        const realTime = this.getSaudiTime();
-        const realDateTime = this.getSaudiDateTime();
+        // الحصول على الوقت الحقيقي الحالي
+        const now = new Date();
+        const saudiTime = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // توقيت السعودية +3
+        const realTime = saudiTime.toLocaleTimeString('ar-SA', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false 
+        });
         
         const prediction = {
             type: isGoal ? '⚽ GOAL' : '🛑 NO GOAL',
@@ -367,8 +193,7 @@ class GoalPredictionAI {
             reasoning: isGoal ? 
                 `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%` :
                 `🛡️ الدفاع المنظم يحد من الفرص بنسبة ${probability}%`,
-            timestamp: realTime,
-            datetime: realDateTime,
+            timestamp: realTime, // استخدام الوقت الحقيقي
             algorithm: this.algorithmVersion
         };
 
@@ -443,62 +268,27 @@ class ImgBBUploader {
     }
 }
 
-// 💾 ENHANCED DATABASE MANAGER WITH DEEP STORAGE
+// 💾 DATABASE MANAGER - ENHANCED FOR PERSISTENCE
 class DatabaseManager {
     constructor() {
         this.maintenanceMode = false;
-        this.storage = enhancedStorage;
-        
-        // تهيئة الإعدادات الافتراضية
-        this.initDefaultSettings();
-    }
-
-    async initDefaultSettings() {
-        try {
-            const existingSettings = await this.getSettings();
-            if (!existingSettings) {
-                const defaultSettings = {
-                    prices: { ...CONFIG.SUBSCRIPTION_PRICES },
-                    payment_methods: { ...CONFIG.PAYMENT_METHODS },
-                    maintenance_mode: false,
-                    updated_at: new Date().toISOString(),
-                    version: CONFIG.VERSION
-                };
-                
-                await this.updateSettings(defaultSettings);
-                console.log('✅ Default settings initialized');
-            }
-        } catch (error) {
-            console.log('❌ Settings initialization failed:', error.message);
-        }
     }
 
     async getUser(userId) {
         try {
             if (db) {
                 const userDoc = await db.collection('users').doc(userId.toString()).get();
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    console.log(`✅ Loaded user ${userId} from Firebase`);
-                    return userData;
-                }
+                return userDoc.exists ? userDoc.data() : null;
             }
-            
-            // Fallback to enhanced storage
-            const userData = this.storage.getUser(userId);
-            if (userData) {
-                console.log(`✅ Loaded user ${userId} from enhanced storage`);
-            }
-            return userData || null;
+            return userDatabase.get(userId) || null;
         } catch (error) {
-            console.error('Get user error:', error);
-            return this.storage.getUser(userId) || null;
+            return userDatabase.get(userId) || null;
         }
     }
 
     async saveUser(userId, userData) {
         try {
-            // التأكد من وجود جميع الحقول المطلوبة مع التعزيز
+            // التأكد من وجود جميع الحقول المطلوبة
             const completeUserData = {
                 user_id: userId,
                 username: userData.username || 'Unknown',
@@ -516,56 +306,44 @@ class DatabaseManager {
                 total_bets: userData.total_bets || 0,
                 total_profit: userData.total_profit || 0,
                 last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false,
-                version: CONFIG.VERSION,
-                persistent_id: `user_${userId}_${Date.now()}`
+                channel_subscribed: userData.channel_subscribed || false
             };
 
-            // الحفظ في Firebase أولاً
             if (db) {
                 await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                console.log(`✅ Saved user ${userId} to Firebase`);
             }
-
-            // الحفظ في التخزين المحسن دائماً
-            this.storage.setUser(userId, completeUserData);
-            console.log(`✅ Saved user ${userId} to enhanced storage`);
-
+            userDatabase.set(userId, completeUserData);
             return true;
         } catch (error) {
             console.error('Error saving user:', error);
-            // Fallback إلى التخزين المحسن
-            this.storage.setUser(userId, userData);
-            console.log(`✅ Saved user ${userId} to enhanced storage (fallback)`);
+            userDatabase.set(userId, userData);
             return true;
         }
     }
 
     async addPayment(paymentData) {
-        const paymentId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const paymentId = Date.now().toString();
         try {
             const fullPaymentData = {
                 ...paymentData,
                 id: paymentId,
                 status: 'pending',
-                timestamp: new Date().toISOString(),
-                persistent_id: paymentId
+                timestamp: new Date().toISOString()
             };
 
             if (db) {
                 await db.collection('payments').doc(paymentId).set(fullPaymentData);
             }
-            this.storage.setPayment(paymentId, fullPaymentData);
+            paymentDatabase.set(paymentId, fullPaymentData);
             return paymentId;
         } catch (error) {
             const fullPaymentData = {
                 ...paymentData,
                 id: paymentId,
                 status: 'pending',
-                timestamp: new Date().toISOString(),
-                persistent_id: paymentId
+                timestamp: new Date().toISOString()
             };
-            this.storage.setPayment(paymentId, fullPaymentData);
+            paymentDatabase.set(paymentId, fullPaymentData);
             return paymentId;
         }
     }
@@ -576,9 +354,9 @@ class DatabaseManager {
                 const paymentsSnapshot = await db.collection('payments').where('status', '==', 'pending').get();
                 return paymentsSnapshot.docs.map(doc => doc.data());
             }
-            return this.storage.getAllPayments().filter(p => p.status === 'pending');
+            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
         } catch (error) {
-            return this.storage.getAllPayments().filter(p => p.status === 'pending');
+            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
         }
     }
 
@@ -587,15 +365,15 @@ class DatabaseManager {
             if (db) {
                 await db.collection('payments').doc(paymentId).update(updates);
             }
-            const payment = this.storage.getPayment(paymentId);
+            const payment = paymentDatabase.get(paymentId);
             if (payment) {
-                this.storage.setPayment(paymentId, { ...payment, ...updates });
+                paymentDatabase.set(paymentId, { ...payment, ...updates });
             }
             return true;
         } catch (error) {
-            const payment = this.storage.getPayment(paymentId);
+            const payment = paymentDatabase.get(paymentId);
             if (payment) {
-                this.storage.setPayment(paymentId, { ...payment, ...updates });
+                paymentDatabase.set(paymentId, { ...payment, ...updates });
             }
             return true;
         }
@@ -607,9 +385,9 @@ class DatabaseManager {
                 const usersSnapshot = await db.collection('users').get();
                 return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }
-            return this.storage.getAllUsers();
+            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
         } catch (error) {
-            return this.storage.getAllUsers();
+            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
         }
     }
 
@@ -621,9 +399,19 @@ class DatabaseManager {
                     return settingsDoc.data();
                 }
             }
-            return this.storage.getSettings('config');
+            return settingsDatabase.get('config') || {
+                prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+                payment_links: { ...CONFIG.PAYMENT_LINKS },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
         } catch (error) {
-            return this.storage.getSettings('config');
+            return settingsDatabase.get('config') || {
+                prices: { ...CONFIG.SUBSCRIPTION_PRICES },
+                payment_links: { ...CONFIG.PAYMENT_LINKS },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
         }
     }
 
@@ -631,22 +419,20 @@ class DatabaseManager {
         try {
             const updatedSettings = {
                 ...newSettings,
-                updated_at: new Date().toISOString(),
-                version: CONFIG.VERSION
+                updated_at: new Date().toISOString()
             };
 
             if (db) {
                 await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
             }
-            this.storage.setSettings('config', updatedSettings);
+            settingsDatabase.set('config', updatedSettings);
             return updatedSettings;
         } catch (error) {
             const updatedSettings = {
                 ...newSettings,
-                updated_at: new Date().toISOString(),
-                version: CONFIG.VERSION
+                updated_at: new Date().toISOString()
             };
-            this.storage.setSettings('config', updatedSettings);
+            settingsDatabase.set('config', updatedSettings);
             return updatedSettings;
         }
     }
@@ -657,9 +443,9 @@ class DatabaseManager {
                 const paymentDoc = await db.collection('payments').doc(paymentId).get();
                 return paymentDoc.exists ? paymentDoc.data() : null;
             }
-            return this.storage.getPayment(paymentId);
+            return paymentDatabase.get(paymentId) || null;
         } catch (error) {
-            return this.storage.getPayment(paymentId);
+            return paymentDatabase.get(paymentId) || null;
         }
     }
 
@@ -669,9 +455,9 @@ class DatabaseManager {
                 const paymentsSnapshot = await db.collection('payments').get();
                 return paymentsSnapshot.docs.map(doc => doc.data());
             }
-            return this.storage.getAllPayments();
+            return Array.from(paymentDatabase.values());
         } catch (error) {
-            return this.storage.getAllPayments();
+            return Array.from(paymentDatabase.values());
         }
     }
 
@@ -694,21 +480,28 @@ class DatabaseManager {
 
     async searchUsers(query) {
         try {
-            return this.storage.searchUsers(query);
+            const users = await this.getAllUsers();
+            const lowerQuery = query.toLowerCase();
+            
+            return users.filter(user => 
+                (user.user_id && user.user_id.toString().includes(query)) ||
+                (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
+                (user.onexbet && user.onexbet.toString().includes(query))
+            );
         } catch (error) {
             console.error('Search users error:', error);
             return [];
         }
     }
 
+    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
     async backupData() {
         try {
             const backupData = {
                 users: await this.getAllUsers(),
                 payments: await this.getAllPayments(),
                 settings: await this.getSettings(),
-                timestamp: new Date().toISOString(),
-                version: CONFIG.VERSION
+                timestamp: new Date().toISOString()
             };
             
             if (db) {
@@ -722,6 +515,7 @@ class DatabaseManager {
         }
     }
 
+    // دالة جديدة للتحقق من اشتراك القناة
     async setChannelSubscription(userId, subscribed) {
         try {
             const user = await this.getUser(userId);
@@ -736,6 +530,7 @@ class DatabaseManager {
         }
     }
 
+    // دالة جديدة للحصول على جميع الإحصائيات
     async getAllStats() {
         try {
             const users = await this.getAllUsers();
@@ -772,24 +567,6 @@ class DatabaseManager {
             };
         }
     }
-
-    // 🔄 دالة جديدة للتحقق من استمرارية البيانات
-    async verifyDataPersistence() {
-        try {
-            const users = await this.getAllUsers();
-            const settings = await this.getSettings();
-            
-            console.log(`✅ Data persistence verified:`);
-            console.log(`   📊 Users: ${users.length}`);
-            console.log(`   ⚙️ Settings: ${settings ? 'Loaded' : 'Not found'}`);
-            console.log(`   🔄 Version: ${CONFIG.VERSION}`);
-            
-            return true;
-        } catch (error) {
-            console.error('Data persistence verification failed:', error);
-            return false;
-        }
-    }
 }
 
 // INITIALIZE SYSTEMS
@@ -805,10 +582,8 @@ class ChannelNotifier {
         this.channelId = channelId;
     }
 
-    async sendSubscriptionNotification(userData, subscriptionType, amount, paymentMethod) {
+    async sendSubscriptionNotification(userData, subscriptionType, amount) {
         try {
-            const saudiTime = goalAI.getSaudiDateTime();
-            
             const message = `
 🎉 *اشتراك جديد في البوت*
 
@@ -816,9 +591,8 @@ class ChannelNotifier {
 🔐 *الحساب:* ${userData.onexbet}
 📦 *الباقة:* ${subscriptionType}
 💰 *المبلغ:* ${amount}$
-💳 *طريقة الدفع:* ${paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي'}
 
-🕒 *الوقت:* ${saudiTime}
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
             `;
 
             await this.bot.telegram.sendMessage(this.channelId, message, {
@@ -831,8 +605,6 @@ class ChannelNotifier {
 
     async sendPredictionNotification(userData, prediction, betAmount) {
         try {
-            const saudiTime = goalAI.getSaudiDateTime();
-            
             const message = `
 🎯 *توقع جديد في البوت*
 
@@ -845,7 +617,7 @@ class ChannelNotifier {
 💡 *التحليل:*
 ${prediction.reasoning}
 
-🕒 *الوقت:* ${saudiTime}
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
             `;
 
             await this.bot.telegram.sendMessage(this.channelId, message, {
@@ -867,7 +639,6 @@ bot.use(session({
         verificationCode: null,
         accountId: null,
         paymentType: null,
-        paymentMethod: null,
         adminMode: false,
         adminStep: null,
         awaitingPaymentAccount: false,
@@ -881,13 +652,7 @@ bot.use(session({
         adminSettingsStep: null,
         selectedPaymentType: null,
         editingSubscriptionType: null,
-        editingPaymentMethod: null,
-        editingBankAccount: null,
-        editingBankPrice: null,
-        checkingChannel: false,
-        // 🆕 جلسات جديدة لتعديل البنك الكريمي
-        bankEditStep: null,
-        tempBankData: {}
+        checkingChannel: false
     })
 }));
 
@@ -908,16 +673,9 @@ const getLoginKeyboard = () => {
 
 const getSubscriptionKeyboard = () => {
     return Markup.keyboard([
-        ['💳 Binance', '🏦 البنك الكريمي'],
-        ['🔙 الرجوع للقائمة']
-    ]).resize();
-};
-
-const getPaymentMethodKeyboard = (paymentMethod) => {
-    return Markup.keyboard([
         ['💰 أسبوعي', '💰 شهري'],
         ['💰 3 أشهر', '💰 سنوي'],
-        ['🔙 رجوع للاشتراكات']
+        ['🔙 الرجوع للقائمة']
     ]).resize();
 };
 
@@ -953,26 +711,10 @@ const getAdminSettingsKeyboard = () => {
     ]).resize();
 };
 
-const getAdminPaymentMethodsKeyboard = () => {
-    return Markup.keyboard([
-        ['💳 تعديل Binance', '🏦 تعديل البنك الكريمي'],
-        ['🔙 رجوع']
-    ]).resize();
-};
-
 const getAdminPaymentTypesKeyboard = () => {
     return Markup.keyboard([
         ['💰 أسبوعي', '💰 شهري'],
         ['💰 3 أشهر', '💰 سنوي'],
-        ['🔙 رجوع']
-    ]).resize();
-};
-
-// 🆕 لوحة مفاتيح تعديل البنك الكريمي
-const getAdminBankEditKeyboard = () => {
-    return Markup.keyboard([
-        ['💵 تعديل السعر', '🏦 تعديل رقم الحساب'],
-        ['🖼️ تعديل الصورة', '✅ إنهاء التعديل'],
         ['🔙 رجوع']
     ]).resize();
 };
@@ -1019,43 +761,10 @@ async function checkChannelSubscription(userId) {
     }
 }
 
-// 🛠️ دوال مساعدة
-function getSubscriptionDisplayName(subscriptionType) {
-    const names = {
-        'week': 'أسبوعي',
-        'month': 'شهري',
-        'three_months': '3 أشهر',
-        'year': 'سنوي'
-    };
-    return names[subscriptionType] || subscriptionType;
-}
-
-function getSubscriptionDuration(subscriptionType) {
-    const durations = {
-        'week': '7 أيام',
-        'month': '30 يوماً',
-        'three_months': '90 يوماً',
-        'year': '365 يوماً'
-    };
-    return durations[subscriptionType] || subscriptionType;
-}
-
-// 🔄 التحقق من استمرارية البيانات عند البدء
-dbManager.verifyDataPersistence().then(success => {
-    if (success) {
-        console.log('🎉 Data persistence system is working perfectly!');
-    } else {
-        console.log('⚠️ Data persistence has some issues, but bot will continue...');
-    }
-});
-
-// 🎯 BOT COMMANDS - ENHANCED WITH DEEP STORAGE
+// 🎯 BOT COMMANDS
 
 bot.start(async (ctx) => {
     try {
-        // التحقق من استمرارية البيانات أولاً
-        await dbManager.verifyDataPersistence();
-
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: ' + CONFIG.DEVELOPER);
@@ -1065,20 +774,15 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        console.log(`🔍 Checking existing user: ${userId}`);
-
-        // 🔍 البحث المعزز عن المستخدم في جميع أنظمة التخزين
+        // التحقق إذا كان المستخدم مسجل مسبقاً
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
-            // ✅ المستخدم مسجل مسبقاً - دخول مباشر إلى الواجهة الرئيسية
-            console.log(`✅ Existing user found: ${userId} - ${existingUser.username}`);
-            
+            // المستخدم مسجل مسبقاً - دخول مباشر
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
 
             const remainingDays = calculateRemainingDays(existingUser.subscription_end_date);
-            const saudiTime = goalAI.getSaudiDateTime();
             
             let statusMessage = '';
             if (existingUser.subscription_status === 'active' && remainingDays > 0) {
@@ -1087,34 +791,27 @@ bot.start(async (ctx) => {
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
                                `📦 النوع: ${existingUser.subscription_type}\n` +
                                `📅 الانتهاء: ${new Date(existingUser.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
-                               `⏳ متبقي: ${remainingDays} يوم\n` +
-                               `🕒 الوقت: ${saudiTime}\n\n` +
-                               `🔄 *تم استعادة حسابك بنجاح من التخزين الآمن*`;
+                               `⏳ متبقي: ${remainingDays} يوم`;
             } else if (existingUser.free_attempts > 0) {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🎯 *محاولات مجانية متاحة*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `🆓 محاولات مجانية: ${existingUser.free_attempts}\n` +
-                               `🕒 الوقت: ${saudiTime}\n\n` +
-                               `🔄 *تم استعادة حسابك بنجاح من التخزين الآمن*`;
+                               `🆓 محاولات مجانية: ${existingUser.free_attempts}`;
             } else {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🚫 *انتهت المحاولات*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `💳 يرجى الاشتراك للمتابعة\n` +
-                               `🕒 الوقت: ${saudiTime}\n\n` +
-                               `🔄 *تم استعادة حسابك بنجاح من التخزين الآمن*`;
+                               `💳 يرجى الاشتراك للمتابعة`;
             }
 
             await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
             
         } else {
-            // 🆕 مستخدم جديد - التحقق من الاشتراك في القناة أولاً
-            console.log(`🆕 New user detected: ${userId} - ${userName}`);
-            
+            // مستخدم جديد - التحقق من الاشتراك في القناة أولاً
             const isSubscribed = await checkChannelSubscription(userId);
             
             if (!isSubscribed) {
+                // إرسال رسالة طلب الاشتراك في القناة
                 await ctx.replyWithMarkdown(
                     `🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*\n\n` +
                     `📢 *للاستخدام البوت يجب الاشتراك في قناتنا أولاً*\n\n` +
@@ -1136,12 +833,10 @@ bot.start(async (ctx) => {
                     caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                             `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
                             `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                            `📢 *القناة:* ${CONFIG.CHANNEL}\n` +
-                            `🕒 *الوقت:* ${goalAI.getSaudiDateTime()}\n\n` +
-                            `💾 *نظام تخزين آمن يحفظ بياناتك دائماً*`
+                            `📢 *القناة:* ${CONFIG.CHANNEL}`
                 });
             } catch (photoError) {
-                await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n🕒 *الوقت:* ${goalAI.getSaudiDateTime()}`);
+                await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
             }
 
             const welcomeMessage = `
@@ -1149,7 +844,6 @@ bot.start(async (ctx) => {
 
 🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
 🤖 *خوارزمية ذكية مخفية تحلل المباريات بدقة عالية*
-💾 *نظام تخزين آمن - بياناتك محفوظة دائماً*
 
 📋 *خطوات الدخول:*
 1️⃣ أدخل رقم حساب 1xBet (10 أرقام)
@@ -1159,7 +853,6 @@ bot.start(async (ctx) => {
 
 💎 *المطور:* ${CONFIG.DEVELOPER}
 📢 *القناة:* ${CONFIG.CHANNEL}
-🕒 *الوقت:* ${goalAI.getSaudiDateTime()}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
             `;
@@ -1193,12 +886,10 @@ bot.action('check_channel_subscription', async (ctx) => {
                     caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                             `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
                             `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                            `📢 *القناة:* ${CONFIG.CHANNEL}\n` +
-                            `🕒 *الوقت:* ${goalAI.getSaudiDateTime()}\n\n` +
-                            `💾 *نظام تخزين آمن يحفظ بياناتك دائماً*`
+                            `📢 *القناة:* ${CONFIG.CHANNEL}`
                 });
             } catch (photoError) {
-                await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n🕒 *الوقت:* ${goalAI.getSaudiDateTime()}`);
+                await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
             }
 
             const welcomeMessage = `
@@ -1206,7 +897,6 @@ bot.action('check_channel_subscription', async (ctx) => {
 
 🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
 🤖 *خوارزمية ذكية مخفية تحلل المباريات بدقة عالية*
-💾 *نظام تخزين آمن - بياناتك محفوظة دائماً*
 
 📋 *خطوات الدخول:*
 1️⃣ أدخل رقم حساب 1xBet (10 أرقام)
@@ -1216,7 +906,6 @@ bot.action('check_channel_subscription', async (ctx) => {
 
 💎 *المطور:* ${CONFIG.DEVELOPER}
 📢 *القناة:* ${CONFIG.CHANNEL}
-🕒 *الوقت:* ${goalAI.getSaudiDateTime()}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
             `;
@@ -1298,9 +987,15 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // معالجة تعديل البنك الكريمي
-        if (session.adminStep === 'edit_bank' && session.editingPaymentMethod === 'bank') {
-            await handleAdminBankEdit(ctx, text);
+        // معالجة تعديل الأسعار والدفع
+        if (session.adminStep === 'edit_price_and_payment') {
+            await handleAdminEditPriceAndPayment(ctx, text);
+            return;
+        }
+
+        // معالجة اختيار نوع الاشتراك للتعديل
+        if (session.adminStep === 'select_subscription_edit') {
+            await handleAdminSelectSubscriptionEdit(ctx, text);
             return;
         }
 
@@ -1440,8 +1135,7 @@ bot.on('text', async (ctx) => {
                 await ctx.replyWithMarkdown(
                     `🎉 *تم التحقق بنجاح!*\n\n` +
                     `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
-                    `👤 *المستخدم:* ${ctx.session.userData.username}\n` +
-                    `🕒 *الوقت:* ${goalAI.getSaudiDateTime()}\n\n` +
+                    `👤 *المستخدم:* ${ctx.session.userData.username}\n\n` +
                     `🎁 *تحصل على 10 محاولات مجانية*\n\n` +
                     `🎯 *يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات*`,
                     getMainKeyboard()
@@ -1460,16 +1154,9 @@ bot.on('text', async (ctx) => {
                 if (text !== userData.onexbet) {
                     await ctx.replyWithMarkdown(
                         '❌ *رقم الحساب لا يتطابق!*\n\n' +
-                        `🔐 حسابك المسجل: \`${userData.onexbet}\`\n` +
-                        `🔢 الرقم المرسل: \`${text}\`\n\n` +
-                        '💡 يرجى إعادة عملية الدفع بإدخال رقم حسابك الصحيح',
-                        getMainKeyboard()
+                        `🔐 رقم حسابك المسجل: \`${userData.onexbet}\`\n` +
+                        '💡 يرجى إدخال رقم حسابك الصحيح المسجل في النظام'
                     );
-                    
-                    ctx.session.paymentType = null;
-                    ctx.session.paymentMethod = null;
-                    ctx.session.awaitingPaymentAccount = false;
-                    ctx.session.paymentAccount = null;
                     return;
                 }
                 
@@ -1521,23 +1208,13 @@ bot.on('text', async (ctx) => {
                         `📞 للاستفسارات والدعم:\n` +
                         `👤 ${CONFIG.DEVELOPER}\n` +
                         `📢 ${CONFIG.CHANNEL}\n\n` +
-                        `⏰ متاحون 24/7 لخدمتكم\n` +
-                        `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+                        `⏰ متاحون 24/7 لخدمتكم`,
                         getMainKeyboard()
                     );
                     break;
 
                 case '🔙 الرجوع للقائمة':
                     await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
-                    break;
-
-                case '💳 Binance':
-                case '🏦 البنك الكريمي':
-                    await handlePaymentMethodSelection(ctx, userData, text);
-                    break;
-
-                case '🔙 رجوع للاشتراكات':
-                    await handleSubscriptions(ctx, userData);
                     break;
 
                 default:
@@ -1578,12 +1255,9 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        // 🖼️ معالجة رفع صورة البنك الكريمي في الإدمن
-        if (session.adminStep === 'edit_price_and_payment' && 
-            session.editingPaymentMethod === 'bank' && 
-            session.bankEditStep === 'awaiting_image') {
-            
-            await handleAdminBankImageUpload(ctx, userId);
+        // 🖼️ معالجة رفع صورة للدفع في الإدمن
+        if (session.adminStep === 'edit_price_and_payment' && session.editingSubscriptionType) {
+            await handleAdminPaymentImageUpload(ctx, userId);
             return;
         }
 
@@ -1628,8 +1302,7 @@ bot.on('callback_query', async (ctx) => {
                     `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
                     `✅ توقعك كان دقيقاً ومميزاً\n` +
                     `💰 ربحت: ${profit}$\n` +
-                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n` +
-                    `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
+                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
                     `🎯 يمكنك البدء بتوقع جديد`,
                     getMainKeyboard()
                 );
@@ -1648,8 +1321,7 @@ bot.on('callback_query', async (ctx) => {
                 await ctx.replyWithMarkdown(
                     `🔄 *خسرت هذه الجولة*\n\n` +
                     `📈 الرهان التالي مضاعف: ${newBet}$\n` +
-                    `💪 لا توقف.. استمر في المحاولة\n` +
-                    `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
+                    `💪 لا توقف.. استمر في المحاولة\n\n` +
                     `🎯 *التوقع التالي:*\n` +
                     `${newPrediction.type}\n` +
                     `📈 ${newPrediction.probability}% | 🎯 ${newPrediction.confidence}%\n` +
@@ -1679,22 +1351,14 @@ bot.on('callback_query', async (ctx) => {
         
         // معالجة زر المتابعة للاشتراك
         else if (callbackData.startsWith('confirm_')) {
-            const parts = callbackData.split('_');
-            const paymentMethod = parts[1];
-            const subscriptionType = parts[2];
-            await handleSubscriptionConfirmation(ctx, subscriptionType, paymentMethod);
+            const subscriptionType = callbackData.split('_')[1];
+            await handleSubscriptionConfirmation(ctx, subscriptionType);
         }
         
         // معالجة زر الرجوع للاشتراكات
         else if (callbackData === 'back_to_subscriptions') {
             await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
             await ctx.replyWithMarkdown('💳 *باقات الاشتراك المتاحة*', getSubscriptionKeyboard());
-        }
-        
-        // معالجة زر الرجوع لطرق الدفع
-        else if (callbackData === 'back_to_payment_methods') {
-            await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
-            await ctx.replyWithMarkdown('💳 *اختر طريقة الدفع*', getSubscriptionKeyboard());
         }
         
     } catch (error) {
@@ -1766,6 +1430,16 @@ async function handleGetPrediction(ctx, userData) {
         userData.lastPrediction = prediction;
         await dbManager.saveUser(ctx.from.id.toString(), userData);
 
+        // الحصول على الوقت الحقيقي الحالي
+        const now = new Date();
+        const saudiTime = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // توقيت السعودية +3
+        const realTime = saudiTime.toLocaleTimeString('ar-SA', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false 
+        });
+
         // إرسال التوقع مع الصورة - مدمج في رسالة واحدة
         const analysisMessage = `
 🤖 *تحليل الذكاء الاصطناعي المتقدم - v${CONFIG.VERSION}*
@@ -1780,8 +1454,7 @@ ${prediction.reasoning}
 
 🔐 *الحساب:* \`${userData.onexbet}\`
 💰 *مبلغ الرهان:* ${ctx.session.currentBet}$
-🕒 *الوقت:* ${prediction.timestamp}
-📅 *التاريخ:* ${prediction.datetime}
+🕒 *الوقت:* ${realTime}
 
 ${userData.subscription_status !== 'active' ? 
     `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
@@ -1830,8 +1503,7 @@ async function handleUserStats(ctx, userData) {
         `💔 ${userData.losses || 0} خسارة\n` +
         `💰 إجمالي الرهانات: ${userData.total_bets || 0}$\n` +
         `💵 إجمالي الأرباح: ${userData.total_profit || 0}$` +
-        subscriptionInfo +
-        `\n🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+        subscriptionInfo,
         getMainKeyboard()
     );
 }
@@ -1842,8 +1514,7 @@ async function handleBotStats(ctx) {
         `👥 *إحصائيات البوت*\n\n` +
         `👤 إجمالي المستخدمين: ${stats.totalUsers.toLocaleString()}\n` +
         `🟢 مستخدمين نشطين الآن: ${stats.activeUsers}\n` +
-        `📊 التوقعات اليومية: ${Math.floor(stats.activeUsers * 8.5)}\n` +
-        `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
+        `📊 التوقعات اليومية: ${Math.floor(stats.activeUsers * 8.5)}\n\n` +
         `🎯 *النظام يعمل بكفاءة عالية*`,
         getMainKeyboard()
     );
@@ -1853,47 +1524,17 @@ async function handleSubscriptions(ctx, userData) {
     try {
         await ctx.replyWithMarkdown(
             '💳 *باقات الاشتراك المتاحة*\n\n' +
-            '📦 اختر طريقة الدفع المناسبة:\n\n' +
-            '💳 *Binance* - الدفع عبر منصة Binance\n' +
-            '🏦 *البنك الكريمي* - التحويل البنكي المباشر\n\n' +
-            '💡 اضغط على الطريقة التي تفضل الدفع بها\n' +
-            `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+            '📦 اختر الباقة المناسبة لك:\n\n' +
+            '💰 أسبوعي - 7 أيام\n' +
+            '💰 شهري - 30 يوماً\n' +
+            '💰 3 أشهر - 90 يوماً\n' +
+            '💰 سنوي - 365 يوماً\n\n' +
+            '💡 اضغط على الزر المناسب لعرض التفاصيل',
             getSubscriptionKeyboard()
         );
     } catch (error) {
         console.error('Subscriptions error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب معلومات الاشتراكات*', getMainKeyboard());
-    }
-}
-
-async function handlePaymentMethodSelection(ctx, userData, text) {
-    const paymentMethod = text === '💳 Binance' ? 'binance' : 'bank';
-    const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-    
-    try {
-        const settings = await dbManager.getSettings();
-        const prices = settings.prices[paymentMethod];
-
-        let message = `💳 *باقات الاشتراك - ${paymentMethodName}*\n\n`;
-        
-        const subscriptionTypes = [
-            { key: 'week', name: 'أسبوعي', emoji: '💰' },
-            { key: 'month', name: 'شهري', emoji: '💰' },
-            { key: 'three_months', name: '3 أشهر', emoji: '💰' },
-            { key: 'year', name: 'سنوي', emoji: '💰' }
-        ];
-
-        subscriptionTypes.forEach(sub => {
-            message += `${sub.emoji} *${sub.name}* - ${prices[sub.key]}$\n`;
-        });
-
-        message += `\n💡 اختر الباقة المناسبة\n🕒 الوقت: ${goalAI.getSaudiDateTime()}`;
-
-        await ctx.replyWithMarkdown(message, getPaymentMethodKeyboard(paymentMethod));
-        
-    } catch (error) {
-        console.error('Payment method selection error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الطلب*', getMainKeyboard());
     }
 }
 
@@ -1907,105 +1548,29 @@ async function handleSubscriptionSelection(ctx, userData, text) {
 
     const subscriptionType = subscriptionTypeMap[text];
     if (!subscriptionType) {
-        await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getPaymentMethodKeyboard(ctx.session.paymentMethod));
+        await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getSubscriptionKeyboard());
         return;
     }
 
-    const paymentMethod = ctx.session.paymentMethod || 'binance';
-    
-    if (paymentMethod === 'bank') {
-        await handleBankSubscriptionDisplay(ctx, subscriptionType, paymentMethod);
-    } else {
-        await handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMethod);
-    }
-}
-
-// 🆕 دالة عرض باقات البنك الكريمي
-async function handleBankSubscriptionDisplay(ctx, subscriptionType, paymentMethod) {
     try {
         const settings = await dbManager.getSettings();
-        const prices = settings.prices[paymentMethod];
-        const paymentMethods = settings.payment_methods[paymentMethod];
+        const prices = settings.prices;
+        const payment_links = settings.payment_links;
 
-        const displayName = getSubscriptionDisplayName(subscriptionType);
-        const paymentInfo = paymentMethods[subscriptionType];
-
-        const subscriptionMessage = `💳 *باقة ${displayName} - البنك الكريمي*\n\n` +
-            `💰 السعر: ${prices[subscriptionType]}$\n` +
-            `⏰ المدة: ${getSubscriptionDuration(subscriptionType)}\n\n` +
-            `🏦 *معلومات الدفع:*\n` +
-            `📊 *رقم الحساب:* \`${paymentInfo.account}\`\n\n` +
-            `📋 *طريقة الدفع:*\n` +
-            `1. قم بالتحويل إلى الرقم أعلاه\n` +
-            `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
-            `3. أرسل صورة إثبات التحويل\n` +
-            `4. انتظر التفعيل من الإدارة\n\n` +
-            `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
-            `💡 *هل تريد المتابعة مع هذه الباقة؟*`;
-
-        // إرسال الصورة مع النص في رسالة واحدة
-        if (paymentInfo.image) {
-            try {
-                await ctx.replyWithPhoto(paymentInfo.image, {
-                    caption: subscriptionMessage,
-                    parse_mode: 'Markdown',
-                    reply_markup: {
-                        inline_keyboard: [
-                            [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                            [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
-                        ]
-                    }
-                });
-            } catch (photoError) {
-                console.error('Error sending bank payment image:', photoError);
-                await ctx.replyWithMarkdown(subscriptionMessage, {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                            [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
-                        ]
-                    }
-                });
-            }
-        } else {
-            await ctx.replyWithMarkdown(subscriptionMessage, {
-                reply_markup: {
-                    inline_keyboard: [
-                        [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                        [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
-                    ]
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error('Bank subscription display error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في عرض معلومات الباقة*', getPaymentMethodKeyboard('bank'));
-    }
-}
-
-// 🆕 دالة عرض باقات Binance
-async function handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMethod) {
-    try {
-        const settings = await dbManager.getSettings();
-        const prices = settings.prices[paymentMethod];
-        const paymentMethods = settings.payment_methods[paymentMethod];
-
-        const displayName = getSubscriptionDisplayName(subscriptionType);
-        const paymentMethodName = 'Binance';
+        const displayName = text.replace('💰 ', '');
         
-    const paymentLink = paymentMethods[subscriptionType];
+        // التحقق إذا كان الرابط صورة أو رابط عادي
+        const paymentLink = payment_links[subscriptionType];
         const isImage = paymentLink && (paymentLink.includes('.jpg') || paymentLink.includes('.png') || paymentLink.includes('.jpeg') || paymentLink.includes('.gif') || paymentLink.includes('imgbb') || paymentLink.includes('i.ibb.co') || paymentLink.startsWith('https://i.ibb.co'));
 
         if (isImage) {
             // إذا كانت صورة، نرسل الصورة مع النص في رسالة واحدة
-            const subscriptionMessage = `💳 *باقة ${displayName} - ${paymentMethodName}*\n\n` +
+            const subscriptionMessage = `💳 *باقة ${displayName}*\n\n` +
                 `💰 السعر: ${prices[subscriptionType]}$\n` +
                 `⏰ المدة: ${subscriptionType === 'week' ? '7 أيام' : subscriptionType === 'month' ? '30 يوماً' : subscriptionType === 'three_months' ? '90 يوماً' : '365 يوماً'}\n\n` +
                 `📋 *طريقة الدفع:*\n` +
                 `💳 ادفع بالمسح عبر الكاميرا\n` +
                 `📱 أو امسح الكود لمواصلة الدفع\n\n` +
-                `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
                 `💡 *هل تريد المتابعة مع هذه الباقة؟*`;
 
             try {
@@ -2014,8 +1579,8 @@ async function handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMe
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
-                            [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                            [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
+                            [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${subscriptionType}` } ],
+                            [ { text: '🔙 رجوع', callback_data: 'back_to_subscriptions' } ]
                         ]
                     }
                 });
@@ -2026,8 +1591,8 @@ async function handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMe
                     {
                         reply_markup: {
                             inline_keyboard: [
-                                [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                                [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
+                                [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${subscriptionType}` } ],
+                                [ { text: '🔙 رجوع', callback_data: 'back_to_subscriptions' } ]
                             ]
                         }
                     }
@@ -2035,7 +1600,7 @@ async function handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMe
             }
         } else {
             // إذا كان رابط عادي
-            const subscriptionMessage = `💳 *باقة ${displayName} - ${paymentMethodName}*\n\n` +
+            const subscriptionMessage = `💳 *باقة ${displayName}*\n\n` +
                 `💰 السعر: ${prices[subscriptionType]}$\n` +
                 `⏰ المدة: ${subscriptionType === 'week' ? '7 أيام' : subscriptionType === 'month' ? '30 يوماً' : subscriptionType === 'three_months' ? '90 يوماً' : '365 يوماً'}\n\n` +
                 `🔗 *رابط الدفع:* ${paymentLink}\n\n` +
@@ -2044,26 +1609,26 @@ async function handleBinanceSubscriptionDisplay(ctx, subscriptionType, paymentMe
                 `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
                 `3. أرسل صورة إثبات الدفع\n` +
                 `4. انتظر التفعيل من الإدارة\n\n` +
-                `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
                 `💡 *هل تريد المتابعة مع هذه الباقة؟*`;
 
             await ctx.replyWithMarkdown(subscriptionMessage, {
                 reply_markup: {
                     inline_keyboard: [
-                        [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${paymentMethod}_${subscriptionType}` } ],
-                        [ { text: '🔙 رجوع', callback_data: 'back_to_payment_methods' } ]
+                        [ { text: '✅ نعم، المتابعة', callback_data: `confirm_${subscriptionType}` } ],
+                        [ { text: '🔙 رجوع', callback_data: 'back_to_subscriptions' } ]
                     ]
                 }
             });
         }
+
     } catch (error) {
-        console.error('Binance subscription display error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في عرض معلومات الباقة*', getPaymentMethodKeyboard('binance'));
+        console.error('Subscription selection error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getSubscriptionKeyboard());
     }
 }
 
-// معالجة تأكيد الاشتراك - محدثة لدعم طرق الدفع المزدوجة
-async function handleSubscriptionConfirmation(ctx, subscriptionType, paymentMethod) {
+// معالجة تأكيد الاشتراك
+async function handleSubscriptionConfirmation(ctx, subscriptionType) {
     try {
         const userId = ctx.from.id.toString();
         const userData = await dbManager.getUser(userId);
@@ -2074,10 +1639,9 @@ async function handleSubscriptionConfirmation(ctx, subscriptionType, paymentMeth
         }
 
         const settings = await dbManager.getSettings();
-        const prices = settings.prices[paymentMethod];
+        const prices = settings.prices;
 
         ctx.session.paymentType = subscriptionType;
-        ctx.session.paymentMethod = paymentMethod;
         ctx.session.awaitingPaymentAccount = true;
 
         await ctx.answerCbQuery('✅ تم تأكيد الاختيار');
@@ -2085,14 +1649,11 @@ async function handleSubscriptionConfirmation(ctx, subscriptionType, paymentMeth
         // حذف الرسالة السابقة
         await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
 
-        const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-
         await ctx.replyWithMarkdown(
-            `💳 *باقة ${subscriptionType} - ${paymentMethodName}*\n\n` +
+            `💳 *باقة ${subscriptionType}*\n\n` +
             `💰 السعر: ${prices[subscriptionType]}$\n\n` +
             `🔐 *رقم حسابك المسجل:* \`${userData.onexbet}\`\n\n` +
-            `🔢 *الآن أرسل رقم حساب 1xBet للتأكد:*\n` +
-            `🕒 الوقت: ${goalAI.getSaudiDateTime()}`
+            `🔢 *الآن أرسل رقم حساب 1xBet للتأكد:*`
         );
 
     } catch (error) {
@@ -2102,27 +1663,23 @@ async function handleSubscriptionConfirmation(ctx, subscriptionType, paymentMeth
 }
 
 async function handleSubscriptionStatus(ctx, userData) {
-    const saudiTime = goalAI.getSaudiDateTime();
-    
     let statusMessage = '';
+    
     if (userData.subscription_status === 'active') {
         const remainingDays = calculateRemainingDays(userData.subscription_end_date);
         statusMessage = `✅ *اشتراكك نشط*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
                        `📦 النوع: ${userData.subscription_type}\n` +
                        `📅 الانتهاء: ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
-                       `⏳ متبقي: ${remainingDays} يوم\n` +
-                       `🕒 الوقت: ${saudiTime}`;
+                       `⏳ متبقي: ${remainingDays} يوم`;
     } else if (userData.free_attempts > 0) {
         statusMessage = `🎯 *محاولات مجانية متاحة*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `🆓 محاولات مجانية: ${userData.free_attempts}\n` +
-                       `🕒 الوقت: ${saudiTime}\n\n` +
+                       `🆓 محاولات مجانية: ${userData.free_attempts}\n\n` +
                        `💳 يمكنك الاشتراك للحصول على ميزات غير محدودة`;
     } else {
         statusMessage = `🚫 *انتهت المحاولات*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `🕒 الوقت: ${saudiTime}\n\n` +
                        `💳 يرجى الاشتراك للمتابعة في استخدام الخدمة`;
     }
     
@@ -2137,15 +1694,14 @@ async function handlePaymentScreenshot(ctx, userId) {
         const imageUrl = fileLink.href;
 
         const settings = await dbManager.getSettings();
-        const paymentMethod = ctx.session.paymentMethod || 'binance';
-        const prices = settings.prices[paymentMethod];
+        const prices = settings.prices;
 
         const accountNumber = ctx.session.paymentAccount || userData.onexbet;
 
-        // التحقق النهائي من تطابق رقم الحساب مع المسجل
+        // التحقق النهائي من تطابق رقم الحساب
         if (accountNumber !== userData.onexbet) {
             await ctx.replyWithMarkdown(
-                '❌ *رقم الحساب لا يتطابق!*\n\n' +
+                '❌ *رقم الحساب لا يتطابق مع المسجل!*\n\n' +
                 `🔐 حسابك المسجل: \`${userData.onexbet}\`\n` +
                 `🔢 الرقم المرسل: \`${accountNumber}\`\n\n` +
                 '💡 يرجى إعادة عملية الدفع بإدخال رقم حسابك الصحيح',
@@ -2153,7 +1709,6 @@ async function handlePaymentScreenshot(ctx, userId) {
             );
             
             ctx.session.paymentType = null;
-            ctx.session.paymentMethod = null;
             ctx.session.awaitingPaymentAccount = false;
             ctx.session.paymentAccount = null;
             return;
@@ -2173,7 +1728,6 @@ async function handlePaymentScreenshot(ctx, userId) {
             screenshot_url: uploadResult.url,
             amount: prices[ctx.session.paymentType],
             subscription_type: ctx.session.paymentType,
-            payment_method: paymentMethod, // حفظ طريقة الدفع
             username: userData.username,
             timestamp: new Date().toISOString()
         };
@@ -2182,8 +1736,6 @@ async function handlePaymentScreenshot(ctx, userId) {
         
         // إرسال الإشعار للإدارة مع الصورة
         try {
-            const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-            
             await bot.telegram.sendPhoto(
                 CONFIG.ADMIN_ID,
                 uploadResult.url,
@@ -2193,9 +1745,8 @@ async function handlePaymentScreenshot(ctx, userId) {
                     `🔐 الحساب: ${accountNumber}\n` +
                     `💰 المبلغ: ${paymentData.amount}$\n` +
                     `📦 الباقة: ${ctx.session.paymentType}\n` +
-                    `💳 طريقة الدفع: ${paymentMethodName}\n` +
                     `🆔 الرقم: ${paymentId}\n` +
-                    `📅 الوقت: ${goalAI.getSaudiDateTime()}`,
+                    `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
@@ -2211,23 +1762,18 @@ async function handlePaymentScreenshot(ctx, userId) {
             console.error('Error notifying admin:', error);
         }
 
-        const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-
         await ctx.replyWithMarkdown(
             '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
             `✅ الحساب: \`${accountNumber}\`\n` +
             `✅ الباقة: ${ctx.session.paymentType}\n` +
-            `💳 طريقة الدفع: ${paymentMethodName}\n` +
             `💰 المبلغ: ${paymentData.amount}$\n\n` +
             '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
             '⏰ عادةً خلال 24 ساعة\n\n' +
-            `📞 للاستفسار: ${CONFIG.DEVELOPER}\n` +
-            `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+            `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
             getMainKeyboard()
         );
 
         ctx.session.paymentType = null;
-        ctx.session.paymentMethod = null;
         ctx.session.awaitingPaymentAccount = false;
         ctx.session.paymentAccount = null;
     } catch (error) {
@@ -2236,7 +1782,7 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🔧 ADMIN HANDLERS - UPDATED FOR DUAL PAYMENT SYSTEM
+// 🔧 ADMIN HANDLERS - UPDATED COMPLETELY
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
@@ -2259,11 +1805,6 @@ async function handleAdminCommands(ctx, text) {
 
         if (session.adminStep === 'select_subscription_edit') {
             await handleAdminSelectSubscriptionEdit(ctx, text);
-            return;
-        }
-
-        if (session.adminStep === 'select_payment_method_edit') {
-            await handleAdminSelectPaymentMethodEdit(ctx, text);
             return;
         }
 
@@ -2436,7 +1977,7 @@ async function handleAdminBroadcast(ctx, message) {
             try {
                 await bot.telegram.sendMessage(
                     user.user_id, 
-                    `📢 *إشعار من الإدارة*\n\n${message}\n\n🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+                    `📢 *إشعار من الإدارة*\n\n${message}`,
                     { parse_mode: 'Markdown' }
                 );
                 success++;
@@ -2454,8 +1995,7 @@ async function handleAdminBroadcast(ctx, message) {
             `📢 *تم إرسال الإشعار بنجاح*\n\n` +
             `✅ تم الإرسال بنجاح: ${success} مستخدم\n` +
             `❌ فشل في الإرسال: ${failed} مستخدم\n` +
-            `👥 الإجمالي: ${users.length} مستخدم\n` +
-            `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+            `👥 الإجمالي: ${users.length} مستخدم`,
             getAdminMainKeyboard()
         );
 
@@ -2515,13 +2055,46 @@ async function handleAdminStats(ctx) {
 • الأرباح: ${totalProfit}$
 
 🔧 *حالة البوت:* ${dbManager.isMaintenanceMode() ? '🔒 مقفل' : '🔓 مفتوح'}
-🕒 *الوقت:* ${goalAI.getSaudiDateTime()}
         `;
         
         await ctx.replyWithMarkdown(statsMessage, getAdminMainKeyboard());
     } catch (error) {
         console.error('Admin stats error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الإحصائيات', getAdminMainKeyboard());
+    }
+}
+
+async function handleAdminUsers(ctx, text) {
+    try {
+        switch (text) {
+            case '📋 قائمة المستخدمين':
+                await handleAdminUsersList(ctx);
+                break;
+                
+            case '✅ المشتركين النشطين':
+                await handleAdminActiveUsers(ctx);
+                break;
+                
+            case '🆓 المستخدمين المجانين':
+                await handleAdminFreeUsers(ctx);
+                break;
+                
+            case '📈 إحصائيات المستخدمين':
+                await handleAdminUsersStats(ctx);
+                break;
+                
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminUsersKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin users error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminUsersKeyboard());
     }
 }
 
@@ -2607,13 +2180,46 @@ async function handleAdminUsersStats(ctx) {
 📊 إجمالي التوقعات: ${totalPredictions}
 💰 إجمالي الرهانات: ${totalBets}$
 💵 إجمالي الأرباح: ${totalProfit}$
-🕒 الوقت: ${goalAI.getSaudiDateTime()}
         `;
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
     } catch (error) {
         console.error('Admin users stats error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إحصائيات المستخدمين', getAdminUsersKeyboard());
+    }
+}
+
+async function handleAdminPayments(ctx, text) {
+    try {
+        switch (text) {
+            case '📥 الطلبات المعلقة':
+                await handleAdminPendingPayments(ctx);
+                break;
+                
+            case '✅ الطلبات المقبولة':
+                await handleAdminAcceptedPayments(ctx);
+                break;
+                
+            case '❌ الطلبات المرفوضة':
+                await handleAdminRejectedPayments(ctx);
+                break;
+                
+            case '📋 كل الطلبات':
+                await handleAdminAllPayments(ctx);
+                break;
+                
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin payments error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminPaymentsKeyboard());
     }
 }
 
@@ -2627,8 +2233,6 @@ async function handleAdminPendingPayments(ctx) {
         }
         
         for (const payment of payments) {
-            const paymentMethodName = payment.payment_method === 'binance' ? 'Binance' : 'البنك الكريمي';
-            
             await ctx.replyWithPhoto(
                 payment.screenshot_url,
                 {
@@ -2637,9 +2241,7 @@ async function handleAdminPendingPayments(ctx) {
                     `🔐 الحساب: ${payment.onexbet}\n` +
                     `💰 المبلغ: ${payment.amount}$\n` +
                     `📦 الباقة: ${payment.subscription_type}\n` +
-                    `💳 طريقة الدفع: ${paymentMethodName}\n` +
-                    `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n` +
-                    `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+                    `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}`,
                     reply_markup: {
                         inline_keyboard: [
                             [
@@ -2670,9 +2272,8 @@ async function handleAdminAcceptedPayments(ctx) {
         let message = `✅ *الطلبات المقبولة (${acceptedPayments.length})*\n\n`;
         
         acceptedPayments.slice(0, 10).forEach((payment, index) => {
-            const paymentMethodName = payment.payment_method === 'binance' ? 'Binance' : 'البنك';
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type} | 💳 ${paymentMethodName}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -2695,9 +2296,8 @@ async function handleAdminRejectedPayments(ctx) {
         let message = `❌ *الطلبات المرفوضة (${rejectedPayments.length})*\n\n`;
         
         rejectedPayments.slice(0, 10).forEach((payment, index) => {
-            const paymentMethodName = payment.payment_method === 'binance' ? 'Binance' : 'البنك';
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type} | 💳 ${paymentMethodName}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -2727,7 +2327,6 @@ async function handleAdminAllPayments(ctx) {
 ✅ المقبولة: ${accepted}
 ❌ المرفوضة: ${rejected}
 💰 الإجمالي: ${payments.length}
-🕒 الوقت: ${goalAI.getSaudiDateTime()}
         `;
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -2737,59 +2336,22 @@ async function handleAdminAllPayments(ctx) {
     }
 }
 
-// 🔧 SYSTEM UPDATED - نظام الدفع المزدوج
+// 🔧 SYSTEM UPDATED - تعديل الأسعار والدفع معاً
 async function handleAdminPriceAndPaymentSettings(ctx) {
     try {
         await ctx.replyWithMarkdown(
             '💰 *تعديل الأسعار ومعلومات الدفع*\n\n' +
-            '📝 اختر طريقة الدفع التي تريد تعديلها:',
-            getAdminPaymentMethodsKeyboard()
+            '📝 اختر نوع الاشتراك الذي تريد تعديله:',
+            getAdminPaymentTypesKeyboard()
         );
-        ctx.session.adminStep = 'select_payment_method_edit';
+        ctx.session.adminStep = 'select_subscription_edit';
     } catch (error) {
         console.error('Admin price and payment settings error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في بدء التعديل', getAdminSettingsKeyboard());
     }
 }
 
-// معالجة اختيار طريقة الدفع للتعديل
-async function handleAdminSelectPaymentMethodEdit(ctx, text) {
-    try {
-        if (text === '🔙 رجوع') {
-            ctx.session.adminStep = 'settings';
-            await ctx.replyWithMarkdown('🔙 *العودة للإعدادات*', getAdminSettingsKeyboard());
-            return;
-        }
-
-        const paymentMethodMap = {
-            '💳 تعديل Binance': 'binance',
-            '🏦 تعديل البنك الكريمي': 'bank'
-        };
-
-        const paymentMethod = paymentMethodMap[text];
-        if (!paymentMethod) {
-            await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getAdminPaymentMethodsKeyboard());
-            return;
-        }
-
-        ctx.session.editingPaymentMethod = paymentMethod;
-        ctx.session.adminStep = 'select_subscription_edit';
-
-        const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-
-        await ctx.replyWithMarkdown(
-            `🔧 *تعديل ${paymentMethodName}*\n\n` +
-            '📝 اختر نوع الاشتراك الذي تريد تعديله:',
-            getAdminPaymentTypesKeyboard()
-        );
-
-    } catch (error) {
-        console.error('Admin select payment method edit error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ', getAdminSettingsKeyboard());
-    }
-}
-
-// معالجة اختيار نوع الاشتراك للتعديل - محدثة لنظام الدفع المزدوج
+// معالجة اختيار نوع الاشتراك للتعديل
 async function handleAdminSelectSubscriptionEdit(ctx, text) {
     try {
         const subscriptionTypeMap = {
@@ -2800,8 +2362,8 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         };
 
         if (text === '🔙 رجوع') {
-            ctx.session.adminStep = 'select_payment_method_edit';
-            await ctx.replyWithMarkdown('🔙 *العودة لاختيار طريقة الدفع*', getAdminPaymentMethodsKeyboard());
+            ctx.session.adminStep = 'settings';
+            await ctx.replyWithMarkdown('🔙 *العودة للإعدادات*', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2812,15 +2374,23 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         }
 
         ctx.session.editingSubscriptionType = subscriptionType;
-        
-        // إذا كان البنك الكريمي، نفتح واجهة التعديل المتقدمة
-        if (ctx.session.editingPaymentMethod === 'bank') {
-            ctx.session.adminStep = 'edit_bank';
-            await showBankEditInterface(ctx, subscriptionType);
-        } else {
-            ctx.session.adminStep = 'edit_price_and_payment';
-            await showBinanceEditInterface(ctx, subscriptionType);
-        }
+        ctx.session.adminStep = 'edit_price_and_payment';
+
+        const settings = await dbManager.getSettings();
+        const currentPrice = settings.prices[subscriptionType] || CONFIG.SUBSCRIPTION_PRICES[subscriptionType];
+        const currentLink = settings.payment_links[subscriptionType] || 'غير محدد';
+
+        await ctx.replyWithMarkdown(
+            `🔧 *تعديل ${text}*\n\n` +
+            `💰 السعر الحالي: ${currentPrice}$\n` +
+            `📎 رابط/صورة الدفع الحالي: ${currentLink}\n\n` +
+            `📝 *الآن يمكنك:*\n` +
+            `• إرسال السعر الجديد (مثال: 15)\n` +
+            `• أو إرسال رابط دفع جديد\n` +
+            `• أو إرسال صورة QR\n` +
+            `• أو كتابة "إلغاء" للرجوع\n\n` +
+            `💡 *أرسل السعر الجديد أولاً:*`
+        );
 
     } catch (error) {
         console.error('Admin select subscription edit error:', error);
@@ -2828,165 +2398,75 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
     }
 }
 
-// 🆕 واجهة تعديل البنك الكريمي
-async function showBankEditInterface(ctx, subscriptionType) {
+// معالجة تعديل الأسعار والدفع - تم إصلاح مشكلة three_months نهائياً
+async function handleAdminEditPriceAndPayment(ctx, text) {
     try {
-        const settings = await dbManager.getSettings();
-        const paymentMethod = 'bank';
-        const currentData = settings.payment_methods[paymentMethod][subscriptionType];
-        const currentPrice = settings.prices[paymentMethod][subscriptionType];
+        if (text === 'إلغاء') {
+            ctx.session.adminStep = 'settings';
+            ctx.session.editingSubscriptionType = null;
+            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            return;
+        }
 
-        const message = `🔧 *تعديل باقة ${getSubscriptionDisplayName(subscriptionType)} - البنك الكريمي*\n\n` +
-            `💰 السعر الحالي: ${currentPrice}$\n` +
-            `🏦 رقم الحساب الحالي: ${currentData.account}\n` +
-            `🖼️ الصورة الحالية: ${currentData.image ? 'موجودة' : 'غير موجودة'}\n\n` +
-            `📝 اختر ما تريد تعديله:`;
-
-        await ctx.replyWithMarkdown(message, getAdminBankEditKeyboard());
-    } catch (error) {
-        console.error('Show bank edit interface error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تحميل البيانات', getAdminSettingsKeyboard());
-    }
-}
-
-// 🆕 واجهة تعديل Binance
-async function showBinanceEditInterface(ctx, subscriptionType) {
-    try {
-        const settings = await dbManager.getSettings();
-        const paymentMethod = 'binance';
-        const currentData = settings.payment_methods[paymentMethod][subscriptionType];
-        const currentPrice = settings.prices[paymentMethod][subscriptionType];
-
-        const isImage = currentData.startsWith('https://i.ibb.co');
-        
-        const message = `🔧 *تعديل باقة ${getSubscriptionDisplayName(subscriptionType)} - Binance*\n\n` +
-            `💰 السعر الحالي: ${currentPrice}$\n` +
-            `📎 ${isImage ? 'صورة الدفع الحالية: [صورة]' : 'رابط الدفع الحالي: ' + currentData}\n\n` +
-            `📝 *أرسل السعر الجديد:*`;
-
-        await ctx.replyWithMarkdown(message);
-    } catch (error) {
-        console.error('Show binance edit interface error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في تحميل البيانات', getAdminSettingsKeyboard());
-    }
-}
-
-// 🆕 معالجة تعديل البنك الكريمي
-async function handleAdminBankEdit(ctx, text) {
-    try {
         const subscriptionType = ctx.session.editingSubscriptionType;
-        const paymentMethod = 'bank';
-        
         if (!subscriptionType) {
             await ctx.reply('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
             return;
         }
 
-        const settings = await dbManager.getSettings();
-        const currentData = settings.payment_methods[paymentMethod][subscriptionType];
-
-        if (text === '🔙 رجوع') {
-            ctx.session.adminStep = 'select_subscription_edit';
-            ctx.session.editingSubscriptionType = null;
-            await ctx.reply('🔙 *العودة لاختيار نوع الاشتراك*', getAdminPaymentTypesKeyboard());
-            return;
-        }
-
-        if (text === '✅ إنهاء التعديل') {
-            ctx.session.adminStep = 'settings';
-            ctx.session.editingSubscriptionType = null;
-            ctx.session.editingPaymentMethod = null;
-            await ctx.reply('✅ *تم إنهاء التعديلات*', getAdminSettingsKeyboard());
-            return;
-        }
-
-        if (text === '💵 تعديل السعر') {
-            ctx.session.bankEditStep = 'awaiting_price';
-            await ctx.reply(
-                `💰 *تعديل سعر الباقة ${getSubscriptionDisplayName(subscriptionType)}*\n\n` +
-                `💵 السعر الحالي: ${settings.prices[paymentMethod][subscriptionType]}$\n\n` +
-                `📝 الرجاء إرسال السعر الجديد:`
-            );
-            return;
-        }
-
-        if (text === '🏦 تعديل رقم الحساب') {
-            ctx.session.bankEditStep = 'awaiting_account';
-            await ctx.reply(
-                `🏦 *تعديل رقم الحساب للباقة ${getSubscriptionDisplayName(subscriptionType)}*\n\n` +
-                `📊 رقم الحساب الحالي: ${currentData.account}\n\n` +
-                `📝 الرجاء إرسال رقم الحساب الجديد:`
-            );
-            return;
-        }
-
-        if (text === '🖼️ تعديل الصورة') {
-            ctx.session.bankEditStep = 'awaiting_image';
-            await ctx.reply(
-                `🖼️ *تعديل صورة الدفع للباقة ${getSubscriptionDisplayName(subscriptionType)}*\n\n` +
-                `📷 الصورة الحالية: ${currentData.image ? 'موجودة' : 'غير موجودة'}\n\n` +
-                `📸 الرجاء إرسال الصورة الجديدة:`
-            );
-            return;
-        }
-
-        // معالجة إدخال السعر
-        if (ctx.session.bankEditStep === 'awaiting_price') {
-            const price = parseFloat(text);
-            if (isNaN(price) || price <= 0) {
-                await ctx.reply('❌ السعر يجب أن يكون رقمًا موجباً', getAdminBankEditKeyboard());
-                return;
-            }
-
-            settings.prices[paymentMethod][subscriptionType] = price;
+        // إذا كان النص رقم (سعر)
+        if (!isNaN(text) && parseFloat(text) > 0) {
+            const priceNum = parseFloat(text);
+            const settings = await dbManager.getSettings();
+            
+            // إصلاح نهائي: التأكد من وجود الكائنات الأساسية
+            if (!settings.prices) settings.prices = {};
+            if (!settings.payment_links) settings.payment_links = {};
+            
+            settings.prices[subscriptionType] = priceNum;
             await dbManager.updateSettings(settings);
 
-            ctx.session.bankEditStep = null;
             await ctx.reply(
                 `✅ *تم تحديث السعر بنجاح*\n\n` +
-                `💰 الباقة: ${getSubscriptionDisplayName(subscriptionType)}\n` +
-                `💵 السعر الجديد: ${price}$\n\n` +
-                `🔄 تم حفظ التغييرات في النظام`,
-                getAdminBankEditKeyboard()
+                `💰 ${subscriptionType}: ${priceNum}$\n\n` +
+                `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
             );
-            return;
         }
-
-        // معالجة إدخال رقم الحساب
-        if (ctx.session.bankEditStep === 'awaiting_account') {
-            if (!text.trim()) {
-                await ctx.reply('❌ رقم الحساب لا يمكن أن يكون فارغاً', getAdminBankEditKeyboard());
-                return;
-            }
-
-            settings.payment_methods[paymentMethod][subscriptionType].account = text.trim();
+        // إذا كان رابط أو سيتم إرسال صورة
+        else if (text.startsWith('http')) {
+            const settings = await dbManager.getSettings();
+            
+            // إصلاح نهائي: التأكد من وجود الكائنات الأساسية
+            if (!settings.prices) settings.prices = {};
+            if (!settings.payment_links) settings.payment_links = {};
+            
+            settings.payment_links[subscriptionType] = text;
             await dbManager.updateSettings(settings);
 
-            ctx.session.bankEditStep = null;
             await ctx.reply(
-                `✅ *تم تحديث رقم الحساب بنجاح*\n\n` +
-                `💰 الباقة: ${getSubscriptionDisplayName(subscriptionType)}\n` +
-                `🏦 رقم الحساب الجديد: ${text.trim()}\n\n` +
+                `✅ *تم التحديث بنجاح!*\n\n` +
+                `📦 ${subscriptionType}\n` +
+                `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
+                `📎 تم حفظ ${text.startsWith('https://i.ibb.co') ? 'صورة الدفع' : 'رابط الدفع'} بنجاح\n\n` +
                 `🔄 تم حفظ التغييرات في النظام`,
-                getAdminBankEditKeyboard()
+                getAdminSettingsKeyboard()
             );
-            return;
+
+            ctx.session.adminStep = 'settings';
+            ctx.session.editingSubscriptionType = null;
+        } else {
+            await ctx.reply('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
         }
-
-        await ctx.reply('❌ أمر غير معروف', getAdminBankEditKeyboard());
-
     } catch (error) {
-        console.error('Admin bank edit error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل', getAdminSettingsKeyboard());
+        console.error('Admin edit price and payment error:', error);
+        await ctx.reply('❌ حدث خطأ في التعديل');
     }
 }
 
-// 🆕 معالجة رفع صورة البنك الكريمي في الإدمن
-async function handleAdminBankImageUpload(ctx, userId) {
+// معالجة رفع صورة للدفع من الإدمن
+async function handleAdminPaymentImageUpload(ctx, userId) {
     try {
         const subscriptionType = ctx.session.editingSubscriptionType;
-        const paymentMethod = 'bank';
-        
         if (!subscriptionType) {
             await ctx.reply('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
             return;
@@ -3000,88 +2480,32 @@ async function handleAdminBankImageUpload(ctx, userId) {
         const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
         if (!uploadResult.success) {
-            await ctx.reply('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى', getAdminBankEditKeyboard());
+            await ctx.reply('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
             return;
         }
 
         const settings = await dbManager.getSettings();
-        settings.payment_methods[paymentMethod][subscriptionType].image = uploadResult.url;
+        
+        // إصلاح نهائي: التأكد من وجود الكائنات الأساسية
+        if (!settings.payment_links) settings.payment_links = {};
+        
+        settings.payment_links[subscriptionType] = uploadResult.url;
         await dbManager.updateSettings(settings);
 
-        ctx.session.bankEditStep = null;
-
         await ctx.reply(
-            `✅ *تم تحديث صورة الدفع بنجاح!*\n\n` +
-            `📦 ${getSubscriptionDisplayName(subscriptionType)}\n` +
-            `🏦 البنك الكريمي\n` +
-            `🖼️ تم تحديث الصورة\n\n` +
+            `✅ *تم التحديث بنجاح!*\n\n` +
+            `📦 ${subscriptionType}\n` +
+            `💰 السعر: ${settings.prices[subscriptionType]}$\n` +
+            `🖼️ تم حفظ صورة الدفع بنجاح\n\n` +
             `🔄 تم حفظ التغييرات في النظام`,
-            getAdminBankEditKeyboard()
+            getAdminSettingsKeyboard()
         );
 
+        ctx.session.adminStep = 'settings';
+        ctx.session.editingSubscriptionType = null;
     } catch (error) {
-        console.error('Admin bank image upload error:', error);
-        await ctx.reply('❌ حدث خطأ في رفع الصورة', getAdminBankEditKeyboard());
-    }
-}
-
-// معالجة تعديل الأسعار والدفع - محدثة لنظام الدفع المزدوج
-async function handleAdminEditPriceAndPayment(ctx, text) {
-    try {
-        const subscriptionType = ctx.session.editingSubscriptionType;
-        const paymentMethod = ctx.session.editingPaymentMethod;
-        if (!subscriptionType || !paymentMethod) {
-            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك أو طريقة الدفع', getAdminSettingsKeyboard());
-            return;
-        }
-
-        const settings = await dbManager.getSettings();
-
-        // إذا كان النص رقم (سعر)
-        if (!isNaN(text) && parseFloat(text) > 0) {
-            const priceNum = parseFloat(text);
-            
-            // تحديث السعر
-            settings.prices[paymentMethod][subscriptionType] = priceNum;
-            await dbManager.updateSettings(settings);
-
-            const paymentMethodName = paymentMethod === 'binance' ? 'Binance' : 'البنك الكريمي';
-
-            await ctx.reply(
-                `✅ *تم تحديث السعر بنجاح*\n\n` +
-                `💰 ${subscriptionType}: ${priceNum}$\n` +
-                `💳 ${paymentMethodName}\n\n` +
-                `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
-            );
-        }
-        // إذا كان رابط أو نص (حسب طريقة الدفع)
-        else {
-            if (paymentMethod === 'binance') {
-                // بالنسبة لـ Binance، يمكن أن يكون رابط أو سيتم إرسال صورة
-                if (text.startsWith('http')) {
-                    settings.payment_methods[paymentMethod][subscriptionType] = text;
-                    await dbManager.updateSettings(settings);
-
-                    await ctx.reply(
-                        `✅ *تم التحديث بنجاح!*\n\n` +
-                        `📦 ${subscriptionType}\n` +
-                        `💰 السعر: ${settings.prices[paymentMethod][subscriptionType]}$\n` +
-                        `📎 تم حفظ ${text.startsWith('https://i.ibb.co') ? 'صورة الدفع' : 'رابط الدفع'} بنجاح\n\n` +
-                        `🔄 تم حفظ التغييرات في النظام`,
-                        getAdminSettingsKeyboard()
-                    );
-
-                    ctx.session.adminStep = 'settings';
-                    ctx.session.editingSubscriptionType = null;
-                    ctx.session.editingPaymentMethod = null;
-                } else {
-                    await ctx.reply('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Admin edit price and payment error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل');
+        console.error('Admin payment image upload error:', error);
+        await ctx.reply('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
 
@@ -3094,31 +2518,18 @@ async function handleAdminGeneralSettings(ctx) {
 
 🔧 حالة البوت: ${settings.maintenance_mode ? '🔒 مقفل' : '🔓 مفتوح'}
 🕒 آخر تحديث: ${new Date(settings.updated_at).toLocaleString('ar-EG')}
-⏰ الوقت الحالي: ${goalAI.getSaudiDateTime()}
 
-💰 *الأسعار الحالية - Binance:*
-• أسبوعي: ${settings.prices.binance.week}$
-• شهري: ${settings.prices.binance.month}$
-• 3 أشهر: ${settings.prices.binance.three_months}$ 
-• سنوي: ${settings.prices.binance.year}$
+💰 *الأسعار الحالية:*
+• أسبوعي: ${settings.prices.week}$
+• شهري: ${settings.prices.month}$
+• 3 أشهر: ${settings.prices.three_months}$ 
+• سنوي: ${settings.prices.year}$
 
-💰 *الأسعار الحالية - البنك الكريمي:*
-• أسبوعي: ${settings.prices.bank.week}$
-• شهري: ${settings.prices.bank.month}$
-• 3 أشهر: ${settings.prices.bank.three_months}$ 
-• سنوي: ${settings.prices.bank.year}$
-
-🔗 *معلومات الدفع - Binance:*
-• أسبوعي: ${settings.payment_methods.binance.week.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_methods.binance.week}
-• شهري: ${settings.payment_methods.binance.month.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_methods.binance.month}
-• 3 أشهر: ${settings.payment_methods.binance.three_months.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_methods.binance.three_months}
-• سنوي: ${settings.payment_methods.binance.year.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_methods.binance.year}
-
-🏦 *معلومات الدفع - البنك الكريمي:*
-• أسبوعي: ${settings.payment_methods.bank.week.account} | 🖼️ ${settings.payment_methods.bank.week.image ? 'صورة موجودة' : 'بدون صورة'}
-• شهري: ${settings.payment_methods.bank.month.account} | 🖼️ ${settings.payment_methods.bank.month.image ? 'صورة موجودة' : 'بدون صورة'}
-• 3 أشهر: ${settings.payment_methods.bank.three_months.account} | 🖼️ ${settings.payment_methods.bank.three_months.image ? 'صورة موجودة' : 'بدون صورة'}
-• سنوي: ${settings.payment_methods.bank.year.account} | 🖼️ ${settings.payment_methods.bank.year.image ? 'صورة موجودة' : 'بدون صورة'}
+🔗 *معلومات الدفع:*
+• أسبوعي: ${settings.payment_links.week.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.week}
+• شهري: ${settings.payment_links.month.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.month}
+• 3 أشهر: ${settings.payment_links.three_months.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.three_months}
+• سنوي: ${settings.payment_links.year.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.year}
         `;
         
         await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
@@ -3187,17 +2598,13 @@ async function handlePaymentAccept(ctx, paymentId) {
         
         // إشعار المستخدم
         try {
-            const paymentMethodName = payment.payment_method === 'binance' ? 'Binance' : 'البنك الكريمي';
-            
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
                 `✅ ${payment.subscription_type}\n` +
                 `💰 ${payment.amount}$\n` +
-                `💳 ${paymentMethodName}\n` +
                 `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
-                `⏳ المتبقي: ${calculateRemainingDays(endDate)} يوم\n` +
-                `🕒 الوقت: ${goalAI.getSaudiDateTime()}\n\n` +
+                `⏳ المتبقي: ${calculateRemainingDays(endDate)} يوم\n\n` +
                 `🎯 يمكنك الآن استخدام الخدمة بدون حدود`,
                 { parse_mode: 'Markdown' }
             );
@@ -3206,21 +2613,18 @@ async function handlePaymentAccept(ctx, paymentId) {
         }
 
         // إرسال الإشعار للقناة
-        await channelNotifier.sendSubscriptionNotification(userData, payment.subscription_type, payment.amount, payment.payment_method);
+        await channelNotifier.sendSubscriptionNotification(userData, payment.subscription_type, payment.amount);
         
         await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         
         try {
-            const paymentMethodName = payment.payment_method === 'binance' ? 'Binance' : 'البنك الكريمي';
-            
             await ctx.editMessageCaption(
                 `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
                 `👤 ${userData.username}\n` +
                 `🔐 ${userData.onexbet}\n` +
                 `📦 ${payment.subscription_type}\n` +
-                `💰 ${payment.amount}$\n` +
-                `💳 ${paymentMethodName}\n\n` +
-                `🕒 ${goalAI.getSaudiDateTime()}`,
+                `💰 ${payment.amount}$\n\n` +
+                `🕒 ${new Date().toLocaleString('ar-EG')}`,
                 { parse_mode: 'Markdown' }
             );
         } catch (editError) {
@@ -3252,8 +2656,7 @@ async function handlePaymentReject(ctx, paymentId) {
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
                 `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n\n` +
-                `📞 للاستفسار: ${CONFIG.DEVELOPER}\n` +
-                `🕒 الوقت: ${goalAI.getSaudiDateTime()}`,
+                `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
                 { parse_mode: 'Markdown' }
             );
         } catch (error) {
@@ -3268,7 +2671,7 @@ async function handlePaymentReject(ctx, paymentId) {
                 `🆔 ${paymentId}\n` +
                 `👤 ${payment.username}\n` +
                 `🔐 ${payment.onexbet}\n\n` +
-                `🕒 ${goalAI.getSaudiDateTime()}`,
+                `🕒 ${new Date().toLocaleString('ar-EG')}`,
                 { parse_mode: 'Markdown' }
             );
         } catch (editError) {
@@ -3283,27 +2686,21 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v16.1 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v15.3 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
+    console.log('📢 Channel ID:', CONFIG.CHANNEL_ID);
     console.log('🌐 Health check: http://localhost:' + PORT);
-    console.log('💾 Storage: ENHANCED PERSISTENCE SYSTEM ACTIVE');
-    console.log('🔐 Data Protection: DEEP STORAGE ENABLED');
-    console.log('🔄 Auto Backup: ACTIVE');
-    console.log('🏦 Bank System: ENHANCED ADMIN CONTROL');
+    console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
+    console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
+    console.log('📤 ImgBB Uploader: ACTIVE');
+    console.log('📊 Dynamic Statistics: ACTIVE');
+    console.log('💾 Enhanced Database: ACTIVE');
+    console.log('🔐 Channel Verification: ACTIVE');
 }).catch(console.error);
 
-// ⚡ Graceful shutdown with data backup
-process.once('SIGINT', () => {
-    console.log('🔒 Saving data before shutdown...');
-    enhancedStorage.cleanup();
-    bot.stop('SIGINT');
-});
+// ⚡ Graceful shutdown
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
-process.once('SIGTERM', () => {
-    console.log('🔒 Saving data before shutdown...');
-    enhancedStorage.cleanup();
-    bot.stop('SIGTERM');
-});
-
-console.log('✅ AI Goal Prediction System Ready with Enhanced Storage!');
+console.log('✅ AI Goal Prediction System Ready!');
