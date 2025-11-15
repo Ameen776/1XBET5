@@ -1,11 +1,11 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.5 FIXED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.6 FIXED
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
-// 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
+// 💾 ENHANCED PERSISTENT DATA STORAGE - AUTO BACKUP EVERY 5 MIN
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v15.5 FIXED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v15.6 FIXED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -69,7 +69,7 @@ const CONFIG = {
         }
     },
     
-    VERSION: "15.5.0",
+    VERSION: "15.6.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -84,6 +84,8 @@ console.log('✅ Dual Payment Configuration loaded successfully');
 const { Telegraf, Markup, session } = require('telegraf');
 const axios = require('axios');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const bot = new Telegraf(CONFIG.BOT_TOKEN);
 
@@ -112,9 +114,21 @@ app.get('/keep-alive', (req, res) => {
     });
 });
 
+// 🔄 BACKUP ENDPOINT
+app.get('/backup', async (req, res) => {
+    try {
+        const backupManager = new BackupManager();
+        const result = await backupManager.createBackup();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
     console.log(`🔄 Keep alive endpoint: http://localhost:${PORT}/keep-alive`);
+    console.log(`💾 Backup endpoint: http://localhost:${PORT}/backup`);
 });
 
 // 🔥 ENHANCED FIREBASE INITIALIZATION - PERSISTENT DATA
@@ -170,24 +184,149 @@ async function initializeFirebase() {
 // INITIALIZE FIREBASE
 initializeFirebase();
 
+// 💾 ENHANCED BACKUP MANAGER - AUTO BACKUP EVERY 5 MINUTES
+class BackupManager {
+    constructor() {
+        this.backupInterval = null;
+        this.backupPath = path.join(__dirname, 'backups');
+        this.init();
+    }
+
+    init() {
+        // إنشاء مجلد النسخ الاحتياطي إذا لم يكن موجوداً
+        if (!fs.existsSync(this.backupPath)) {
+            fs.mkdirSync(this.backupPath, { recursive: true });
+        }
+
+        // 🔄 النسخ الاحتياطي التلقائي كل 5 دقائق
+        this.backupInterval = setInterval(async () => {
+            await this.createBackup();
+        }, 5 * 60 * 1000); // 5 دقائق
+
+        console.log('✅ Auto-backup system initialized (every 5 minutes)');
+    }
+
+    async createBackup() {
+        try {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const backupFile = path.join(this.backupPath, `backup-${timestamp}.json`);
+            
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                version: CONFIG.VERSION,
+                users: Array.from(persistentStorage.userDatabase.entries()),
+                payments: Array.from(persistentStorage.paymentDatabase.entries()),
+                settings: Array.from(persistentStorage.settingsDatabase.entries())
+            };
+
+            // حفظ محلي
+            fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2));
+            
+            // حفظ على Firebase إذا كان متاحاً
+            if (db) {
+                await db.collection('backups').doc(timestamp).set(backupData);
+            }
+
+            console.log(`✅ Backup created: ${backupFile}`);
+            
+            return {
+                success: true,
+                file: backupFile,
+                timestamp: backupData.timestamp,
+                users: backupData.users.length,
+                payments: backupData.payments.length
+            };
+            
+        } catch (error) {
+            console.error('Backup creation error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async restoreBackup(backupFile) {
+        try {
+            if (!fs.existsSync(backupFile)) {
+                throw new Error('Backup file not found');
+            }
+
+            const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+            
+            // استعادة البيانات
+            persistentStorage.userDatabase.clear();
+            persistentStorage.paymentDatabase.clear();
+            persistentStorage.settingsDatabase.clear();
+
+            backupData.users.forEach(([key, value]) => {
+                persistentStorage.userDatabase.set(key, value);
+            });
+
+            backupData.payments.forEach(([key, value]) => {
+                persistentStorage.paymentDatabase.set(key, value);
+            });
+
+            backupData.settings.forEach(([key, value]) => {
+                persistentStorage.settingsDatabase.set(key, value);
+            });
+
+            console.log(`✅ Backup restored: ${backupData.users.length} users, ${backupData.payments.length} payments`);
+            
+            return {
+                success: true,
+                users: backupData.users.length,
+                payments: backupData.payments.length,
+                timestamp: backupData.timestamp
+            };
+            
+        } catch (error) {
+            console.error('Backup restoration error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    getBackupFiles() {
+        try {
+            if (!fs.existsSync(this.backupPath)) {
+                return [];
+            }
+            return fs.readdirSync(this.backupPath)
+                .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
+                .sort()
+                .reverse();
+        } catch (error) {
+            console.error('Get backup files error:', error);
+            return [];
+        }
+    }
+
+    stop() {
+        if (this.backupInterval) {
+            clearInterval(this.backupInterval);
+        }
+    }
+}
+
+// INITIALIZE BACKUP MANAGER
+const backupManager = new BackupManager();
+
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
 class PersistentStorage {
     constructor() {
         this.userDatabase = new Map();
         this.paymentDatabase = new Map();
         this.settingsDatabase = new Map();
-        this.backupInterval = null;
         this.init();
     }
 
     async init() {
         // 🗄️ LOAD DATA FROM BACKUP ON STARTUP
         await this.loadBackup();
-        
-        // 🔄 AUTO BACKUP EVERY 30 MINUTES
-        this.backupInterval = setInterval(() => {
-            this.createBackup();
-        }, 30 * 60 * 1000);
+        console.log('✅ Persistent storage initialized');
     }
 
     async loadBackup() {
@@ -215,32 +354,6 @@ class PersistentStorage {
             }
         } catch (error) {
             console.error('Backup load error:', error);
-        }
-    }
-
-    async createBackup() {
-        try {
-            if (db) {
-                const backupData = {
-                    users: Array.from(this.userDatabase.entries()),
-                    payments: Array.from(this.paymentDatabase.entries()),
-                    settings: Array.from(this.settingsDatabase.entries()),
-                    timestamp: new Date().toISOString(),
-                    version: CONFIG.VERSION
-                };
-
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-                console.log('✅ Auto-backup created successfully');
-            }
-        } catch (error) {
-            console.error('Auto-backup error:', error);
-        }
-    }
-
-    // 🛑 STOP BACKUP INTERVAL ON SHUTDOWN
-    stop() {
-        if (this.backupInterval) {
-            clearInterval(this.backupInterval);
         }
     }
 }
@@ -416,9 +529,14 @@ class EnhancedDatabaseManager {
     async addPayment(paymentData) {
         const paymentId = Date.now().toString();
         try {
+            // 🆕 إصلاح: إضافة اسم الباقة بشكل صحيح
+            const subscriptionType = paymentData.subscription_type;
+            const subscriptionName = this.getSubscriptionArabicName(subscriptionType);
+            
             const fullPaymentData = {
                 ...paymentData,
                 id: paymentId,
+                subscription_name: subscriptionName, // 🆕 إضافة اسم الباقة بالعربية
                 status: 'pending',
                 timestamp: new Date().toISOString()
             };
@@ -444,6 +562,17 @@ class EnhancedDatabaseManager {
             this.storage.paymentDatabase.set(paymentId, fullPaymentData);
             return paymentId;
         }
+    }
+
+    // 🆕 دالة لتحويل اسم الباقة إلى عربية
+    getSubscriptionArabicName(type) {
+        const names = {
+            'week': 'أسبوعي',
+            'month': 'شهري',
+            'three_months': '3 أشهر',
+            'year': 'سنوي'
+        };
+        return names[type] || type;
     }
 
     async updatePayment(paymentId, updates) {
@@ -631,23 +760,6 @@ class EnhancedDatabaseManager {
         }
     }
 
-    isMaintenanceMode() {
-        return this.maintenanceMode;
-    }
-
-    async setMaintenanceMode(enabled) {
-        try {
-            const settings = await this.getSettings();
-            settings.maintenance_mode = enabled;
-            await this.updateSettings(settings);
-            this.maintenanceMode = enabled;
-            return true;
-        } catch (error) {
-            this.maintenanceMode = enabled;
-            return true;
-        }
-    }
-
     async searchUsers(query) {
         try {
             const users = await this.getAllUsers();
@@ -661,27 +773,6 @@ class EnhancedDatabaseManager {
         } catch (error) {
             console.error('Search users error:', error);
             return [];
-        }
-    }
-
-    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
-    async backupData() {
-        try {
-            const backupData = {
-                users: await this.getAllUsers(),
-                payments: await this.getAllPayments(),
-                settings: await this.getSettings(),
-                timestamp: new Date().toISOString()
-            };
-            
-            if (db) {
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-            }
-            
-            return backupData;
-        } catch (error) {
-            console.error('Backup error:', error);
-            return null;
         }
     }
 
@@ -735,6 +826,23 @@ class EnhancedDatabaseManager {
                 totalPayments: 0,
                 pendingPayments: 0
             };
+        }
+    }
+
+    isMaintenanceMode() {
+        return this.maintenanceMode;
+    }
+
+    async setMaintenanceMode(enabled) {
+        try {
+            const settings = await this.getSettings();
+            settings.maintenance_mode = enabled;
+            await this.updateSettings(settings);
+            this.maintenanceMode = enabled;
+            return true;
+        } catch (error) {
+            this.maintenanceMode = enabled;
+            return true;
         }
     }
 }
@@ -812,7 +920,7 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "15.5";
+        this.algorithmVersion = "15.6";
     }
 
     generateSmartPrediction(userId) {
@@ -926,12 +1034,14 @@ class ChannelNotifier {
     async sendSubscriptionNotification(userData, subscriptionType, amount, paymentSystem) {
         try {
             const systemText = paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي';
+            const subscriptionName = dbManager.getSubscriptionArabicName(subscriptionType);
+            
             const message = `
 🎉 *اشتراك جديد في البوت - ${systemText}*
 
 👤 *المستخدم:* ${userData.username}
 🔐 *الحساب:* ${userData.onexbet}
-📦 *الباقة:* ${subscriptionType}
+📦 *الباقة:* ${subscriptionName}
 💰 *المبلغ:* ${amount}$
 💳 *النظام:* ${systemText}
 
@@ -1178,7 +1288,7 @@ bot.start(async (ctx) => {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `✅ *اشتراكك نشط*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `📦 النوع: ${existingUser.subscription_type}\n` +
+                               `📦 النوع: ${dbManager.getSubscriptionArabicName(existingUser.subscription_type)}\n` +
                                `📅 الانتهاء: ${new Date(existingUser.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                                `⏳ متبقي: ${remainingDays} يوم`;
             } else if (existingUser.free_attempts > 0) {
@@ -1947,7 +2057,7 @@ async function handleUserStats(ctx, userData) {
     let subscriptionInfo = '';
     if (userData.subscription_status === 'active') {
         const remainingDays = calculateRemainingDays(userData.subscription_end_date);
-        subscriptionInfo = `\n📦 *الاشتراك:* ${userData.subscription_type}\n` +
+        subscriptionInfo = `\n📦 *الاشتراك:* ${dbManager.getSubscriptionArabicName(userData.subscription_type)}\n` +
                           `⏳ *متبقي:* ${remainingDays} يوم`;
     } else {
         subscriptionInfo = `\n🆓 *محاولات مجانية:* ${userData.free_attempts}`;
@@ -2202,7 +2312,7 @@ async function handleSubscriptionStatus(ctx, userData) {
         const remainingDays = calculateRemainingDays(userData.subscription_end_date);
         statusMessage = `✅ *اشتراكك نشط*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `📦 النوع: ${userData.subscription_type}\n` +
+                       `📦 النوع: ${dbManager.getSubscriptionArabicName(userData.subscription_type)}\n` +
                        `📅 الانتهاء: ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                        `⏳ متبقي: ${remainingDays} يوم`;
     } else if (userData.free_attempts > 0) {
@@ -2274,6 +2384,7 @@ async function handlePaymentScreenshot(ctx, userId) {
         // إرسال الإشعار للإدارة مع الصورة
         try {
             const paymentSystemText = paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي';
+            const subscriptionName = dbManager.getSubscriptionArabicName(ctx.session.paymentType);
             
             await bot.telegram.sendPhoto(
                 CONFIG.ADMIN_ID,
@@ -2283,7 +2394,7 @@ async function handlePaymentScreenshot(ctx, userId) {
                     `👤 المستخدم: ${userData.username}\n` +
                     `🔐 الحساب: ${accountNumber}\n` +
                     `💰 المبلغ: ${paymentData.amount}$\n` +
-                    `📦 الباقة: ${ctx.session.paymentType}\n` +
+                    `📦 الباقة: ${subscriptionName}\n` + // 🆕 استخدام الاسم العربي
                     `💳 النظام: ${paymentSystemText}\n` +
                     `🆔 الرقم: ${paymentId}\n` +
                     `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
@@ -2305,7 +2416,7 @@ async function handlePaymentScreenshot(ctx, userId) {
         await ctx.replyWithMarkdown(
             '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
             `✅ الحساب: \`${accountNumber}\`\n` +
-            `✅ الباقة: ${ctx.session.paymentType}\n` +
+            `✅ الباقة: ${dbManager.getSubscriptionArabicName(ctx.session.paymentType)}\n` + // 🆕 استخدام الاسم العربي
             `💰 المبلغ: ${paymentData.amount}$\n` +
             `💳 النظام: ${paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
             '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
@@ -2422,22 +2533,16 @@ async function handleAdminCommands(ctx, text) {
 
             case '💾 نسخ احتياطي':
                 await ctx.replyWithMarkdown('🔄 *جاري إنشاء نسخة احتياطية...*');
-                const backupSuccess = await dbManager.syncAllDataToFirebase();
-                if (backupSuccess) {
-                    await ctx.replyWithMarkdown('✅ *تم إنشاء النسخة الاحتياطية بنجاح*');
+                const backupResult = await backupManager.createBackup();
+                if (backupResult.success) {
+                    await ctx.replyWithMarkdown(`✅ *تم إنشاء النسخة الاحتياطية بنجاح*\n\n📊 المستخدمين: ${backupResult.users}\n💰 المدفوعات: ${backupResult.payments}`);
                 } else {
                     await ctx.replyWithMarkdown('❌ *فشل في إنشاء النسخة الاحتياطية*');
                 }
                 return;
 
             case '📥 استعادة البيانات':
-                await ctx.replyWithMarkdown('🔄 *جاري استعادة البيانات...*');
-                const restoreSuccess = await dbManager.restoreFromFirebase();
-                if (restoreSuccess) {
-                    await ctx.replyWithMarkdown('✅ *تم استعادة البيانات بنجاح*');
-                } else {
-                    await ctx.replyWithMarkdown('❌ *فشل في استعادة البيانات*');
-                }
+                await handleAdminRestoreBackup(ctx);
                 return;
                 
             case '🔄 إعادة التعيين':
@@ -2496,6 +2601,34 @@ async function handleAdminCommands(ctx, text) {
     } catch (error) {
         console.error('Admin commands error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
+    }
+}
+
+// 🆕 معالجة استعادة النسخ الاحتياطي
+async function handleAdminRestoreBackup(ctx) {
+    try {
+        const backupFiles = backupManager.getBackupFiles();
+        
+        if (backupFiles.length === 0) {
+            await ctx.replyWithMarkdown('❌ *لا توجد نسخ احتياطية متاحة*', getAdminMainKeyboard());
+            return;
+        }
+
+        let message = '📂 *النسخ الاحتياطية المتاحة:*\n\n';
+        
+        backupFiles.slice(0, 5).forEach((file, index) => {
+            const timestamp = file.replace('backup-', '').replace('.json', '');
+            message += `${index + 1}. ${timestamp}\n`;
+        });
+
+        message += '\n🔢 *أرسل رقم النسخة التي تريد استعادتها:*';
+        
+        await ctx.replyWithMarkdown(message);
+        ctx.session.adminStep = 'restore_backup';
+        
+    } catch (error) {
+        console.error('Admin restore backup error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في عرض النسخ الاحتياطية', getAdminMainKeyboard());
     }
 }
 
@@ -2615,7 +2748,7 @@ async function handleAdminStats(ctx) {
         const freeUsers = users.filter(u => u.subscription_status === 'free');
         
         const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
-        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
+        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0;
         
         const statsMessage = `
 📊 *إحصائيات النظام*
@@ -2634,6 +2767,8 @@ async function handleAdminStats(ctx) {
 • الأرباح: ${totalProfit}$
 
 🔧 *حالة البوت:* ${dbManager.isMaintenanceMode() ? '🔒 مقفل' : '🔓 مفتوح'}
+
+💾 *النسخ الاحتياطي:* نشط (كل 5 دقائق)
         `;
         
         await ctx.replyWithMarkdown(statsMessage, getAdminMainKeyboard());
@@ -2676,7 +2811,7 @@ async function handleAdminActiveUsers(ctx) {
         activeUsers.slice(0, 10).forEach((user, index) => {
             const remainingDays = calculateRemainingDays(user.subscription_end_date);
             message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
-            message += `   📦 ${user.subscription_type} | ⏳ ${remainingDays} يوم\n\n`;
+            message += `   📦 ${dbManager.getSubscriptionArabicName(user.subscription_type)} | ⏳ ${remainingDays} يوم\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
@@ -2744,6 +2879,8 @@ async function handleAdminPendingPayments(ctx) {
         }
         
         for (const payment of payments) {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
+            
             await ctx.replyWithPhoto(
                 payment.screenshot_url,
                 {
@@ -2751,7 +2888,7 @@ async function handleAdminPendingPayments(ctx) {
                     `👤 المستخدم: ${payment.username}\n` +
                     `🔐 الحساب: ${payment.onexbet}\n` +
                     `💰 المبلغ: ${payment.amount}$\n` +
-                    `📦 الباقة: ${payment.subscription_type}\n` +
+                    `📦 الباقة: ${subscriptionName}\n` + // 🆕 استخدام الاسم العربي
                     `💳 النظام: ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
                     `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}`,
                     reply_markup: {
@@ -2784,8 +2921,9 @@ async function handleAdminAcceptedPayments(ctx) {
         let message = `✅ *الطلبات المقبولة (${acceptedPayments.length})*\n\n`;
         
         acceptedPayments.slice(0, 10).forEach((payment, index) => {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${subscriptionName} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -2808,8 +2946,9 @@ async function handleAdminRejectedPayments(ctx) {
         let message = `❌ *الطلبات المرفوضة (${rejectedPayments.length})*\n\n`;
         
         rejectedPayments.slice(0, 10).forEach((payment, index) => {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${subscriptionName} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -3193,7 +3332,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
 
                 await ctx.replyWithMarkdown(
                     `✅ *تم تحديث السعر بنجاح*\n\n` +
-                    `💰 ${getSubscriptionDisplayName(subscriptionType)}: ${priceNum}$\n\n` +
+                    `💰 ${dbManager.getSubscriptionArabicName(subscriptionType)}: ${priceNum}$\n\n` +
                     `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
                 );
             }
@@ -3208,7 +3347,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
 
                 await ctx.replyWithMarkdown(
                     `✅ *تم التحديث بنجاح!*\n\n` +
-                    `📦 ${getSubscriptionDisplayName(subscriptionType)} - باينانس\n` +
+                    `📦 ${dbManager.getSubscriptionArabicName(subscriptionType)} - باينانس\n` +
                     `💰 السعر: ${settings.prices.binance[subscriptionType]}$\n` +
                     `📎 تم حفظ ${text.startsWith('https://i.ibb.co') ? 'صورة الدفع' : 'رابط الدفع'} بنجاح\n\n` +
                     `🔄 تم حفظ التغييرات في النظام`,
@@ -3227,17 +3366,6 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         console.error('Admin edit price and payment error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل: ' + error.message);
     }
-}
-
-// 🆕 دالة مساعدة للحصول على اسم العرض بالعربية
-function getSubscriptionDisplayName(type) {
-    const names = {
-        'week': 'أسبوعي',
-        'month': 'شهري', 
-        'three_months': '3 أشهر',
-        'year': 'سنوي'
-    };
-    return names[type] || type;
 }
 
 // 🆕 تحديث الإعدادات العامة لعرض النظام المزدوج
@@ -3342,10 +3470,12 @@ async function handlePaymentAccept(ctx, paymentId) {
         
         // إشعار المستخدم
         try {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
+            
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
-                `✅ ${payment.subscription_type}\n` +
+                `✅ ${subscriptionName}\n` +
                 `💰 ${payment.amount}$\n` +
                 `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
                 `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
@@ -3363,11 +3493,13 @@ async function handlePaymentAccept(ctx, paymentId) {
         await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         
         try {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
+            
             await ctx.editMessageCaption(
                 `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
                 `👤 ${userData.username}\n` +
                 `🔐 ${userData.onexbet}\n` +
-                `📦 ${payment.subscription_type}\n` +
+                `📦 ${subscriptionName}\n` +
                 `💰 ${payment.amount}$\n` +
                 `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
                 `🕒 ${new Date().toLocaleString('ar-EG')}`,
@@ -3412,11 +3544,14 @@ async function handlePaymentReject(ctx, paymentId) {
         await ctx.answerCbQuery('❌ تم رفض الطلب');
         
         try {
+            const subscriptionName = dbManager.getSubscriptionArabicName(payment.subscription_type);
+            
             await ctx.editMessageCaption(
                 `❌ *تم رفض طلب الدفع*\n\n` +
                 `🆔 ${paymentId}\n` +
                 `👤 ${payment.username}\n` +
                 `🔐 ${payment.onexbet}\n` +
+                `📦 ${subscriptionName}\n` +
                 `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
                 `🕒 ${new Date().toLocaleString('ar-EG')}`,
                 { parse_mode: 'Markdown' }
@@ -3433,29 +3568,31 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v15.5 FIXED with DUAL PAYMENT is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v15.6 FIXED with DUAL PAYMENT is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
-    console.log('💾 Persistent Data Storage: ENABLED');
+    console.log('💾 Enhanced Persistent Data Storage: ENABLED');
+    console.log('🔄 Auto Backup: EVERY 5 MINUTES');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
+    console.log('💾 Backup: http://localhost:' + PORT + '/backup');
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
 }).catch(console.error);
 
 // 🛑 GRACEFUL SHUTDOWN WITH DATA BACKUP
 process.once('SIGINT', async () => {
     console.log('🔄 Creating final backup before shutdown...');
-    await persistentStorage.createBackup();
-    persistentStorage.stop();
+    await backupManager.createBackup();
+    backupManager.stop();
     await bot.stop('SIGINT');
 });
 
 process.once('SIGTERM', async () => {
     console.log('🔄 Creating final backup before shutdown...');
-    await persistentStorage.createBackup();
-    persistentStorage.stop();
+    await backupManager.createBackup();
+    backupManager.stop();
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with Dual Payment & Persistent Data Ready!');
+console.log('✅ AI Goal Prediction System with Enhanced Dual Payment & Persistent Data Ready!');
