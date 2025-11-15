@@ -3339,7 +3339,7 @@ async function handlePaymentReject(ctx, paymentId) {
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
-                `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n\n` +
+                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
                 `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
                 { parse_mode: 'Markdown' }
             );
