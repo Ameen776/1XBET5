@@ -1,11 +1,11 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.5
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.5 FIXED
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v15.5...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v15.5 FIXED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -3121,7 +3121,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
     }
 }
 
-// 🆕 معالجة تعديل الأسعار والدفع (باينانس) - FIXED FOR three_months
+// 🛠️ الإصلاح الرئيسي: معالجة تعديل الأسعار والدفع (باينانس) - FIXED FOR three_months
 async function handleAdminEditPriceAndPayment(ctx, text) {
     try {
         if (text === 'إلغاء') {
@@ -3157,7 +3157,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
 
                 await ctx.replyWithMarkdown(
                     `✅ *تم تحديث السعر بنجاح*\n\n` +
-                    `💰 ${subscriptionType}: ${priceNum}$\n\n` +
+                    `💰 ${getSubscriptionDisplayName(subscriptionType)}: ${priceNum}$\n\n` +
                     `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
                 );
             }
@@ -3172,7 +3172,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
 
                 await ctx.replyWithMarkdown(
                     `✅ *تم التحديث بنجاح!*\n\n` +
-                    `📦 ${subscriptionType} - باينانس\n` +
+                    `📦 ${getSubscriptionDisplayName(subscriptionType)} - باينانس\n` +
                     `💰 السعر: ${settings.prices.binance[subscriptionType]}$\n` +
                     `📎 تم حفظ ${text.startsWith('https://i.ibb.co') ? 'صورة الدفع' : 'رابط الدفع'} بنجاح\n\n` +
                     `🔄 تم حفظ التغييرات في النظام`,
@@ -3191,6 +3191,17 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         console.error('Admin edit price and payment error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل: ' + error.message);
     }
+}
+
+// 🆕 دالة مساعدة للحصول على اسم العرض بالعربية
+function getSubscriptionDisplayName(type) {
+    const names = {
+        'week': 'أسبوعي',
+        'month': 'شهري', 
+        'three_months': '3 أشهر',
+        'year': 'سنوي'
+    };
+    return names[type] || type;
 }
 
 // 🆕 تحديث الإعدادات العامة لعرض النظام المزدوج
@@ -3386,7 +3397,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v15.5 with DUAL PAYMENT is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v15.5 FIXED with DUAL PAYMENT is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: ENABLED');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
