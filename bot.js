@@ -2,6 +2,7 @@
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.5
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
+// 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v15.5...');
@@ -116,18 +117,20 @@ app.listen(PORT, () => {
     console.log(`🔄 Keep alive endpoint: http://localhost:${PORT}/keep-alive`);
 });
 
-// 🔥 FIREBASE INITIALIZATION
+// 🔥 ENHANCED FIREBASE INITIALIZATION - PERSISTENT DATA
 let db = null;
 let admin = null;
 
 try {
     admin = require('firebase-admin');
     
+    // 🔐 ENHANCED FIREBASE CONFIG WITH ERROR HANDLING
     const serviceAccount = {
         "type": "service_account",
         "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
         "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
-        "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+        "private_key": process.env.FIREBASE_PRIVATE_KEY ? 
+            process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
         "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
         "client_id": process.env.FIREBASE_CLIENT_ID,
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -144,31 +147,601 @@ try {
     }
     
     db = admin.firestore();
-    console.log('✅ Firebase initialized successfully');
+    
+    // 🔄 TEST FIREBASE CONNECTION
+    const testDoc = db.collection('connection_test').doc('test');
+    await testDoc.set({ 
+        timestamp: new Date().toISOString(),
+        status: 'connected',
+        version: CONFIG.VERSION
+    });
+    
+    console.log('✅ Firebase initialized successfully with persistent connection');
     
 } catch (error) {
-    console.log('⚠️ Firebase initialization failed:', error.message);
-    console.log('🔄 Using local storage instead');
+    console.log('❌ Firebase initialization failed:', error.message);
+    console.log('🔄 Using enhanced local storage with backup system');
 }
 
-// 🗄️ LOCAL STORAGE FALLBACK - UPDATED FOR DUAL PAYMENT
-const userDatabase = new Map();
-const paymentDatabase = new Map();
-const settingsDatabase = new Map();
+// 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
+class PersistentStorage {
+    constructor() {
+        this.userDatabase = new Map();
+        this.paymentDatabase = new Map();
+        this.settingsDatabase = new Map();
+        this.backupInterval = null;
+        this.init();
+    }
 
-// تهيئة الإعدادات الافتراضية للنظام المزدوج
-settingsDatabase.set('config', {
-    prices: { 
-        binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
-        bank: { ...CONFIG.SUBSCRIPTION_PRICES.bank }
-    },
-    payment_links: { 
-        binance: { ...CONFIG.PAYMENT_LINKS.binance },
-        bank: { ...CONFIG.PAYMENT_LINKS.bank }
-    },
-    maintenance_mode: false,
-    updated_at: new Date().toISOString()
-});
+    async init() {
+        // 🗄️ LOAD DATA FROM BACKUP ON STARTUP
+        await this.loadBackup();
+        
+        // 🔄 AUTO BACKUP EVERY 30 MINUTES
+        this.backupInterval = setInterval(() => {
+            this.createBackup();
+        }, 30 * 60 * 1000);
+    }
+
+    async loadBackup() {
+        try {
+            if (db) {
+                // 📥 LOAD USERS FROM FIREBASE
+                const usersSnapshot = await db.collection('users').get();
+                usersSnapshot.forEach(doc => {
+                    this.userDatabase.set(doc.id, doc.data());
+                });
+
+                // 📥 LOAD PAYMENTS FROM FIREBASE
+                const paymentsSnapshot = await db.collection('payments').get();
+                paymentsSnapshot.forEach(doc => {
+                    this.paymentDatabase.set(doc.id, doc.data());
+                });
+
+                // 📥 LOAD SETTINGS FROM FIREBASE
+                const settingsDoc = await db.collection('settings').doc('config').get();
+                if (settingsDoc.exists) {
+                    this.settingsDatabase.set('config', settingsDoc.data());
+                }
+
+                console.log(`✅ Loaded backup: ${this.userDatabase.size} users, ${this.paymentDatabase.size} payments`);
+            }
+        } catch (error) {
+            console.error('Backup load error:', error);
+        }
+    }
+
+    async createBackup() {
+        try {
+            if (db) {
+                const backupData = {
+                    users: Array.from(this.userDatabase.entries()),
+                    payments: Array.from(this.paymentDatabase.entries()),
+                    settings: Array.from(this.settingsDatabase.entries()),
+                    timestamp: new Date().toISOString(),
+                    version: CONFIG.VERSION
+                };
+
+                await db.collection('backups').doc(Date.now().toString()).set(backupData);
+                console.log('✅ Auto-backup created successfully');
+            }
+        } catch (error) {
+            console.error('Auto-backup error:', error);
+        }
+    }
+
+    // 🛑 STOP BACKUP INTERVAL ON SHUTDOWN
+    stop() {
+        if (this.backupInterval) {
+            clearInterval(this.backupInterval);
+        }
+    }
+}
+
+// INITIALIZE PERSISTENT STORAGE
+const persistentStorage = new PersistentStorage();
+
+// 💾 ENHANCED DATABASE MANAGER - PERSISTENT DATA
+class EnhancedDatabaseManager {
+    constructor() {
+        this.maintenanceMode = false;
+        this.storage = persistentStorage;
+    }
+
+    async getUser(userId) {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const userDoc = await db.collection('users').doc(userId.toString()).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    // 🗄️ SYNC WITH LOCAL STORAGE
+                    this.storage.userDatabase.set(userId, userData);
+                    return userData;
+                }
+            }
+            
+            // 🔄 FALLBACK TO LOCAL STORAGE
+            return this.storage.userDatabase.get(userId) || null;
+            
+        } catch (error) {
+            console.error('Get user error:', error);
+            return this.storage.userDatabase.get(userId) || null;
+        }
+    }
+
+    async saveUser(userId, userData) {
+        try {
+            const completeUserData = {
+                user_id: userId,
+                username: userData.username || 'Unknown',
+                onexbet: userData.onexbet || '',
+                free_attempts: userData.free_attempts || 0,
+                subscription_status: userData.subscription_status || 'free',
+                subscription_type: userData.subscription_type || 'none',
+                subscription_start_date: userData.subscription_start_date || null,
+                subscription_end_date: userData.subscription_end_date || null,
+                joined_at: userData.joined_at || new Date().toISOString(),
+                total_predictions: userData.total_predictions || 0,
+                correct_predictions: userData.correct_predictions || 0,
+                wins: userData.wins || 0,
+                losses: userData.losses || 0,
+                total_bets: userData.total_bets || 0,
+                total_profit: userData.total_profit || 0,
+                last_updated: new Date().toISOString(),
+                channel_subscribed: userData.channel_subscribed || false
+            };
+
+            // 💾 SAVE TO FIREBASE (PRIMARY)
+            if (db) {
+                await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
+            }
+            
+            // 💾 SAVE TO LOCAL STORAGE (BACKUP)
+            this.storage.userDatabase.set(userId, completeUserData);
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Error saving user:', error);
+            // 🆘 EMERGENCY SAVE TO LOCAL STORAGE
+            this.storage.userDatabase.set(userId, userData);
+            return true;
+        }
+    }
+
+    async getSettings() {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const settingsDoc = await db.collection('settings').doc('config').get();
+                if (settingsDoc.exists) {
+                    const settingsData = settingsDoc.data();
+                    // 🗄️ SYNC WITH LOCAL STORAGE
+                    this.storage.settingsDatabase.set('config', settingsData);
+                    return settingsData;
+                }
+            }
+            
+            // 🔄 FALLBACK TO LOCAL STORAGE OR DEFAULT
+            return this.storage.settingsDatabase.get('config') || {
+                prices: { 
+                    binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
+                    bank: { ...CONFIG.SUBSCRIPTION_PRICES.bank }
+                },
+                payment_links: { 
+                    binance: { ...CONFIG.PAYMENT_LINKS.binance },
+                    bank: { ...CONFIG.PAYMENT_LINKS.bank }
+                },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
+            
+        } catch (error) {
+            console.error('Get settings error:', error);
+            return this.storage.settingsDatabase.get('config') || {
+                prices: { 
+                    binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
+                    bank: { ...CONFIG.SUBSCRIPTION_PRICES.bank }
+                },
+                payment_links: { 
+                    binance: { ...CONFIG.PAYMENT_LINKS.binance },
+                    bank: { ...CONFIG.PAYMENT_LINKS.bank }
+                },
+                maintenance_mode: false,
+                updated_at: new Date().toISOString()
+            };
+        }
+    }
+
+    async updateSettings(newSettings) {
+        try {
+            const updatedSettings = {
+                ...newSettings,
+                updated_at: new Date().toISOString()
+            };
+
+            // 💾 SAVE TO FIREBASE (PRIMARY)
+            if (db) {
+                await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
+            }
+            
+            // 💾 SAVE TO LOCAL STORAGE (BACKUP)
+            this.storage.settingsDatabase.set('config', updatedSettings);
+            
+            return updatedSettings;
+            
+        } catch (error) {
+            console.error('Update settings error:', error);
+            const updatedSettings = {
+                ...newSettings,
+                updated_at: new Date().toISOString()
+            };
+            this.storage.settingsDatabase.set('config', updatedSettings);
+            return updatedSettings;
+        }
+    }
+
+    async getAllUsers() {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const usersSnapshot = await db.collection('users').get();
+                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // 🗄️ SYNC WITH LOCAL STORAGE
+                users.forEach(user => {
+                    this.storage.userDatabase.set(user.user_id, user);
+                });
+                
+                return users;
+            }
+            
+            // 🔄 FALLBACK TO LOCAL STORAGE
+            return Array.from(this.storage.userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
+            
+        } catch (error) {
+            console.error('Get all users error:', error);
+            return Array.from(this.storage.userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
+        }
+    }
+
+    async addPayment(paymentData) {
+        const paymentId = Date.now().toString();
+        try {
+            const fullPaymentData = {
+                ...paymentData,
+                id: paymentId,
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            };
+
+            // 💾 SAVE TO FIREBASE (PRIMARY)
+            if (db) {
+                await db.collection('payments').doc(paymentId).set(fullPaymentData);
+            }
+            
+            // 💾 SAVE TO LOCAL STORAGE (BACKUP)
+            this.storage.paymentDatabase.set(paymentId, fullPaymentData);
+            
+            return paymentId;
+            
+        } catch (error) {
+            console.error('Add payment error:', error);
+            const fullPaymentData = {
+                ...paymentData,
+                id: paymentId,
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            };
+            this.storage.paymentDatabase.set(paymentId, fullPaymentData);
+            return paymentId;
+        }
+    }
+
+    async updatePayment(paymentId, updates) {
+        try {
+            // 🔄 UPDATE FIREBASE
+            if (db) {
+                await db.collection('payments').doc(paymentId).update(updates);
+            }
+            
+            // 🔄 UPDATE LOCAL STORAGE
+            const payment = this.storage.paymentDatabase.get(paymentId);
+            if (payment) {
+                this.storage.paymentDatabase.set(paymentId, { ...payment, ...updates });
+            }
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Update payment error:', error);
+            const payment = this.storage.paymentDatabase.get(paymentId);
+            if (payment) {
+                this.storage.paymentDatabase.set(paymentId, { ...payment, ...updates });
+            }
+            return true;
+        }
+    }
+
+    async getPayment(paymentId) {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const paymentDoc = await db.collection('payments').doc(paymentId).get();
+                if (paymentDoc.exists) {
+                    const paymentData = paymentDoc.data();
+                    // 🗄️ SYNC WITH LOCAL STORAGE
+                    this.storage.paymentDatabase.set(paymentId, paymentData);
+                    return paymentData;
+                }
+            }
+            
+            // 🔄 FALLBACK TO LOCAL STORAGE
+            return this.storage.paymentDatabase.get(paymentId) || null;
+            
+        } catch (error) {
+            console.error('Get payment error:', error);
+            return this.storage.paymentDatabase.get(paymentId) || null;
+        }
+    }
+
+    async getAllPayments() {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const paymentsSnapshot = await db.collection('payments').get();
+                const payments = paymentsSnapshot.docs.map(doc => doc.data());
+                
+                // 🗄️ SYNC WITH LOCAL STORAGE
+                payments.forEach(payment => {
+                    this.storage.paymentDatabase.set(payment.id, payment);
+                });
+                
+                return payments;
+            }
+            
+            // 🔄 FALLBACK TO LOCAL STORAGE
+            return Array.from(this.storage.paymentDatabase.values());
+            
+        } catch (error) {
+            console.error('Get all payments error:', error);
+            return Array.from(this.storage.paymentDatabase.values());
+        }
+    }
+
+    async getPendingPayments() {
+        try {
+            const payments = await this.getAllPayments();
+            return payments.filter(p => p.status === 'pending');
+        } catch (error) {
+            console.error('Get pending payments error:', error);
+            return Array.from(this.storage.paymentDatabase.values()).filter(p => p.status === 'pending');
+        }
+    }
+
+    // 🔄 SYNC ALL DATA TO FIREBASE
+    async syncAllDataToFirebase() {
+        try {
+            if (!db) {
+                console.log('❌ Firebase not available for sync');
+                return false;
+            }
+
+            console.log('🔄 Starting data synchronization to Firebase...');
+
+            // 📤 SYNC USERS
+            const users = Array.from(this.storage.userDatabase.entries());
+            for (const [userId, userData] of users) {
+                await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
+            }
+
+            // 📤 SYNC PAYMENTS
+            const payments = Array.from(this.storage.paymentDatabase.entries());
+            for (const [paymentId, paymentData] of payments) {
+                await db.collection('payments').doc(paymentId).set(paymentData, { merge: true });
+            }
+
+            // 📤 SYNC SETTINGS
+            const settings = this.storage.settingsDatabase.get('config');
+            if (settings) {
+                await db.collection('settings').doc('config').set(settings, { merge: true });
+            }
+
+            console.log(`✅ Data sync completed: ${users.length} users, ${payments.length} payments`);
+            return true;
+
+        } catch (error) {
+            console.error('Data sync error:', error);
+            return false;
+        }
+    }
+
+    // 📥 RESTORE FROM FIREBASE
+    async restoreFromFirebase() {
+        try {
+            if (!db) {
+                console.log('❌ Firebase not available for restore');
+                return false;
+            }
+
+            console.log('📥 Restoring data from Firebase...');
+
+            // CLEAR LOCAL STORAGE
+            this.storage.userDatabase.clear();
+            this.storage.paymentDatabase.clear();
+            this.storage.settingsDatabase.clear();
+
+            // 📥 RESTORE USERS
+            const usersSnapshot = await db.collection('users').get();
+            usersSnapshot.forEach(doc => {
+                this.storage.userDatabase.set(doc.id, doc.data());
+            });
+
+            // 📥 RESTORE PAYMENTS
+            const paymentsSnapshot = await db.collection('payments').get();
+            paymentsSnapshot.forEach(doc => {
+                this.storage.paymentDatabase.set(doc.id, doc.data());
+            });
+
+            // 📥 RESTORE SETTINGS
+            const settingsDoc = await db.collection('settings').doc('config').get();
+            if (settingsDoc.exists) {
+                this.storage.settingsDatabase.set('config', settingsDoc.data());
+            }
+
+            console.log(`✅ Restore completed: ${this.storage.userDatabase.size} users, ${this.storage.paymentDatabase.size} payments`);
+            return true;
+
+        } catch (error) {
+            console.error('Restore error:', error);
+            return false;
+        }
+    }
+
+    isMaintenanceMode() {
+        return this.maintenanceMode;
+    }
+
+    async setMaintenanceMode(enabled) {
+        try {
+            const settings = await this.getSettings();
+            settings.maintenance_mode = enabled;
+            await this.updateSettings(settings);
+            this.maintenanceMode = enabled;
+            return true;
+        } catch (error) {
+            this.maintenanceMode = enabled;
+            return true;
+        }
+    }
+
+    async searchUsers(query) {
+        try {
+            const users = await this.getAllUsers();
+            const lowerQuery = query.toLowerCase();
+            
+            return users.filter(user => 
+                (user.user_id && user.user_id.toString().includes(query)) ||
+                (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
+                (user.onexbet && user.onexbet.toString().includes(query))
+            );
+        } catch (error) {
+            console.error('Search users error:', error);
+            return [];
+        }
+    }
+
+    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
+    async backupData() {
+        try {
+            const backupData = {
+                users: await this.getAllUsers(),
+                payments: await this.getAllPayments(),
+                settings: await this.getSettings(),
+                timestamp: new Date().toISOString()
+            };
+            
+            if (db) {
+                await db.collection('backups').doc(Date.now().toString()).set(backupData);
+            }
+            
+            return backupData;
+        } catch (error) {
+            console.error('Backup error:', error);
+            return null;
+        }
+    }
+
+    // دالة جديدة للتحقق من اشتراك القناة
+    async setChannelSubscription(userId, subscribed) {
+        try {
+            const user = await this.getUser(userId);
+            if (user) {
+                user.channel_subscribed = subscribed;
+                await this.saveUser(userId, user);
+            }
+            return true;
+        } catch (error) {
+            console.error('Set channel subscription error:', error);
+            return false;
+        }
+    }
+
+    // دالة جديدة للحصول على جميع الإحصائيات
+    async getAllStats() {
+        try {
+            const users = await this.getAllUsers();
+            const payments = await this.getAllPayments();
+            
+            const activeUsers = users.filter(u => u.subscription_status === 'active');
+            const freeUsers = users.filter(u => u.subscription_status === 'free');
+            
+            const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
+            const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
+            const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
+            
+            return {
+                totalUsers: users.length,
+                activeUsers: activeUsers.length,
+                freeUsers: freeUsers.length,
+                totalPredictions,
+                totalProfit,
+                totalBets,
+                totalPayments: payments.length,
+                pendingPayments: payments.filter(p => p.status === 'pending').length
+            };
+        } catch (error) {
+            console.error('Get all stats error:', error);
+            return {
+                totalUsers: 0,
+                activeUsers: 0,
+                freeUsers: 0,
+                totalPredictions: 0,
+                totalProfit: 0,
+                totalBets: 0,
+                totalPayments: 0,
+                pendingPayments: 0
+            };
+        }
+    }
+}
+
+// INITIALIZE ENHANCED DATABASE MANAGER
+const dbManager = new EnhancedDatabaseManager();
+
+// 🚀 INITIAL DATA SYNC ON STARTUP
+async function initializeDataSync() {
+    try {
+        console.log('🔄 Initializing data synchronization...');
+        
+        // 📥 TRY TO RESTORE FROM FIREBASE FIRST
+        const restoreSuccess = await dbManager.restoreFromFirebase();
+        
+        if (!restoreSuccess) {
+            console.log('🔄 No Firebase data found, checking local storage...');
+            
+            // 📊 CHECK IF WE HAVE LOCAL DATA
+            const settings = await dbManager.getSettings();
+            const users = await dbManager.getAllUsers();
+            
+            console.log(`📊 Local data found: ${users.length} users`);
+            
+            // 📤 SYNC LOCAL DATA TO FIREBASE
+            if (users.length > 0) {
+                await dbManager.syncAllDataToFirebase();
+            }
+        }
+        
+        console.log('✅ Data initialization completed');
+        
+    } catch (error) {
+        console.error('Data initialization error:', error);
+    }
+}
+
+// 🔄 CALL INITIALIZATION ON STARTUP
+initializeDataSync();
 
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
@@ -306,322 +879,8 @@ class ImgBBUploader {
     }
 }
 
-// 💾 DATABASE MANAGER - ENHANCED FOR DUAL PAYMENT
-class DatabaseManager {
-    constructor() {
-        this.maintenanceMode = false;
-    }
-
-    async getUser(userId) {
-        try {
-            if (db) {
-                const userDoc = await db.collection('users').doc(userId.toString()).get();
-                return userDoc.exists ? userDoc.data() : null;
-            }
-            return userDatabase.get(userId) || null;
-        } catch (error) {
-            return userDatabase.get(userId) || null;
-        }
-    }
-
-    async saveUser(userId, userData) {
-        try {
-            // التأكد من وجود جميع الحقول المطلوبة
-            const completeUserData = {
-                user_id: userId,
-                username: userData.username || 'Unknown',
-                onexbet: userData.onexbet || '',
-                free_attempts: userData.free_attempts || 0,
-                subscription_status: userData.subscription_status || 'free',
-                subscription_type: userData.subscription_type || 'none',
-                subscription_start_date: userData.subscription_start_date || null,
-                subscription_end_date: userData.subscription_end_date || null,
-                joined_at: userData.joined_at || new Date().toISOString(),
-                total_predictions: userData.total_predictions || 0,
-                correct_predictions: userData.correct_predictions || 0,
-                wins: userData.wins || 0,
-                losses: userData.losses || 0,
-                total_bets: userData.total_bets || 0,
-                total_profit: userData.total_profit || 0,
-                last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false
-            };
-
-            if (db) {
-                await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-            }
-            userDatabase.set(userId, completeUserData);
-            return true;
-        } catch (error) {
-            console.error('Error saving user:', error);
-            userDatabase.set(userId, userData);
-            return true;
-        }
-    }
-
-    async addPayment(paymentData) {
-        const paymentId = Date.now().toString();
-        try {
-            const fullPaymentData = {
-                ...paymentData,
-                id: paymentId,
-                status: 'pending',
-                timestamp: new Date().toISOString()
-            };
-
-            if (db) {
-                await db.collection('payments').doc(paymentId).set(fullPaymentData);
-            }
-            paymentDatabase.set(paymentId, fullPaymentData);
-            return paymentId;
-        } catch (error) {
-            const fullPaymentData = {
-                ...paymentData,
-                id: paymentId,
-                status: 'pending',
-                timestamp: new Date().toISOString()
-            };
-            paymentDatabase.set(paymentId, fullPaymentData);
-            return paymentId;
-        }
-    }
-
-    async getPendingPayments() {
-        try {
-            if (db) {
-                const paymentsSnapshot = await db.collection('payments').where('status', '==', 'pending').get();
-                return paymentsSnapshot.docs.map(doc => doc.data());
-            }
-            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
-        } catch (error) {
-            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
-        }
-    }
-
-    async updatePayment(paymentId, updates) {
-        try {
-            if (db) {
-                await db.collection('payments').doc(paymentId).update(updates);
-            }
-            const payment = paymentDatabase.get(paymentId);
-            if (payment) {
-                paymentDatabase.set(paymentId, { ...payment, ...updates });
-            }
-            return true;
-        } catch (error) {
-            const payment = paymentDatabase.get(paymentId);
-            if (payment) {
-                paymentDatabase.set(paymentId, { ...payment, ...updates });
-            }
-            return true;
-        }
-    }
-
-    async getAllUsers() {
-        try {
-            if (db) {
-                const usersSnapshot = await db.collection('users').get();
-                return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            }
-            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
-        } catch (error) {
-            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
-        }
-    }
-
-    async getSettings() {
-        try {
-            if (db) {
-                const settingsDoc = await db.collection('settings').doc('config').get();
-                if (settingsDoc.exists) {
-                    return settingsDoc.data();
-                }
-            }
-            return settingsDatabase.get('config') || {
-                prices: { 
-                    binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
-                    bank: { ...CONFIG.SUBSCRIPTION_PRICES.bank }
-                },
-                payment_links: { 
-                    binance: { ...CONFIG.PAYMENT_LINKS.binance },
-                    bank: { ...CONFIG.PAYMENT_LINKS.bank }
-                },
-                maintenance_mode: false,
-                updated_at: new Date().toISOString()
-            };
-        } catch (error) {
-            return settingsDatabase.get('config') || {
-                prices: { 
-                    binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
-                    bank: { ...CONFIG.SUBSCRIPTION_PRICES.bank }
-                },
-                payment_links: { 
-                    binance: { ...CONFIG.PAYMENT_LINKS.binance },
-                    bank: { ...CONFIG.PAYMENT_LINKS.bank }
-                },
-                maintenance_mode: false,
-                updated_at: new Date().toISOString()
-            };
-        }
-    }
-
-    async updateSettings(newSettings) {
-        try {
-            const updatedSettings = {
-                ...newSettings,
-                updated_at: new Date().toISOString()
-            };
-
-            if (db) {
-                await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
-            }
-            settingsDatabase.set('config', updatedSettings);
-            return updatedSettings;
-        } catch (error) {
-            const updatedSettings = {
-                ...newSettings,
-                updated_at: new Date().toISOString()
-            };
-            settingsDatabase.set('config', updatedSettings);
-            return updatedSettings;
-        }
-    }
-
-    async getPayment(paymentId) {
-        try {
-            if (db) {
-                const paymentDoc = await db.collection('payments').doc(paymentId).get();
-                return paymentDoc.exists ? paymentDoc.data() : null;
-            }
-            return paymentDatabase.get(paymentId) || null;
-        } catch (error) {
-            return paymentDatabase.get(paymentId) || null;
-        }
-    }
-
-    async getAllPayments() {
-        try {
-            if (db) {
-                const paymentsSnapshot = await db.collection('payments').get();
-                return paymentsSnapshot.docs.map(doc => doc.data());
-            }
-            return Array.from(paymentDatabase.values());
-        } catch (error) {
-            return Array.from(paymentDatabase.values());
-        }
-    }
-
-    isMaintenanceMode() {
-        return this.maintenanceMode;
-    }
-
-    async setMaintenanceMode(enabled) {
-        try {
-            const settings = await this.getSettings();
-            settings.maintenance_mode = enabled;
-            await this.updateSettings(settings);
-            this.maintenanceMode = enabled;
-            return true;
-        } catch (error) {
-            this.maintenanceMode = enabled;
-            return true;
-        }
-    }
-
-    async searchUsers(query) {
-        try {
-            const users = await this.getAllUsers();
-            const lowerQuery = query.toLowerCase();
-            
-            return users.filter(user => 
-                (user.user_id && user.user_id.toString().includes(query)) ||
-                (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
-                (user.onexbet && user.onexbet.toString().includes(query))
-            );
-        } catch (error) {
-            console.error('Search users error:', error);
-            return [];
-        }
-    }
-
-    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
-    async backupData() {
-        try {
-            const backupData = {
-                users: await this.getAllUsers(),
-                payments: await this.getAllPayments(),
-                settings: await this.getSettings(),
-                timestamp: new Date().toISOString()
-            };
-            
-            if (db) {
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-            }
-            
-            return backupData;
-        } catch (error) {
-            console.error('Backup error:', error);
-            return null;
-        }
-    }
-
-    // دالة جديدة للتحقق من اشتراك القناة
-    async setChannelSubscription(userId, subscribed) {
-        try {
-            const user = await this.getUser(userId);
-            if (user) {
-                user.channel_subscribed = subscribed;
-                await this.saveUser(userId, user);
-            }
-            return true;
-        } catch (error) {
-            console.error('Set channel subscription error:', error);
-            return false;
-        }
-    }
-
-    // دالة جديدة للحصول على جميع الإحصائيات
-    async getAllStats() {
-        try {
-            const users = await this.getAllUsers();
-            const payments = await this.getAllPayments();
-            
-            const activeUsers = users.filter(u => u.subscription_status === 'active');
-            const freeUsers = users.filter(u => u.subscription_status === 'free');
-            
-            const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
-            const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
-            const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
-            
-            return {
-                totalUsers: users.length,
-                activeUsers: activeUsers.length,
-                freeUsers: freeUsers.length,
-                totalPredictions,
-                totalProfit,
-                totalBets,
-                totalPayments: payments.length,
-                pendingPayments: payments.filter(p => p.status === 'pending').length
-            };
-        } catch (error) {
-            console.error('Get all stats error:', error);
-            return {
-                totalUsers: 0,
-                activeUsers: 0,
-                freeUsers: 0,
-                totalPredictions: 0,
-                totalProfit: 0,
-                totalBets: 0,
-                totalPayments: 0,
-                pendingPayments: 0
-            };
-        }
-    }
-}
-
 // INITIALIZE SYSTEMS
 const goalAI = new GoalPredictionAI();
-const dbManager = new DatabaseManager();
 const dynamicStats = new DynamicStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 
@@ -744,11 +1003,13 @@ const getSubscriptionKeyboard = () => {
     ]).resize();
 };
 
+// 🔄 UPDATE ADMIN KEYBOARD WITH DATA MANAGEMENT
 const getAdminMainKeyboard = () => {
     return Markup.keyboard([
         ['📊 إحصائيات النظام', '👥 إدارة المستخدمين'],
         ['💰 طلبات الدفع', '⚙️ الإعدادات'],
         ['📢 إرسال إشعار', '🔍 بحث عن مستخدم'],
+        ['💾 نسخ احتياطي', '📥 استعادة البيانات'],
         ['🔧 قفل/فتح البوت', '🔙 الخروج من الإدمن']
     ]).resize();
 };
@@ -2115,6 +2376,26 @@ async function handleAdminCommands(ctx, text) {
             case '⚙️ الإعدادات العامة':
                 await handleAdminGeneralSettings(ctx);
                 break;
+
+            case '💾 نسخ احتياطي':
+                await ctx.replyWithMarkdown('🔄 *جاري إنشاء نسخة احتياطية...*');
+                const backupSuccess = await dbManager.syncAllDataToFirebase();
+                if (backupSuccess) {
+                    await ctx.replyWithMarkdown('✅ *تم إنشاء النسخة الاحتياطية بنجاح*');
+                } else {
+                    await ctx.replyWithMarkdown('❌ *فشل في إنشاء النسخة الاحتياطية*');
+                }
+                return;
+
+            case '📥 استعادة البيانات':
+                await ctx.replyWithMarkdown('🔄 *جاري استعادة البيانات...*');
+                const restoreSuccess = await dbManager.restoreFromFirebase();
+                if (restoreSuccess) {
+                    await ctx.replyWithMarkdown('✅ *تم استعادة البيانات بنجاح*');
+                } else {
+                    await ctx.replyWithMarkdown('❌ *فشل في استعادة البيانات*');
+                }
+                return;
                 
             case '🔄 إعادة التعيين':
                 await handleAdminReset(ctx);
@@ -3058,7 +3339,7 @@ async function handlePaymentReject(ctx, paymentId) {
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
-                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
+                `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n\n` +
                 `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
                 { parse_mode: 'Markdown' }
             );
@@ -3092,6 +3373,7 @@ async function handlePaymentReject(ctx, paymentId) {
 bot.launch().then(() => {
     console.log('🎉 SUCCESS! AI GOAL Predictor v15.5 with DUAL PAYMENT is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
+    console.log('💾 Persistent Data Storage: ENABLED');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
@@ -3099,8 +3381,19 @@ bot.launch().then(() => {
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
 }).catch(console.error);
 
-// ⚡ Graceful shutdown
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// 🛑 GRACEFUL SHUTDOWN WITH DATA BACKUP
+process.once('SIGINT', async () => {
+    console.log('🔄 Creating final backup before shutdown...');
+    await persistentStorage.createBackup();
+    persistentStorage.stop();
+    await bot.stop('SIGINT');
+});
 
-console.log('✅ AI Goal Prediction System with Dual Payment Ready!');
+process.once('SIGTERM', async () => {
+    console.log('🔄 Creating final backup before shutdown...');
+    await persistentStorage.createBackup();
+    persistentStorage.stop();
+    await bot.stop('SIGTERM');
+});
+
+console.log('✅ AI Goal Prediction System with Dual Payment & Persistent Data Ready!');
