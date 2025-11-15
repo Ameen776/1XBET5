@@ -606,6 +606,31 @@ class EnhancedDatabaseManager {
         }
     }
 
+    // 🔍 NEW: Get user by 1xBet account number
+    async getUserByOneXBet(onexbet) {
+        try {
+            // 🔄 TRY FIREBASE FIRST
+            if (db) {
+                const usersSnapshot = await db.collection('users').where('onexbet', '==', onexbet).get();
+                if (!usersSnapshot.empty) {
+                    return usersSnapshot.docs[0].data();
+                }
+            }
+
+            // 🔄 CHECK LOCAL STORAGE
+            for (let [userId, userData] of this.storage.userDatabase) {
+                if (userData.onexbet === onexbet) {
+                    return userData;
+                }
+            }
+            return null;
+            
+        } catch (error) {
+            console.error('Get user by onexbet error:', error);
+            return null;
+        }
+    }
+
     isMaintenanceMode() {
         return this.maintenanceMode;
     }
@@ -1446,7 +1471,7 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن
+        // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار
         if (session.step === 'awaiting_account_id') {
             // التحقق من الاشتراك في القناة أولاً
             const isSubscribed = await checkChannelSubscription(userId);
@@ -1464,6 +1489,17 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
+                // 🔒 التحقق من أن رقم الحساب غير مسجل لمستخدم آخر
+                const existingUserWithAccount = await dbManager.getUserByOneXBet(text);
+                if (existingUserWithAccount && existingUserWithAccount.user_id !== userId) {
+                    await ctx.replyWithMarkdown(
+                        '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
+                        '🔐 هذا الحساب مسجل لمستخدم آخر\n' +
+                        '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم'
+                    );
+                    return;
+                }
+
                 ctx.session.accountId = text;
                 ctx.session.step = 'awaiting_verification';
                 ctx.session.verificationCode = Math.floor(100000 + Math.random() * 900000);
