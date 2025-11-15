@@ -121,47 +121,54 @@ app.listen(PORT, () => {
 let db = null;
 let admin = null;
 
-try {
-    admin = require('firebase-admin');
-    
-    // 🔐 ENHANCED FIREBASE CONFIG WITH ERROR HANDLING
-    const serviceAccount = {
-        "type": "service_account",
-        "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
-        "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
-        "private_key": process.env.FIREBASE_PRIVATE_KEY ? 
-            process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
-        "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
-        "client_id": process.env.FIREBASE_CLIENT_ID,
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": process.env.FIREBASE_CERT_URL
-    };
+async function initializeFirebase() {
+    try {
+        admin = require('firebase-admin');
+        
+        // 🔐 ENHANCED FIREBASE CONFIG WITH ERROR HANDLING
+        const serviceAccount = {
+            "type": "service_account",
+            "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
+            "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+            "private_key": process.env.FIREBASE_PRIVATE_KEY ? 
+                process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+            "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@bot-tlegram-9f4b5.iam.gserviceaccount.com",
+            "client_id": process.env.FIREBASE_CLIENT_ID,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": process.env.FIREBASE_CERT_URL
+        };
 
-    if (!admin.apps.length) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                databaseURL: "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
+            });
+        }
+        
+        db = admin.firestore();
+        
+        // 🔄 TEST FIREBASE CONNECTION
+        const testDoc = db.collection('connection_test').doc('test');
+        await testDoc.set({ 
+            timestamp: new Date().toISOString(),
+            status: 'connected',
+            version: CONFIG.VERSION
         });
+        
+        console.log('✅ Firebase initialized successfully with persistent connection');
+        return true;
+        
+    } catch (error) {
+        console.log('❌ Firebase initialization failed:', error.message);
+        console.log('🔄 Using enhanced local storage with backup system');
+        return false;
     }
-    
-    db = admin.firestore();
-    
-    // 🔄 TEST FIREBASE CONNECTION
-    const testDoc = db.collection('connection_test').doc('test');
-    await testDoc.set({ 
-        timestamp: new Date().toISOString(),
-        status: 'connected',
-        version: CONFIG.VERSION
-    });
-    
-    console.log('✅ Firebase initialized successfully with persistent connection');
-    
-} catch (error) {
-    console.log('❌ Firebase initialization failed:', error.message);
-    console.log('🔄 Using enhanced local storage with backup system');
 }
+
+// INITIALIZE FIREBASE
+initializeFirebase();
 
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
 class PersistentStorage {
@@ -3114,7 +3121,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
     }
 }
 
-// 🆕 معالجة تعديل الأسعار والدفع (باينانس)
+// 🆕 معالجة تعديل الأسعار والدفع (باينانس) - FIXED FOR three_months
 async function handleAdminEditPriceAndPayment(ctx, text) {
     try {
         if (text === 'إلغاء') {
@@ -3140,7 +3147,11 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
             if (!isNaN(text) && parseFloat(text) > 0) {
                 const priceNum = parseFloat(text);
                 
-                if (!settings.prices.binance) settings.prices.binance = {};
+                // 🔧 FIX: Ensure the prices object exists
+                if (!settings.prices.binance) {
+                    settings.prices.binance = {};
+                }
+                
                 settings.prices.binance[subscriptionType] = priceNum;
                 await dbManager.updateSettings(settings);
 
@@ -3150,8 +3161,12 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
                     `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
                 );
             }
-            else if (text.startsWith('http')) {
-                if (!settings.payment_links.binance) settings.payment_links.binance = {};
+            else if (text.startsWith('http') || text.startsWith('https://i.ibb.co')) {
+                // 🔧 FIX: Ensure the payment_links object exists
+                if (!settings.payment_links.binance) {
+                    settings.payment_links.binance = {};
+                }
+                
                 settings.payment_links.binance[subscriptionType] = text;
                 await dbManager.updateSettings(settings);
 
@@ -3168,13 +3183,13 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
                 ctx.session.editingSubscriptionType = null;
                 ctx.session.adminPaymentSystem = null;
             } else {
-                await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
+                await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http أو https://i.ibb.co');
             }
         }
 
     } catch (error) {
         console.error('Admin edit price and payment error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
+        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل: ' + error.message);
     }
 }
 
@@ -3339,7 +3354,7 @@ async function handlePaymentReject(ctx, paymentId) {
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
-                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
+                `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n\n` +
                 `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
                 { parse_mode: 'Markdown' }
             );
