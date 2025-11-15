@@ -707,8 +707,8 @@ bot.use(session({
         editingSubscriptionType: null,
         adminPaymentSystem: null,
         awaitingBankImage: false,
-        editingBankStep: null, // 🆕 خطوة التعديل الحالية
-        bankEditData: {}, // 🆕 بيانات التعديل المؤقتة
+        editingBankStep: null,
+        bankEditData: {},
         checkingChannel: false
     })
 }));
@@ -832,6 +832,18 @@ function getSubscriptionDuration(type) {
         'year': '365 يوماً'
     };
     return durations[type] || 'غير محدد';
+}
+
+// 🆕 دالة لإنشاء وصف البنك تلقائياً
+function generateBankDescription(subscriptionType, price, accountNumber) {
+    const typeNames = {
+        'week': 'أسبوعية',
+        'month': 'شهرية',
+        'three_months': '3 أشهر',
+        'year': 'سنوية'
+    };
+    
+    return `🔹 تحويل بنكي - باقة ${typeNames[subscriptionType]}\n💳 رقم الحساب: ${accountNumber}\n🏦 البنك: البنك الكريمي\n💰 المبلغ: ${price}$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك`;
 }
 
 // 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION
@@ -1100,11 +1112,6 @@ bot.on('text', async (ctx) => {
 
         if (session.adminStep === 'edit_bank_account') {
             await handleAdminEditBankAccount(ctx, text);
-            return;
-        }
-
-        if (session.adminStep === 'edit_bank_description') {
-            await handleAdminEditBankDescription(ctx, text);
             return;
         }
 
@@ -2056,11 +2063,6 @@ async function handleAdminCommands(ctx, text) {
             return;
         }
 
-        if (session.adminStep === 'edit_bank_description') {
-            await handleAdminEditBankDescription(ctx, text);
-            return;
-        }
-
         // SECOND: Handle navigation and main commands
         switch (text) {
             case '📊 إحصائيات النظام':
@@ -2656,7 +2658,7 @@ async function handleAdminEditBankPrice(ctx, text) {
             ctx.session.editingSubscriptionType = null;
             ctx.session.adminPaymentSystem = null;
             ctx.session.bankEditData = {};
-            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2674,12 +2676,12 @@ async function handleAdminEditBankPrice(ctx, text) {
                 `📝 *الآن أرسل رقم الحساب البنكي الجديد:*`
             );
         } else {
-            await ctx.reply('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح (مثال: 15)');
+            await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح (مثال: 15)');
         }
 
     } catch (error) {
         console.error('Admin edit bank price error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل');
+        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
     }
 }
 
@@ -2691,7 +2693,7 @@ async function handleAdminEditBankAccount(ctx, text) {
             ctx.session.editingSubscriptionType = null;
             ctx.session.adminPaymentSystem = null;
             ctx.session.bankEditData = {};
-            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2700,67 +2702,21 @@ async function handleAdminEditBankAccount(ctx, text) {
             
             // حفظ رقم الحساب مؤقتاً
             ctx.session.bankEditData.account = text;
-            ctx.session.bankEditData.step = 'description';
-            ctx.session.adminStep = 'edit_bank_description';
+            ctx.session.bankEditData.step = 'image';
+            ctx.session.adminStep = 'edit_bank_image';
 
             await ctx.replyWithMarkdown(
                 `✅ *تم حفظ رقم الحساب:* ${text}\n\n` +
-                `📝 *الآن أرسل الوصف الجديد للباقة:*\n\n` +
-                `💡 *يمكنك استخدام هذا القالب:*\n` +
-                `🔹 تحويل بنكي - باقة [المدة]\n` +
-                `💳 رقم الحساب: [رقم الحساب]\n` +
-                `🏦 البنك: البنك الكريمي\n` +
-                `💰 المبلغ: [المبلغ]$\n` +
-                `💵 العملة: الدولار الأمريكي\n\n` +
-                `📋 الشروط:\n` +
-                `• يجب التحويل بالدولار الأمريكي\n` +
-                `• إرفاق صورة إثبات الدفع\n` +
-                `• كتابة رقم حساب 1xBet الخاص بك`
+                `🖼️ *الآن أرسل صورة الحساب البنكي:*\n\n` +
+                `💡 *ملاحظة:* هذه الصورة ستظهر للمستخدمين عند اختيار الباقة`
             );
         } else {
-            await ctx.reply('❌ *إدخال غير صحيح!*\n\nيرجى إرسال رقم حساب بنكي صحيح');
+            await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال رقم حساب بنكي صحيح');
         }
 
     } catch (error) {
         console.error('Admin edit bank account error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل');
-    }
-}
-
-// 🆕 معالجة تعديل وصف البنكي
-async function handleAdminEditBankDescription(ctx, text) {
-    try {
-        if (text === 'إلغاء') {
-            ctx.session.adminStep = 'settings';
-            ctx.session.editingSubscriptionType = null;
-            ctx.session.adminPaymentSystem = null;
-            ctx.session.bankEditData = {};
-            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
-            return;
-        }
-
-        const subscriptionType = ctx.session.bankEditData.subscriptionType;
-        const price = ctx.session.bankEditData.price;
-        const account = ctx.session.bankEditData.account;
-        
-        // حفظ الوصف مؤقتاً
-        ctx.session.bankEditData.description = text;
-        ctx.session.bankEditData.step = 'image';
-        ctx.session.adminStep = 'edit_bank_image';
-
-        await ctx.replyWithMarkdown(
-            `✅ *تم حفظ الوصف بنجاح!*\n\n` +
-            `📦 *بيانات الباقة الجديدة:*\n` +
-            `💰 السعر: ${price}$\n` +
-            `💳 رقم الحساب: ${account}\n` +
-            `📋 الوصف: ${text.substring(0, 100)}...\n\n` +
-            `🖼️ *الآن أرسل صورة الحساب البنكي:*\n\n` +
-            `💡 *ملاحظة:* هذه الصورة ستظهر للمستخدمين عند اختيار الباقة`
-        );
-
-    } catch (error) {
-        console.error('Admin edit bank description error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل');
+        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
     }
 }
 
@@ -2770,10 +2726,9 @@ async function handleAdminBankImageUpload(ctx, userId) {
         const subscriptionType = ctx.session.bankEditData.subscriptionType;
         const price = ctx.session.bankEditData.price;
         const account = ctx.session.bankEditData.account;
-        const description = ctx.session.bankEditData.description;
         
         if (!subscriptionType) {
-            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2785,7 +2740,7 @@ async function handleAdminBankImageUpload(ctx, userId) {
         const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
         if (!uploadResult.success) {
-            await ctx.reply('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
             return;
         }
 
@@ -2794,6 +2749,9 @@ async function handleAdminBankImageUpload(ctx, userId) {
         // تحديث السعر
         if (!settings.prices.bank) settings.prices.bank = {};
         settings.prices.bank[subscriptionType] = price;
+        
+        // 🆕 إنشاء الوصف تلقائياً
+        const description = generateBankDescription(subscriptionType, price, account);
         
         // تحديث بيانات البنك
         if (!settings.payment_links.bank) settings.payment_links.bank = {};
@@ -2811,7 +2769,7 @@ async function handleAdminBankImageUpload(ctx, userId) {
             `💰 السعر: ${price}$\n` +
             `💳 رقم الحساب: ${account}\n` +
             `🖼️ تم رفع صورة الحساب\n` +
-            `📋 تم حفظ الوصف\n\n` +
+            `📋 تم إنشاء الوصف تلقائياً\n\n` +
             `✅ *تم حفظ جميع التغييرات في النظام*`,
             getAdminSettingsKeyboard()
         );
@@ -2824,7 +2782,7 @@ async function handleAdminBankImageUpload(ctx, userId) {
 
     } catch (error) {
         console.error('Admin bank image upload error:', error);
-        await ctx.reply('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
+        await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
 
@@ -2835,7 +2793,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const paymentSystem = ctx.session.adminPaymentSystem;
         
         if (!subscriptionType || paymentSystem !== 'binance') {
-            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك أو ليس نظام باينانس', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك أو ليس نظام باينانس', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2847,7 +2805,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         const uploadResult = await imgbbUploader.uploadImageFromUrl(imageUrl);
         
         if (!uploadResult.success) {
-            await ctx.reply('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
+            await ctx.replyWithMarkdown('❌ فشل في رفع الصورة، يرجى المحاولة مرة أخرى');
             return;
         }
 
@@ -2857,7 +2815,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         settings.payment_links.binance[subscriptionType] = uploadResult.url;
         await dbManager.updateSettings(settings);
 
-        await ctx.reply(
+        await ctx.replyWithMarkdown(
             `✅ *تم التحديث بنجاح!*\n\n` +
             `📦 ${subscriptionType} - باينانس\n` +
             `💰 السعر: ${settings.prices.binance[subscriptionType]}$\n` +
@@ -2871,7 +2829,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         ctx.session.adminPaymentSystem = null;
     } catch (error) {
         console.error('Admin payment image upload error:', error);
-        await ctx.reply('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
+        await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
 
@@ -2882,7 +2840,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
             ctx.session.adminStep = 'settings';
             ctx.session.editingSubscriptionType = null;
             ctx.session.adminPaymentSystem = null;
-            await ctx.reply('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('🔙 *تم الإلغاء*', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2890,7 +2848,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         const paymentSystem = ctx.session.adminPaymentSystem;
         
         if (!subscriptionType || !paymentSystem) {
-            await ctx.reply('❌ لم يتم اختيار نوع الاشتراك أو نظام الدفع', getAdminSettingsKeyboard());
+            await ctx.replyWithMarkdown('❌ لم يتم اختيار نوع الاشتراك أو نظام الدفع', getAdminSettingsKeyboard());
             return;
         }
 
@@ -2905,7 +2863,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
                 settings.prices.binance[subscriptionType] = priceNum;
                 await dbManager.updateSettings(settings);
 
-                await ctx.reply(
+                await ctx.replyWithMarkdown(
                     `✅ *تم تحديث السعر بنجاح*\n\n` +
                     `💰 ${subscriptionType}: ${priceNum}$\n\n` +
                     `📝 *الآن أرسل رابط الدفع الجديد أو صورة QR:*`
@@ -2916,7 +2874,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
                 settings.payment_links.binance[subscriptionType] = text;
                 await dbManager.updateSettings(settings);
 
-                await ctx.reply(
+                await ctx.replyWithMarkdown(
                     `✅ *تم التحديث بنجاح!*\n\n` +
                     `📦 ${subscriptionType} - باينانس\n` +
                     `💰 السعر: ${settings.prices.binance[subscriptionType]}$\n` +
@@ -2929,13 +2887,13 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
                 ctx.session.editingSubscriptionType = null;
                 ctx.session.adminPaymentSystem = null;
             } else {
-                await ctx.reply('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
+                await ctx.replyWithMarkdown('❌ *إدخال غير صحيح!*\n\nيرجى إرسال سعر صحيح أو رابط يبدأ بـ http');
             }
         }
 
     } catch (error) {
         console.error('Admin edit price and payment error:', error);
-        await ctx.reply('❌ حدث خطأ في التعديل');
+        await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
     }
 }
 
