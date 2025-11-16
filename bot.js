@@ -1,11 +1,12 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.6 FIXED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 15.7 FIXED
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 ENHANCED PERSISTENT DATA STORAGE - AUTO BACKUP EVERY 5 MIN
+// 🆕 FIXED: PACKAGE NAME & PRICE DISPLAY IN PAYMENT NOTIFICATIONS
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v15.6 FIXED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v15.7 FIXED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -69,7 +70,7 @@ const CONFIG = {
         }
     },
     
-    VERSION: "15.6.0",
+    VERSION: "15.7.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -556,6 +557,7 @@ class EnhancedDatabaseManager {
             const fullPaymentData = {
                 ...paymentData,
                 id: paymentId,
+                subscription_name: paymentData.subscription_name || this.getSubscriptionArabicName(paymentData.subscription_type),
                 status: 'pending',
                 timestamp: new Date().toISOString()
             };
@@ -920,7 +922,7 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "15.6";
+        this.algorithmVersion = "15.7";
     }
 
     generateSmartPrediction(userId) {
@@ -2374,6 +2376,7 @@ async function handlePaymentScreenshot(ctx, userId) {
             screenshot_url: uploadResult.url,
             amount: prices[ctx.session.paymentType],
             subscription_type: ctx.session.paymentType,
+            subscription_name: dbManager.getSubscriptionArabicName(ctx.session.paymentType), // 🆕 إضافة اسم الباقة بالعربية
             payment_system: paymentSystem, // 🆕 إضافة نظام الدفع
             username: userData.username,
             timestamp: new Date().toISOString()
@@ -2413,6 +2416,7 @@ async function handlePaymentScreenshot(ctx, userId) {
             console.error('Error notifying admin:', error);
         }
 
+        // 🆕 الإصلاح: استخدام اسم الباقة والسعر بشكل صحيح في رسالة التأكيد
         await ctx.replyWithMarkdown(
             '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
             `✅ الحساب: \`${accountNumber}\`\n` +
@@ -2748,7 +2752,7 @@ async function handleAdminStats(ctx) {
         const freeUsers = users.filter(u => u.subscription_status === 'free');
         
         const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
-        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0;
+        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
         
         const statsMessage = `
 📊 *إحصائيات النظام*
@@ -3568,7 +3572,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v15.6 FIXED with DUAL PAYMENT is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v15.7 FIXED with DUAL PAYMENT is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Enhanced Persistent Data Storage: ENABLED');
     console.log('🔄 Auto Backup: EVERY 5 MINUTES');
