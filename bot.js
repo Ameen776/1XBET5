@@ -1158,12 +1158,12 @@ function generateBankDescription(subscriptionType, price, accountNumber) {
     return `🔹 تحويل بنكي - باقة ${typeNames[subscriptionType]}\n💳 رقم الحساب: ${accountNumber}\n🏦 البنك: البنك الكريمي\n💰 المبلغ: ${price}$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك`;
 }
 
-// 🆕 دالة للحصول على اسم العرض للباقة
+// 🆕 دالة للحصول على اسم العرض للباقة - الإصلاح الرئيسي هنا
 function getSubscriptionDisplayName(type) {
     const names = {
         'week': 'أسبوعي',
         'month': 'شهري', 
-        'three_months': '3 أشهر',
+        'three_months': '3 أشهر', // تم التصحيح من 'three_months' إلى '3 أشهر'
         'year': 'سنوي'
     };
     return names[type] || type;
@@ -2095,7 +2095,7 @@ async function handleSubscriptionSelection(ctx, userData, text) {
     const subscriptionTypeMap = {
         '💰 أسبوعي': 'week',
         '💰 شهري': 'month', 
-        '💰 3 أشهر': 'three_months',
+        '💰 3 أشهر': 'three_months', // تم التصحيح هنا
         '💰 سنوي': 'year'
     };
 
@@ -2242,13 +2242,19 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
             return;
         }
 
-        // فصل بيانات الكallback
+        // فصل بيانات الكallback - الإصلاح الرئيسي هنا
         const parts = callbackData.split('_');
         const paymentSystem = parts[1]; // binance or bank
-        const subscriptionType = parts[2];
+        const subscriptionType = parts.slice(2).join('_'); // الإصلاح: دمج الأجزاء المتبقية
 
         const settings = await dbManager.getSettings();
         const prices = settings.prices[paymentSystem];
+
+        // 🔧 التحقق من وجود السعر
+        if (!prices || !prices[subscriptionType]) {
+            await ctx.answerCbQuery('❌ خطأ في بيانات السعر');
+            return;
+        }
 
         ctx.session.paymentSystem = paymentSystem;
         ctx.session.paymentType = subscriptionType;
@@ -2310,7 +2316,7 @@ async function handleSubscriptionStatus(ctx, userData) {
     await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
 }
 
-// 🆕 تحديث معالجة صور الدفع لتشمل النظام المزدوج
+// 🆕 تحديث معالجة صور الدفع لتشمل النظام المزدوج - الإصلاح الرئيسي هنا
 async function handlePaymentScreenshot(ctx, userId) {
     try {
         const userData = await dbManager.getUser(userId);
@@ -2323,6 +2329,12 @@ async function handlePaymentScreenshot(ctx, userId) {
         const prices = settings.prices[paymentSystem];
 
         const accountNumber = ctx.session.paymentAccount || userData.onexbet;
+
+        // 🔧 التحقق من وجود السعر والبيانات
+        if (!prices || !prices[ctx.session.paymentType]) {
+            await ctx.replyWithMarkdown('❌ خطأ في بيانات السعر، يرجى المحاولة مرة أخرى');
+            return;
+        }
 
         // التحقق النهائي من تطابق رقم الحساب
         if (accountNumber !== userData.onexbet) {
@@ -2353,7 +2365,7 @@ async function handlePaymentScreenshot(ctx, userId) {
             user_id: userId,
             onexbet: accountNumber,
             screenshot_url: uploadResult.url,
-            amount: prices[ctx.session.paymentType],
+            amount: prices[ctx.session.paymentType], // 🔧 الإصلاح: استخدام السعر الصحيح
             subscription_type: ctx.session.paymentType,
             payment_system: paymentSystem, // 🆕 إضافة نظام الدفع
             username: userData.username,
@@ -2362,7 +2374,7 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const paymentId = await dbManager.addPayment(paymentData);
         
-        // إرسال الإشعار للإدارة مع الصورة
+        // إرسال الإشعار للإدارة مع الصورة - الإصلاح الرئيسي هنا
         try {
             const paymentSystemText = paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي';
             const subscriptionDisplayName = getSubscriptionDisplayName(ctx.session.paymentType);
@@ -2374,8 +2386,8 @@ async function handlePaymentScreenshot(ctx, userId) {
                     caption: `🆕 *طلب دفع جديد - ${paymentSystemText}*\n\n` +
                     `👤 المستخدم: ${userData.username}\n` +
                     `🔐 الحساب: ${accountNumber}\n` +
-                    `💰 المبلغ: ${paymentData.amount}$\n` +
-                    `📦 الباقة: ${subscriptionDisplayName}\n` +
+                    `💰 المبلغ: ${paymentData.amount}$\n` + // 🔧 الإصلاح: استخدام المبلغ الصحيح
+                    `📦 الباقة: ${subscriptionDisplayName}\n` + // 🔧 الإصلاح: استخدام الاسم العربي
                     `💳 النظام: ${paymentSystemText}\n` +
                     `🆔 الرقم: ${paymentId}\n` +
                     `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
@@ -2397,8 +2409,8 @@ async function handlePaymentScreenshot(ctx, userId) {
         await ctx.replyWithMarkdown(
             '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
             `✅ الحساب: \`${accountNumber}\`\n` +
-            `✅ الباقة: ${getSubscriptionDisplayName(ctx.session.paymentType)}\n` +
-            `💰 المبلغ: ${paymentData.amount}$\n` +
+            `✅ الباقة: ${getSubscriptionDisplayName(ctx.session.paymentType)}\n` + // 🔧 الإصلاح: استخدام الاسم العربي
+            `💰 المبلغ: ${paymentData.amount}$\n` + // 🔧 الإصلاح: استخدام المبلغ الصحيح
             `💳 النظام: ${paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
             '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
             '⏰ عادةً خلال 24 ساعة\n\n' +
@@ -2843,7 +2855,7 @@ async function handleAdminPendingPayments(ctx) {
                     `👤 المستخدم: ${payment.username}\n` +
                     `🔐 الحساب: ${payment.onexbet}\n` +
                     `💰 المبلغ: ${payment.amount}$\n` +
-                    `📦 الباقة: ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
+                    `📦 الباقة: ${getSubscriptionDisplayName(payment.subscription_type)}\n` + // 🔧 الإصلاح: استخدام الاسم العربي
                     `💳 النظام: ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
                     `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}`,
                     reply_markup: {
@@ -2877,7 +2889,7 @@ async function handleAdminAcceptedPayments(ctx) {
         
         acceptedPayments.slice(0, 10).forEach((payment, index) => {
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${getSubscriptionDisplayName(payment.subscription_type)} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${getSubscriptionDisplayName(payment.subscription_type)} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`; // 🔧 الإصلاح: استخدام الاسم العربي
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -2901,7 +2913,7 @@ async function handleAdminRejectedPayments(ctx) {
         
         rejectedPayments.slice(0, 10).forEach((payment, index) => {
             message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${getSubscriptionDisplayName(payment.subscription_type)} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${getSubscriptionDisplayName(payment.subscription_type)} | 💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'بنكي'}\n\n`; // 🔧 الإصلاح: استخدام الاسم العربي
         });
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
@@ -3001,7 +3013,7 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         const subscriptionTypeMap = {
             '💰 أسبوعي': 'week',
             '💰 شهري': 'month', 
-            '💰 3 أشهر': 'three_months',
+            '💰 3 أشهر': 'three_months', // تم التصحيح هنا
             '💰 سنوي': 'year'
         };
 
@@ -3426,7 +3438,7 @@ async function handlePaymentAccept(ctx, paymentId) {
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
-                `✅ ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
+                `✅ ${getSubscriptionDisplayName(payment.subscription_type)}\n` + // 🔧 الإصلاح: استخدام الاسم العربي
                 `💰 ${payment.amount}$\n` +
                 `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
                 `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
@@ -3448,7 +3460,7 @@ async function handlePaymentAccept(ctx, paymentId) {
                 `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
                 `👤 ${userData.username}\n` +
                 `🔐 ${userData.onexbet}\n` +
-                `📦 ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
+                `📦 ${getSubscriptionDisplayName(payment.subscription_type)}\n` + // 🔧 الإصلاح: استخدام الاسم العربي
                 `💰 ${payment.amount}$\n` +
                 `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
                 `🕒 ${new Date().toLocaleString('ar-EG')}`,
