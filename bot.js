@@ -1,6 +1,6 @@
 // ===================================================
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
-// 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛ - @GEMZGOOLBOT
+// 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
 // ===================================================
@@ -70,7 +70,7 @@ const CONFIG = {
     },
     
     VERSION: "16.0.0",
-    DEVELOPER: "AMIN - @GEMZGOOLBOT",
+    DEVELOPER: "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
@@ -3486,7 +3486,7 @@ async function handlePaymentReject(ctx, paymentId) {
         
         await dbManager.updatePayment(paymentId, { 
             status: 'rejected',
-            processed_at: new Date().toISOString()
+            processed_at: new Date().toLocaleString('ar-EG')
         });
         
         // إشعار المستخدم
