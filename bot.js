@@ -1,6 +1,6 @@
 // ===================================================
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
-// 👤 DEVELOPER: ✦ 𝑨𝑴𝑬𝑬𝑵 𝑨𝑳𝒁𝑾𝑨𝑯𝑰 ✦ - @GEMZGOOLBOT
+// 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛ - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
 // ===================================================
