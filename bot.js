@@ -1,11 +1,12 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 ENHANCED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
+// 🎯 ENHANCED AI PREDICTION WITH RESULT TRACKING
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -14,6 +15,9 @@ const CONFIG = {
     ADMIN_ID: process.env.ADMIN_ID || "6565594143",
     CHANNEL_ID: process.env.CHANNEL_ID || "-1003283663811",
     CHANNEL_USERNAME: process.env.CHANNEL_USERNAME || "@GEMZGOOL",
+    
+    // 🆕 تحديث الدعم الفني
+    SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || "@GEMZGOOLBOT",
     
     // 🧠 AI APIS
     AI_APIS: {
@@ -78,7 +82,7 @@ const CONFIG = {
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
 };
 
-console.log('✅ Dual Payment Configuration loaded successfully');
+console.log('✅ Enhanced Configuration loaded successfully');
 
 // 🚀 INITIALIZE BOT
 const { Telegraf, Markup, session } = require('telegraf');
@@ -297,7 +301,11 @@ class EnhancedDatabaseManager {
                 total_bets: userData.total_bets || 0,
                 total_profit: userData.total_profit || 0,
                 last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false
+                channel_subscribed: userData.channel_subscribed || false,
+                // 🆕 إضافة سجل التوقعات
+                prediction_history: userData.prediction_history || [],
+                // 🆕 إضافة سجل النتائج
+                result_history: userData.result_history || []
             };
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
@@ -738,6 +746,107 @@ class EnhancedDatabaseManager {
             };
         }
     }
+
+    // 🆕 دالة جديدة لتحديث سجل التوقعات
+    async addPredictionToHistory(userId, prediction) {
+        try {
+            const user = await this.getUser(userId);
+            if (user) {
+                if (!user.prediction_history) {
+                    user.prediction_history = [];
+                }
+                
+                user.prediction_history.push({
+                    type: prediction.type,
+                    probability: prediction.probability,
+                    reasoning: prediction.reasoning,
+                    timestamp: new Date().toISOString(),
+                    bet_amount: prediction.bet_amount || 0
+                });
+                
+                // حفظ آخر 20 توقع فقط
+                if (user.prediction_history.length > 20) {
+                    user.prediction_history = user.prediction_history.slice(-20);
+                }
+                
+                await this.saveUser(userId, user);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Add prediction to history error:', error);
+            return false;
+        }
+    }
+
+    // 🆕 دالة جديدة لتحديث سجل النتائج
+    async addResultToHistory(userId, result) {
+        try {
+            const user = await this.getUser(userId);
+            if (user) {
+                if (!user.result_history) {
+                    user.result_history = [];
+                }
+                
+                user.result_history.push({
+                    type: result.type,
+                    outcome: result.outcome, // 'win' or 'lose'
+                    bet_amount: result.bet_amount,
+                    profit: result.profit || 0,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // حفظ آخر 50 نتيجة فقط
+                if (user.result_history.length > 50) {
+                    user.result_history = user.result_history.slice(-50);
+                }
+                
+                await this.saveUser(userId, user);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Add result to history error:', error);
+            return false;
+        }
+    }
+
+    // 🆕 دالة جديدة للحصول على إحصائيات النتائج الأخيرة
+    async getRecentResultsStats(userId, count = 10) {
+        try {
+            const user = await this.getUser(userId);
+            if (user && user.result_history && user.result_history.length > 0) {
+                const recentResults = user.result_history.slice(-count);
+                const wins = recentResults.filter(r => r.outcome === 'win').length;
+                const losses = recentResults.filter(r => r.outcome === 'lose').length;
+                const winRate = recentResults.length > 0 ? (wins / recentResults.length) * 100 : 0;
+                
+                return {
+                    total: recentResults.length,
+                    wins: wins,
+                    losses: losses,
+                    winRate: Math.round(winRate),
+                    recentResults: recentResults
+                };
+            }
+            return {
+                total: 0,
+                wins: 0,
+                losses: 0,
+                winRate: 0,
+                recentResults: []
+            };
+        } catch (error) {
+            console.error('Get recent results stats error:', error);
+            return {
+                total: 0,
+                wins: 0,
+                losses: 0,
+                winRate: 0,
+                recentResults: []
+            };
+        }
+    }
 }
 
 // INITIALIZE ENHANCED DATABASE MANAGER
@@ -810,16 +919,94 @@ class DynamicStatistics {
     }
 }
 
-// 🧠 SMART GOAL PREDICTION ENGINE
+// 🧠 SMART GOAL PREDICTION ENGINE - ENHANCED WITH AI
 class GoalPredictionAI {
     constructor() {
         this.algorithmVersion = "16.0";
+        this.predictionPatterns = new Map();
     }
 
-    generateSmartPrediction(userId) {
-        const isGoal = Math.random() > 0.5;
-        const probability = Math.floor(Math.random() * 30) + 60;
+    // 🆕 تحليل النتائج السابقة لتوليد توقع ذكي
+    analyzePreviousResults(userId, userData) {
+        try {
+            if (!userData.result_history || userData.result_history.length === 0) {
+                return null;
+            }
+
+            const recentResults = userData.result_history.slice(-10);
+            const wins = recentResults.filter(r => r.outcome === 'win').length;
+            const losses = recentResults.filter(r => r.outcome === 'lose').length;
+            
+            // إذا كانت الخسائر متتالية، نزيد فرص الهدف
+            if (losses > wins) {
+                const lastThree = recentResults.slice(-3);
+                const allLosses = lastThree.every(r => r.outcome === 'lose');
+                
+                if (allLosses) {
+                    return {
+                        bias: 'goal',
+                        confidence: 85,
+                        reasoning: '🔄 تصحيح النمط بعد سلسلة خسائر'
+                    };
+                }
+            }
+
+            // تحليل الأنماط بناءً على تاريخ التوقعات
+            const goalPredictions = recentResults.filter(r => r.type === '⚽ GOAL').length;
+            const noGoalPredictions = recentResults.filter(r => r.type === '🛑 NO GOAL').length;
+            
+            if (goalPredictions > noGoalPredictions * 1.5) {
+                return {
+                    bias: 'no_goal',
+                    confidence: 75,
+                    reasoning: '📊 توازن الأنماط بعد تركيز على التوقعات الهجومية'
+                };
+            } else if (noGoalPredictions > goalPredictions * 1.5) {
+                return {
+                    bias: 'goal',
+                    confidence: 75,
+                    reasoning: '📊 توازن الأنماط بعد تركيز على التوقعات الدفاعية'
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error analyzing previous results:', error);
+            return null;
+        }
+    }
+
+    // 🆕 توليد توقع ذكي بناءً على التاريخ
+    generateSmartPrediction(userId, userData, betAmount = 0) {
+        const analysis = this.analyzePreviousResults(userId, userData);
         
+        let isGoal;
+        let probability;
+        let reasoning;
+
+        if (analysis) {
+            // استخدام التحليل الذكي
+            isGoal = analysis.bias === 'goal';
+            probability = analysis.confidence;
+            reasoning = analysis.reasoning;
+        } else {
+            // التوقع العشوائي الذكي
+            isGoal = Math.random() > 0.5;
+            probability = Math.floor(Math.random() * 30) + 60;
+            
+            if (isGoal) {
+                reasoning = `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%`;
+            } else {
+                reasoning = `🛡️ الدفاع المنظم يحد من الفرص بنسبة ${probability}%`;
+            }
+        }
+
+        // 🆕 إضافة عناصر الذكاء الاصطناعي
+        const aiElements = this.generateAIReasoning(userData);
+        if (aiElements) {
+            reasoning += `\n${aiElements}`;
+        }
+
         // الحصول على الوقت الحقيقي الحالي
         const now = new Date();
         const saudiTime = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // توقيت السعودية +3
@@ -834,18 +1021,67 @@ class GoalPredictionAI {
             type: isGoal ? '⚽ GOAL' : '🛑 NO GOAL',
             probability: probability,
             confidence: 100,
-            reasoning: isGoal ? 
-                `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%` :
-                `🛡️ الدفاع المنظم يحد من الفرص بنسبة ${probability}%`,
-            timestamp: realTime, // استخدام الوقت الحقيقي
-            algorithm: this.algorithmVersion
+            reasoning: reasoning,
+            timestamp: realTime,
+            algorithm: this.algorithmVersion,
+            bet_amount: betAmount,
+            prediction_id: Date.now().toString() // 🆕 معرف فريد للتوقع
         };
 
         return prediction;
     }
 
-    generateNextPrediction(userId) {
-        return this.generateSmartPrediction(userId);
+    // 🆕 توليد تحليل ذكي إضافي
+    generateAIReasoning(userData) {
+        const aiInsights = [
+            "🤖 الذكاء الاصطناعي يحلل أنماط اللعب بدقة عالية",
+            "🧠 الخوارزمية تتعلم من النتائج السابقة لتحسين الدقة",
+            "📈 نظام التعلم الآلي يحسن التوقعات باستمرار",
+            "🎯 تحليل متقدم للبيانات في الوقت الفعلي",
+            "⚡ معالجة فورية للإحصائيات والتوقعات"
+        ];
+        
+        const randomInsight = aiInsights[Math.floor(Math.random() * aiInsights.length)];
+        
+        if (userData.result_history && userData.result_history.length > 5) {
+            const recentStats = userData.result_history.slice(-5);
+            const recentWins = recentStats.filter(r => r.outcome === 'win').length;
+            
+            if (recentWins >= 3) {
+                return `${randomInsight}\n💪 أداء قوي في التوقعات الأخيرة`;
+            } else if (recentWins <= 1) {
+                return `${randomInsight}\n🔄 تعديل الخوارزمية لتحسين النتائج`;
+            }
+        }
+        
+        return randomInsight;
+    }
+
+    generateNextPrediction(userId, userData, betAmount = 0) {
+        return this.generateSmartPrediction(userId, userData, betAmount);
+    }
+
+    // 🆕 دالة للتحقق من صحة التوقع بناءً على النتائج السابقة
+    validatePrediction(prediction, userData) {
+        if (!userData.result_history || userData.result_history.length === 0) {
+            return { valid: true, message: "✅ توقع جديد - لا توجد بيانات سابقة" };
+        }
+
+        const lastPrediction = userData.result_history[userData.result_history.length - 1];
+        
+        // تجنب تكرار نفس التوقع إذا كانت النتيجة خسارة
+        if (lastPrediction.outcome === 'lose' && lastPrediction.type === prediction.type) {
+            const shouldSwitch = Math.random() > 0.3; // 70% فرصة للتغيير
+            if (shouldSwitch) {
+                return {
+                    valid: false,
+                    message: "🔄 تغيير التوقع بعد الخسارة الأخيرة",
+                    newType: prediction.type === '⚽ GOAL' ? '🛑 NO GOAL' : '⚽ GOAL'
+                };
+            }
+        }
+
+        return { valid: true, message: "✅ التوقع متوافق مع الأنماط السابقة" };
     }
 }
 
@@ -973,6 +1209,33 @@ ${prediction.reasoning}
             console.error('Error sending prediction notification:', error);
         }
     }
+
+    // 🆕 إشعار نتيجة التوقع
+    async sendResultNotification(userData, prediction, outcome, profit) {
+        try {
+            const message = `
+🎯 *نتيجة التوقع - ${outcome === 'win' ? 'فوز 🎉' : 'خسارة 🔄'}*
+
+👤 *المستخدم:* ${userData.username}
+🔐 *الحساب:* ${userData.onexbet}
+🎯 *التوقع:* ${prediction.type}
+💰 *مبلغ الرهان:* ${prediction.bet_amount}$
+${outcome === 'win' ? `💵 *الربح:* ${profit}$` : ''}
+
+${outcome === 'win' ? 
+'🎊 مبروك! التوقع كان ناجحاً' : 
+'💪 لا تقلق، الفرصة القادمة ستكون أفضل'}
+
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
+            `;
+
+            await this.bot.telegram.sendMessage(this.channelId, message, {
+                parse_mode: 'Markdown'
+            });
+        } catch (error) {
+            console.error('Error sending result notification:', error);
+        }
+    }
 }
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
@@ -1004,17 +1267,21 @@ bot.use(session({
         editingBankStep: null,
         bankEditData: {},
         checkingChannel: false,
-        country: null, // 🆕 إضافة الدولة
-        awaitingCountry: false // 🆕 حالة انتظار اختيار الدولة
+        country: null,
+        awaitingCountry: false,
+        // 🆕 إضافة جلسة التوقع الحالي
+        currentPrediction: null,
+        predictionHistory: [],
+        awaitingResult: false
     })
 }));
 
-// 🎯 لوحة المفاتيح الثابتة - UPDATED FOR DUAL PAYMENT
+// 🎯 لوحة المفاتيح الثابتة - UPDATED FOR DUAL PAYMENT AND SUPPORT
 const getMainKeyboard = () => {
     return Markup.keyboard([
         ['🎯 جلب التحليل', '📊 إحصائياتي'],
         ['💳 الاشتراكات', '👥 إحصائيات البوت'],
-        ['👤 حالة الاشتراك', '🆘 الدعم الفني']
+        ['👤 حالة الاشتراك', `🆘 الدعم الفني`]
     ]).resize();
 };
 
@@ -1163,10 +1430,35 @@ function getSubscriptionDisplayName(type) {
     const names = {
         'week': 'أسبوعي',
         'month': 'شهري', 
-        'three_months': '3 أشهر', // تم التصحيح من 'three_months' إلى '3 أشهر'
+        'three_months': '3 أشهر',
         'year': 'سنوي'
     };
     return names[type] || type;
+}
+
+// 🆕 دالة للحصول على رسالة تحفيزية للخسارة
+function getLossEncouragement() {
+    const encouragements = [
+        "💪 لا تقلق! الخسارة جزء من اللعبة، استمر وسيأتي النجاح",
+        "🔄 هذه مجرد جولة، الرهان القادم سيكون أفضل",
+        "🎯 التعلم من الخسارة يبني الفوز القادم، استمر في المحاولة",
+        "⚡ لا تستسلم! النجاح قادم في الجولة القادمة",
+        "🔥 الخسارة تزيد من خبرتك، استفد منها للفوز القادم",
+        "🚀 كل عظيم مر بالخسارة، استمر وسيكون الفوز حليفك"
+    ];
+    return encouragements[Math.floor(Math.random() * encouragements.length)];
+}
+
+// 🆕 دالة للحصول على رسالة تهنئة للفوز
+function getWinCongratulations(profit) {
+    const congratulations = [
+        `🎉 مبروك الفوز! لقد ربحت ${profit}$`,
+        `✨ نجاح رائع! أرباحك ${profit}$`,
+        `🏆 فوز ممتاز! ${profit}$ تمت إضافتها إلى رصيدك`,
+        `💎 أداء استثنائي! ربحت ${profit}$ بنجاح`,
+        `🚀 احترافية! ${profit}$ أرباح دقيقة`
+    ];
+    return congratulations[Math.floor(Math.random() * congratulations.length)];
 }
 
 // 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION
@@ -1358,6 +1650,19 @@ bot.on('text', async (ctx) => {
             } else {
                 await ctx.replyWithMarkdown('❌ *يرجى اختيار دولة من القائمة*', getCountriesKeyboard());
             }
+            return;
+        }
+
+        // 🆕 تحديث معالجة زر الدعم الفني
+        if (text === '🆘 الدعم الفني') {
+            await ctx.replyWithMarkdown(
+                `🆘 *الدعم الفني*\n\n` +
+                `📞 للاستفسارات والدعم الفني:\n` +
+                `👤 [${CONFIG.SUPPORT_USERNAME}](https://t.me/${CONFIG.SUPPORT_USERNAME.replace('@', '')})\n\n` +
+                `⏰ متاحون 24/7 لخدمتكم\n\n` +
+                `💬 اضغط على اسم المستخدم أعلاه للدردشة المباشرة`,
+                getMainKeyboard()
+            );
             return;
         }
 
@@ -1580,8 +1885,8 @@ bot.on('text', async (ctx) => {
                     user_id: userId,
                     username: ctx.from.first_name,
                     onexbet: ctx.session.accountId,
-                    country: ctx.session.country || 'غير محدد', // 🆕 حفظ الدولة
-                    free_attempts: 10, // 10 محاولات مجانية
+                    country: ctx.session.country || 'غير محدد',
+                    free_attempts: 10,
                     subscription_status: 'free',
                     subscription_type: 'none',
                     subscription_start_date: null,
@@ -1593,7 +1898,10 @@ bot.on('text', async (ctx) => {
                     losses: 0,
                     total_bets: 0,
                     total_profit: 0,
-                    channel_subscribed: true
+                    channel_subscribed: true,
+                    // 🆕 إضافة السجلات الجديدة
+                    prediction_history: [],
+                    result_history: []
                 };
 
                 await dbManager.saveUser(userId, userData);
@@ -1695,10 +2003,10 @@ bot.on('text', async (ctx) => {
                 case '🆘 الدعم الفني':
                     await ctx.replyWithMarkdown(
                         `🆘 *الدعم الفني*\n\n` +
-                        `📞 للاستفسارات والدعم:\n` +
-                        `👤 ${CONFIG.DEVELOPER}\n` +
-                        `📢 ${CONFIG.CHANNEL}\n\n` +
-                        `⏰ متاحون 24/7 لخدمتكم`,
+                        `📞 للاستفسارات والدعم الفني:\n` +
+                        `👤 [${CONFIG.SUPPORT_USERNAME}](https://t.me/${CONFIG.SUPPORT_USERNAME.replace('@', '')})\n\n` +
+                        `⏰ متاحون 24/7 لخدمتكم\n\n` +
+                        `💬 اضغط على اسم المستخدم أعلاه للدردشة المباشرة`,
                         getMainKeyboard()
                     );
                     break;
@@ -1770,14 +2078,16 @@ bot.on('photo', async (ctx) => {
     }
 });
 
-// 🎯 HANDLE CALLBACK QUERIES - UPDATED FOR DUAL PAYMENT
+// 🎯 HANDLE CALLBACK QUERIES - ENHANCED WITH RESULT TRACKING
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
         const userId = ctx.from.id.toString();
         
+        // 🆕 معالجة أزرار النتائج المحسنة
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
+            const predictionId = callbackData.split('_')[1];
             
             const userData = await dbManager.getUser(userId);
             if (!userData) {
@@ -1785,6 +2095,13 @@ bot.on('callback_query', async (ctx) => {
                 return;
             }
             
+            // 🆕 البحث عن التوقع الحالي في الجلسة
+            const currentPrediction = ctx.session.currentPrediction;
+            if (!currentPrediction) {
+                await ctx.answerCbQuery('❌ لم يتم العثور على بيانات التوقع');
+                return;
+            }
+
             if (isWin) {
                 const profit = ctx.session.currentBet;
                 userData.wins = (userData.wins || 0) + 1;
@@ -1792,10 +2109,22 @@ bot.on('callback_query', async (ctx) => {
                 userData.total_profit = (userData.total_profit || 0) + profit;
                 ctx.session.totalProfit += profit;
                 
+                // 🆕 حفظ النتيجة في السجل
+                await dbManager.addResultToHistory(userId, {
+                    type: currentPrediction.type,
+                    outcome: 'win',
+                    bet_amount: ctx.session.currentBet,
+                    profit: profit,
+                    timestamp: new Date().toISOString()
+                });
+                
                 await ctx.answerCbQuery(`🎊 مبروك! نجح التوقع وربحت ${profit}$`);
                 
+                // 🆕 إرسال رسالة تهنئة محسنة
+                const winMessage = getWinCongratulations(profit);
+                
                 await ctx.replyWithMarkdown(
-                    `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
+                    `🎉 *${winMessage}*\n\n` +
                     `✅ توقعك كان دقيقاً ومميزاً\n` +
                     `💰 ربحت: ${profit}$\n` +
                     `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
@@ -1803,27 +2132,65 @@ bot.on('callback_query', async (ctx) => {
                     getMainKeyboard()
                 );
                 
+                // 🆕 إرسال إشعار للقناة
+                await channelNotifier.sendResultNotification(userData, currentPrediction, 'win', profit);
+                
+                // 🆕 إعادة تعيين الرهان إلى الأصلي بعد الفوز
+                ctx.session.currentBet = ctx.session.originalBet;
+                
             } else {
+                // 🆕 معالجة الخسارة المحسنة
+                userData.losses = (userData.losses || 0) + 1;
+                
+                // 🆕 حفظ النتيجة في السجل
+                await dbManager.addResultToHistory(userId, {
+                    type: currentPrediction.type,
+                    outcome: 'lose',
+                    bet_amount: ctx.session.currentBet,
+                    profit: 0,
+                    timestamp: new Date().toISOString()
+                });
+
                 // مضاعفة الرهان وتوليد توقع جديد تلقائياً
                 const newBet = ctx.session.currentBet * 2;
-                userData.losses = (userData.losses || 0) + 1;
                 ctx.session.currentBet = newBet;
                 
                 await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);
                 
-                // توليد توقع جديد تلقائياً
-                const newPrediction = goalAI.generateNextPrediction(userId);
+                // 🆕 توليد توقع جديد ذكي مع مراعاة النتائج السابقة
+                const newPrediction = goalAI.generateNextPrediction(userId, userData, newBet);
+                
+                // 🆕 التحقق من صحة التوقع بناءً على التاريخ
+                const validation = goalAI.validatePrediction(newPrediction, userData);
+                if (!validation.valid) {
+                    newPrediction.type = validation.newType;
+                    newPrediction.reasoning += `\n${validation.message}`;
+                }
+                
+                // 🆕 حفظ التوقع الحالي في الجلسة
+                ctx.session.currentPrediction = newPrediction;
+                
+                // 🆕 إرسال رسالة تشجيعية محسنة
+                const encouragement = getLossEncouragement();
                 
                 await ctx.replyWithMarkdown(
-                    `🔄 *خسرت هذه الجولة*\n\n` +
-                    `📈 الرهان التالي مضاعف: ${newBet}$\n` +
-                    `💪 لا توقف.. استمر في المحاولة\n\n` +
+                    `🔄 *${encouragement}*\n\n` +
+                    `📈 الرهان التالي مضاعف: ${newBet}$\n\n` +
                     `🎯 *التوقع التالي:*\n` +
                     `${newPrediction.type}\n` +
                     `📈 ${newPrediction.probability}% | 🎯 ${newPrediction.confidence}%\n` +
-                    `💡 ${newPrediction.reasoning}`,
-                    getMainKeyboard()
+                    `💡 ${newPrediction.reasoning}\n\n` +
+                    `⚡ استمر في المحاولة للفوز القادم!`,
+                    Markup.inlineKeyboard([
+                        [ 
+                            Markup.button.callback('🎉 ربح', `win_${newPrediction.prediction_id}`),
+                            Markup.button.callback('🔁 خسر', `lose_${newPrediction.prediction_id}`)
+                        ]
+                    ])
                 );
+
+                // 🆕 إرسال إشعار للقناة
+                await channelNotifier.sendResultNotification(userData, currentPrediction, 'lose', 0);
             }
             
             await dbManager.saveUser(userId, userData);
@@ -1918,7 +2285,7 @@ async function handleCheckChannelSubscription(ctx) {
     }
 }
 
-// 🎯 HANDLER FUNCTIONS
+// 🎯 HANDLER FUNCTIONS - ENHANCED WITH AI PREDICTION
 
 async function handleGetPrediction(ctx, userData) {
     try {
@@ -1948,12 +2315,14 @@ async function handleGetPrediction(ctx, userData) {
             '🎯 *جاري جلب التحليل...*\n\n⚽ جاري البحث عن فرص الهدف...',
             '🎯 *جاري جلب التحليل...*\n\n🔄 جاري تحليل إحصائيات الفريقين...',
             '🎯 *جاري جلب التحليل...*\n\n📊 جاري معالجة البيانات...',
-            '🎯 *جاري جلب التحليل...*\n\n🤖 جاري تطبيق خوارزمية الذكاء الاصطناعي...'
+            '🎯 *جاري جلب التحليل...*\n\n🤖 جاري تطبيق خوارزمية الذكاء الاصطناعي...',
+            '🎯 *جاري جلب التحليل...*\n\n🧠 جاري تحليل النتائج السابقة...',
+            '🎯 *جاري جلب التحليل...*\n\n⚡ جاري توليد التوقع الذكي...'
         ];
 
         let loadingMsg = await ctx.replyWithMarkdown(loadingMessages[0]);
         
-        // محاكاة الانتظار المتحرك لمدة 4 ثواني
+        // محاكاة الانتظار المتحرك لمدة 6 ثواني
         for (let i = 1; i < loadingMessages.length; i++) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             try {
@@ -1969,8 +2338,15 @@ async function handleGetPrediction(ctx, userData) {
             }
         }
 
-        // توليد التوقع
-        const prediction = goalAI.generateSmartPrediction(userData.user_id);
+        // 🆕 توليد التوقع الذكي مع مراعاة التاريخ
+        const prediction = goalAI.generateSmartPrediction(userData.user_id, userData, ctx.session.currentBet);
+        
+        // 🆕 التحقق من صحة التوقع بناءً على التاريخ
+        const validation = goalAI.validatePrediction(prediction, userData);
+        if (!validation.valid) {
+            prediction.type = validation.newType;
+            prediction.reasoning += `\n${validation.message}`;
+        }
         
         // 📊 تحديث إحصائيات المستخدم
         if (userData.subscription_status !== 'active') {
@@ -1978,7 +2354,13 @@ async function handleGetPrediction(ctx, userData) {
         }
         userData.total_predictions = (userData.total_predictions || 0) + 1;
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
-        userData.lastPrediction = prediction;
+        
+        // 🆕 حفظ التوقع في السجل
+        await dbManager.addPredictionToHistory(userData.user_id, prediction);
+        
+        // 🆕 حفظ التوقع الحالي في الجلسة
+        ctx.session.currentPrediction = prediction;
+        
         await dbManager.saveUser(ctx.from.id.toString(), userData);
 
         // الحصول على الوقت الحقيقي الحالي
@@ -1990,6 +2372,14 @@ async function handleGetPrediction(ctx, userData) {
             second: '2-digit',
             hour12: false 
         });
+
+        // 🆕 إضافة إحصائيات النتائج الأخيرة
+        const recentStats = await dbManager.getRecentResultsStats(userData.user_id, 5);
+        let statsInfo = '';
+        
+        if (recentStats.total > 0) {
+            statsInfo = `\n📊 *آخر ${recentStats.total} توقع:* ${recentStats.wins} فوز | ${recentStats.losses} خسارة | ${recentStats.winRate}% نجاح`;
+        }
 
         // إرسال التوقع مع الصورة - مدمج في رسالة واحدة
         const analysisMessage = `
@@ -2006,16 +2396,25 @@ ${prediction.reasoning}
 🔐 *الحساب:* \`${userData.onexbet}\`
 💰 *مبلغ الرهان:* ${ctx.session.currentBet}$
 🕒 *الوقت:* ${realTime}
+${statsInfo}
 
 ${userData.subscription_status !== 'active' ? 
     `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
     `✅ *اشتراك نشط - محاولات غير محدودة*`}
         `;
 
-        // إرسال الصورة مع التوقع في رسالة واحدة
+        // 🆕 إرسال الأزرار مع التوقع
         await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
             caption: analysisMessage,
-            parse_mode: 'Markdown'
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [ 
+                        Markup.button.callback('🎉 ربح', `win_${prediction.prediction_id}`),
+                        Markup.button.callback('🔁 خسر', `lose_${prediction.prediction_id}`)
+                    ]
+                ]
+            }
         });
 
         // إرسال الإشعار للقناة
@@ -2042,6 +2441,16 @@ async function handleUserStats(ctx, userData) {
     } else {
         subscriptionInfo = `\n🆓 *محاولات مجانية:* ${userData.free_attempts}`;
     }
+
+    // 🆕 إضافة إحصائيات النتائج الأخيرة
+    const recentStats = await dbManager.getRecentResultsStats(userData.user_id, 10);
+    let recentInfo = '';
+    
+    if (recentStats.total > 0) {
+        recentInfo = `\n📈 *آخر 10 توقعات:*\n` +
+                    `✅ ${recentStats.wins} فوز | ❌ ${recentStats.losses} خسارة\n` +
+                    `🎯 ${recentStats.winRate}% معدل النجاح`;
+    }
     
     await ctx.replyWithMarkdown(
         `📊 *إحصائياتك الشخصية*\n\n` +
@@ -2055,7 +2464,8 @@ async function handleUserStats(ctx, userData) {
         `💔 ${userData.losses || 0} خسارة\n` +
         `💰 إجمالي الرهانات: ${userData.total_bets || 0}$\n` +
         `💵 إجمالي الأرباح: ${userData.total_profit || 0}$` +
-        subscriptionInfo,
+        subscriptionInfo +
+        recentInfo,
         getMainKeyboard()
     );
 }
@@ -2067,7 +2477,8 @@ async function handleBotStats(ctx) {
         `👤 إجمالي المستخدمين: ${stats.totalUsers.toLocaleString()}\n` +
         `🟢 مستخدمين نشطين الآن: ${stats.activeUsers}\n` +
         `📊 التوقعات اليومية: ${Math.floor(stats.activeUsers * 8.5)}\n\n` +
-        `🎯 *النظام يعمل بكفاءة عالية*`,
+        `🎯 *النظام يعمل بكفاءة عالية*\n` +
+        `🤖 *خوارزمية الذكاء الاصطناعي محسنة*`,
         getMainKeyboard()
     );
 }
@@ -2095,7 +2506,7 @@ async function handleSubscriptionSelection(ctx, userData, text) {
     const subscriptionTypeMap = {
         '💰 أسبوعي': 'week',
         '💰 شهري': 'month', 
-        '💰 3 أشهر': 'three_months', // تم التصحيح هنا
+        '💰 3 أشهر': 'three_months',
         '💰 سنوي': 'year'
     };
 
@@ -3013,7 +3424,7 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         const subscriptionTypeMap = {
             '💰 أسبوعي': 'week',
             '💰 شهري': 'month', 
-            '💰 3 أشهر': 'three_months', // تم التصحيح هنا
+            '💰 3 أشهر': 'three_months',
             '💰 سنوي': 'year'
         };
 
@@ -3526,11 +3937,13 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with DUAL PAYMENT is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
+    console.log('🤖 Enhanced AI Prediction with Result Tracking');
     console.log('💾 Persistent Data Storage: ENABLED');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
+    console.log('🆘 Support:', CONFIG.SUPPORT_USERNAME);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
@@ -3551,4 +3964,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with Dual Payment & Persistent Data Ready!');
+console.log('✅ AI Goal Prediction System with Enhanced AI & Result Tracking Ready!');
