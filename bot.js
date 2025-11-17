@@ -1,6 +1,6 @@
 // ===================================================
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
-// 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
+// 👤 DEVELOPER: ✦ 𝑨𝑴𝑬𝑬𝑵 𝑨𝑳𝒁𝑾𝑨𝑯𝑰 ✦ - @GEMZGOOLBOT
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - NO DATA LOSS ON UPDATES
 // ===================================================
@@ -1604,7 +1604,7 @@ bot.on('text', async (ctx) => {
                 await ctx.deleteMessage(waitingMessage.message_id);
 
                 await ctx.replyWithMarkdown(
-                    `🎉 *تم التحقق بنجاح!*\n\n` +
+                    `🎉 *تم الربط بنجاح!*\n\n` +
                     `📍 *الدولة:* ${userData.country}\n` +
                     `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
                     `👤 *المستخدم:* ${ctx.session.userData.username}\n\n` +
@@ -3494,7 +3494,7 @@ async function handlePaymentReject(ctx, paymentId) {
             await bot.telegram.sendMessage(
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
-                `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n\n` +
+                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
                 `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
                 { parse_mode: 'Markdown' }
             );
