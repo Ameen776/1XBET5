@@ -1,9 +1,0 @@
-node_modules/
-.env
-*.log
-.DS_Store
-firebase-key.json
-service-account.json
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
