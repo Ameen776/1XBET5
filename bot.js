@@ -5,6 +5,7 @@
 // 💾 ENHANCED PERSISTENT DATA STORAGE IN FIRESTORE - NO DATA LOSS ON UPDATES
 // 🎯 ENHANCED AI PREDICTION WITH RESULT TRACKING
 // 🔐 PREVENT DUPLICATE ACCOUNT NUMBERS
+// 🛠️ FIXED REGISTRATION FLOW
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
@@ -128,7 +129,7 @@ const { admin, db, rtdb } = require('./firebase-config');
 // 💾 ENHANCED FIRESTORE STORAGE MANAGER - COMPLETE PERSISTENCE
 class FirestoreStorage {
     constructor() {
-        this.initialized = true; // Firebase is already initialized
+        this.initialized = true;
     }
 
     async getUser(userId) {
@@ -1053,31 +1054,12 @@ bot.use(async (ctx, next) => {
                     userData: {},
                     verificationCode: null,
                     accountId: null,
-                    paymentType: null,
-                    paymentSystem: null,
-                    adminMode: false,
-                    adminStep: null,
-                    awaitingPaymentAccount: false,
-                    paymentAccount: null,
+                    country: null,
+                    awaitingCountry: false,
                     currentBet: 0,
                     originalBet: 0,
                     totalProfit: 0,
-                    awaitingBetAmount: false,
-                    searchQuery: null,
-                    broadcastMessage: null,
-                    adminSettingsStep: null,
-                    selectedPaymentType: null,
-                    editingSubscriptionType: null,
-                    adminPaymentSystem: null,
-                    awaitingBankImage: false,
-                    editingBankStep: null,
-                    bankEditData: {},
-                    checkingChannel: false,
-                    country: null,
-                    awaitingCountry: false,
-                    currentPrediction: null,
-                    predictionHistory: [],
-                    awaitingResult: false
+                    currentPrediction: null
                 };
             }
         }
@@ -1101,7 +1083,7 @@ const getMainKeyboard = () => {
     return Markup.keyboard([
         ['🎯 جلب التحليل', '📊 إحصائياتي'],
         ['💳 الاشتراكات', '👥 إحصائيات البوت'],
-        ['👤 حالة الاشتراك', `🆘 الدعم الفني`]
+        ['👤 حالة الاشتراك', '🆘 الدعم الفني']
     ]).resize();
 };
 
@@ -1235,8 +1217,7 @@ async function checkChannelSubscription(userId) {
     }
 }
 
-// 🎯 BOT COMMANDS - UPDATED WITH PERSISTENT DATA
-
+// 🎯 BOT COMMANDS - UPDATED WITH FIXED REGISTRATION FLOW
 bot.start(async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -1286,11 +1267,22 @@ bot.start(async (ctx) => {
             await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
             
         } else {
-            // مستخدم جديد - اختيار الدولة أولاً
-            ctx.session.step = 'awaiting_country';
-            ctx.session.awaitingCountry = true;
-
-            console.log(`🆕 New user ${userId}, starting registration...`);
+            // مستخدم جديد - بدء عملية التسجيل من الصفر
+            console.log(`🆕 New user ${userId}, starting fresh registration...`);
+            
+            // إعادة تعيين الجلسة بالكامل
+            ctx.session = {
+                step: 'awaiting_country',
+                userData: {},
+                verificationCode: null,
+                accountId: null,
+                country: null,
+                awaitingCountry: true,
+                currentBet: 0,
+                originalBet: 0,
+                totalProfit: 0,
+                currentPrediction: null
+            };
 
             try {
                 await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
@@ -1331,7 +1323,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED WITH DUPLICATE ACCOUNT CHECK
+// 📝 HANDLE TEXT MESSAGES - COMPLETELY FIXED REGISTRATION FLOW
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -1344,7 +1336,21 @@ bot.on('text', async (ctx) => {
         const session = ctx.session;
         const userId = ctx.from.id.toString();
 
-        // 🆕 معالجة اختيار الدولة
+        // 🔄 معالجة زر الرجوع للقائمة الرئيسية
+        if (text === '🔙 الرجوع للقائمة' || text === '🔙 رجوع') {
+            // إذا كان المستخدم مسجل، نعيده للقائمة الرئيسية
+            const userData = await dbManager.getUser(userId);
+            if (userData) {
+                ctx.session.step = 'verified';
+                ctx.session.userData = userData;
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
+            } else {
+                await ctx.replyWithMarkdown('❌ *يجب التسجيل أولاً*\n\n🔐 أرسل /start لتسجيل الدخول');
+            }
+            return;
+        }
+
+        // 🆕 معالجة اختيار الدولة - محسنة
         if (session.step === 'awaiting_country' && session.awaitingCountry) {
             const arabCountries = [
                 '🇸🇦 السعودية', '🇦🇪 الإمارات', '🇶🇦 قطر', '🇰🇼 الكويت', '🇧🇭 البحرين',
@@ -1358,53 +1364,48 @@ bot.on('text', async (ctx) => {
                 ctx.session.country = text;
                 ctx.session.awaitingCountry = false;
                 
-                const isSubscribed = await checkChannelSubscription(userId);
-                
-                if (!isSubscribed) {
-                    await ctx.replyWithMarkdown(
-                        `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
-                        `📍 *الدولة:* ${text}\n\n` +
-                        `📢 *للاستخدام البوت يجب الاشتراك في قناتنا أولاً*\n\n` +
-                        `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                        `✅ بعد الاشتراك اضغط على الزر أدناه للتحقق:`,
-                        Markup.inlineKeyboard([
-                            [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                        ])
-                    );
-                    return;
-                }
-
-                await dbManager.setChannelSubscription(userId, true);
-                
-                const welcomeMessage = `
-🔐 *مرحباً ${ctx.from.first_name} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
-
-📍 *الدولة:* ${text}
-
-🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
-🤖 *خوارزمية ذكية مخفية تحلل المباريات بدقة عالية*
-
-📋 *خطوات الدخول:*
-1️⃣ أدخل رقم حساب 1xBet (10 أرقام)
-2️⃣ استلم كود التحقق (6 أرقام)  
-3️⃣ أدخل كود التحقق
-4️⃣ ابدأ باستخدام المحاولات المجانية
-
-💎 *المطور:* ${CONFIG.DEVELOPER}
-📢 *القناة:* ${CONFIG.CHANNEL}
-
-🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
-                `;
-
-                await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
-                
+                // الانتقال مباشرة إلى طلب الاشتراك في القناة
+                await ctx.replyWithMarkdown(
+                    `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
+                    `📍 *الدولة:* ${text}\n\n` +
+                    `📢 *للاستخدام البوت يجب الاشتراك في قناتنا أولاً*\n\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ بعد الاشتراك اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
             } else {
                 await ctx.replyWithMarkdown('❌ *يرجى اختيار دولة من القائمة*', getCountriesKeyboard());
             }
             return;
         }
 
-        // 🔐 STEP 1: Validate 1xBet Account - مع منع التكرار المحسن
+        // 🆕 معالجة زر إدخال رقم الحساب
+        if (text === '🔐 إدخال رقم الحساب') {
+            const isSubscribed = await checkChannelSubscription(userId);
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
+
+            ctx.session.step = 'awaiting_account_id';
+            await ctx.replyWithMarkdown(
+                '🔢 *الخطوة 1:* أرسل رقم حساب 1xBet الخاص بك (10 أرقام)\n\n' +
+                '💡 *ملاحظة:* يجب أن يكون الرقم الحقيقي الخاص بك'
+            );
+            return;
+        }
+
+        // 🔐 STEP 1: Validate 1xBet Account 
         if (session.step === 'awaiting_account_id') {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
@@ -1421,7 +1422,7 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
-                // 🆕 تحقق محسن من عدم تكرار رقم الحساب
+                // تحقق من عدم تكرار رقم الحساب
                 const existingUserWithAccount = await dbManager.getUserByOneXBet(text);
                 if (existingUserWithAccount) {
                     await ctx.replyWithMarkdown(
@@ -1444,6 +1445,7 @@ bot.on('text', async (ctx) => {
                     `🔢 *الخطوة 2:* أرسل كود التحقق خلال 5 دقائق`
                 );
 
+                // ضبط مؤقت للكود
                 setTimeout(() => {
                     if (ctx.session.step === 'awaiting_verification') {
                         ctx.session.verificationCode = null;
@@ -1457,40 +1459,24 @@ bot.on('text', async (ctx) => {
                     '📝 مثال: 1234567890\n\n' +
                     '💡 يرجى إعادة إدخال الرقم بشكل صحيح'
                 );
-                return;
             }
+            return;
         }
-        // 🔐 STEP 2: Verify Code
+
+        // 🔐 STEP 2: Verify Code - محسنة
         else if (session.step === 'awaiting_verification' && /^\d{6}$/.test(text)) {
             if (parseInt(text) === ctx.session.verificationCode) {
                 
                 const waitingMessage = await ctx.replyWithMarkdown(
                     '🔐 *جاري تسجيل الدخول...*\n\n' +
-                    '⏳ جاري البحث في السجلات...\n' +
-                    '📡 جاري الاتصال بالسيرفر...\n' +
-                    '⚡ جاري تفعيل الحساب...\n' +
-                    '🎯 جاري إعداد المحاولات المجانية...\n\n' +
-                    '⏰ قد تستغرق العملية 10 ثواني...'
+                    '⏳ جاري إنشاء حسابك...\n' +
+                    '📡 جاري ربط البيانات...\n' +
+                    '⚡ جاري تفعيل الخدمة...\n\n' +
+                    '⏰ قد تستغرق العملية بضع ثواني...'
                 );
 
-                for (let i = 1; i <= 10; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    try {
-                        await ctx.telegram.editMessageText(
-                            ctx.chat.id,
-                            waitingMessage.message_id,
-                            null,
-                            `🔐 *جاري تسجيل الدخول...*\n\n` +
-                            `⏳ جاري البحث في السجلات... ${i}/10\n` +
-                            `📡 جاري الاتصال بالسيرفر...\n` +
-                            `⚡ جاري تفعيل الحساب...\n` +
-                            `🎯 جاري إعداد المحاولات المجانية...`,
-                            { parse_mode: 'Markdown' }
-                        );
-                    } catch (editError) {
-                        console.log('Error editing waiting message:', editError);
-                    }
-                }
+                // محاكاة عملية الانتظار
+                await new Promise(resolve => setTimeout(resolve, 3000));
 
                 const userData = {
                     user_id: userId,
@@ -1514,38 +1500,45 @@ bot.on('text', async (ctx) => {
                     result_history: []
                 };
 
-                // 🆕 حفظ المستخدم في قاعدة البيانات
-                await dbManager.saveUser(userId, userData);
-                ctx.session.step = 'verified';
-                ctx.session.userData = userData;
+                // حفظ المستخدم في قاعدة البيانات
+                const saveResult = await dbManager.saveUser(userId, userData);
+                
+                if (saveResult) {
+                    ctx.session.step = 'verified';
+                    ctx.session.userData = userData;
+                    
+                    await ctx.deleteMessage(waitingMessage.message_id);
 
-                await ctx.deleteMessage(waitingMessage.message_id);
-
-                await ctx.replyWithMarkdown(
-                    `🎉 *تم الربط بنجاح!*\n\n` +
-                    `📍 *الدولة:* ${userData.country}\n` +
-                    `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
-                    `👤 *المستخدم:* ${ctx.session.userData.username}\n\n` +
-                    `🎁 *تحصل على 10 محاولات مجانية*\n\n` +
-                    `🎯 *يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات*`,
-                    getMainKeyboard()
-                );
+                    await ctx.replyWithMarkdown(
+                        `🎉 *تم التسجيل بنجاح!*\n\n` +
+                        `📍 *الدولة:* ${userData.country}\n` +
+                        `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
+                        `👤 *المستخدم:* ${ctx.from.first_name}\n\n` +
+                        `🎁 *تحصل على 10 محاولات مجانية*\n\n` +
+                        `🎯 *يمكنك الآن استخدام البوت بالكامل*`,
+                        getMainKeyboard()
+                    );
+                } else {
+                    await ctx.replyWithMarkdown('❌ *حدث خطأ في حفظ البيانات*');
+                }
 
             } else {
                 await ctx.replyWithMarkdown('❌ *كود تحقق خاطئ!*\n\n🔐 يرجى إعادة إدخال الكود الصحيح');
             }
+            return;
         }
-        // 🎯 معالجة الأزرار الثابتة بعد التحقق
+
+        // 🎯 معالجة الأزرار الرئيسية للمستخدمين المسجلين
         else if (session.step === 'verified') {
-            // 🆕 تحديث مهم: تحميل بيانات المستخدم من قاعدة البيانات أولاً
+            // تأكد من وجود بيانات المستخدم
             const userData = await dbManager.getUser(userId);
             
             if (!userData) {
-                await ctx.replyWithMarkdown('❌ *جلسة منتهية*\n\n🔐 أرسل /start للبدء', getLoginKeyboard());
+                await ctx.replyWithMarkdown('❌ *جلسة منتهية*\n\n🔐 أرسل /start للبدء');
                 return;
             }
 
-            // 🆕 تحديث بيانات الجلسة بآخر البيانات من قاعدة البيانات
+            // تحديث بيانات الجلسة
             ctx.session.userData = userData;
 
             switch (text) {
@@ -1588,33 +1581,126 @@ bot.on('text', async (ctx) => {
                     );
                     break;
 
-                case '🔙 الرجوع للقائمة':
-                    await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
-                    break;
-
                 default:
-                    if (text.startsWith('💰 ')) {
-                        await handleSubscriptionSelection(ctx, userData, text);
-                    } else {
-                        await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
-                    }
+                    // إذا كان النص لا يتطابق مع أي زر، نعيده للقائمة الرئيسية
+                    await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
                     break;
             }
         }
-        // 🔐 إذا كان المستخدم غير مسجل وحاول استخدام الأزرار
-        else if (['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت'].includes(text)) {
+        // إذا كان المستخدم غير مسجل وحاول استخدام الأزرار
+        else if (['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '👤 حالة الاشتراك'].includes(text)) {
             await ctx.replyWithMarkdown(
                 '❌ *يجب التسجيل أولاً*\n\n' +
-                '🔐 أرسل /start لتسجيل الدخول',
-                getLoginKeyboard()
+                '🔐 أرسل /start لتسجيل الدخول'
             );
-        } else {
-            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
         }
 
     } catch (error) {
         console.error('Text handler error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ غير متوقع', getMainKeyboard());
+        await ctx.replyWithMarkdown('❌ حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى');
+    }
+});
+
+// 🆕 معالجة الاشتراكات
+async function handleSubscriptions(ctx, userData) {
+    try {
+        await ctx.replyWithMarkdown(
+            '💳 *باقات الاشتراك المتاحة*\n\n' +
+            '📦 اختر الباقة المناسبة لك:\n\n' +
+            '💰 أسبوعي - 7 أيام\n' +
+            '💰 شهري - 30 يوماً\n' +
+            '💰 3 أشهر - 90 يوماً\n' +
+            '💰 سنوي - 365 يوماً\n\n' +
+            '💡 اضغط على الزر المناسب لعرض التفاصيل',
+            getSubscriptionKeyboard()
+        );
+    } catch (error) {
+        console.error('Subscriptions error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب معلومات الاشتراكات*', getMainKeyboard());
+    }
+}
+
+// 🆕 معالجة اختيار نوع الاشتراك
+async function handleSubscriptionSelection(ctx, userData, text) {
+    const subscriptionTypeMap = {
+        '💰 أسبوعي': 'week',
+        '💰 شهري': 'month', 
+        '💰 3 أشهر': 'three_months',
+        '💰 سنوي': 'year'
+    };
+
+    const subscriptionType = subscriptionTypeMap[text];
+    if (!subscriptionType) {
+        await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getSubscriptionKeyboard());
+        return;
+    }
+
+    try {
+        const settings = await dbManager.getSettings();
+        const prices = settings.prices.binance;
+        const displayName = getSubscriptionDisplayName(subscriptionType);
+        
+        await ctx.replyWithMarkdown(
+            `💳 *باقة ${displayName}*\n\n` +
+            `💰 السعر: ${prices[subscriptionType]}$\n` +
+            `⏰ المدة: ${getSubscriptionDuration(subscriptionType)}\n\n` +
+            `📋 *طريقة الدفع:*\n` +
+            `💳 سيتم إضافة طرق الدفع قريباً\n\n` +
+            `🔔 *جاري العمل على إضافة أنظمة الدفع*`,
+            getMainKeyboard()
+        );
+
+    } catch (error) {
+        console.error('Subscription selection error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getMainKeyboard());
+    }
+}
+
+// 🆕 تحديث معالجة التحقق من الاشتراك في القناة
+bot.action('check_channel_subscription', async (ctx) => {
+    try {
+        const userId = ctx.from.id.toString();
+        const isSubscribed = await checkChannelSubscription(userId);
+        
+        if (isSubscribed) {
+            await dbManager.setChannelSubscription(userId, true);
+            await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
+            
+            // حذف الرسالة السابقة
+            try {
+                await ctx.deleteMessage();
+            } catch (e) {
+                console.log('Could not delete message:', e);
+            }
+            
+            // الانتقال إلى خطوة إدخال رقم الحساب
+            ctx.session.step = 'awaiting_account_id';
+            
+            await ctx.replyWithMarkdown(
+                `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
+                `📍 *الدولة:* ${ctx.session.country}\n\n` +
+                `✅ *تم التحقق من اشتراكك في القناة*\n\n` +
+                `🔢 *الآن اضغط على الزر أدناه لبدء إدخال رقم الحساب:*`,
+                Markup.keyboard([
+                    ['🔐 إدخال رقم الحساب']
+                ]).resize()
+            );
+            
+        } else {
+            await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
+            await ctx.replyWithMarkdown(
+                `❌ *لم يتم العثور على اشتراكك في القناة*\n\n` +
+                `📢 يرجى الاشتراك في القناة أولاً:\n` +
+                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                Markup.inlineKeyboard([
+                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                ])
+            );
+        }
+    } catch (error) {
+        console.error('Channel subscription check error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في التحقق');
     }
 });
 
@@ -1729,65 +1815,11 @@ bot.on('callback_query', async (ctx) => {
             }
         }
         
-        else if (callbackData === 'check_channel_subscription') {
-            await handleCheckChannelSubscription(ctx);
-        }
-        
     } catch (error) {
         console.error('Callback query error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 });
-
-// 🆕 معالجة التحقق من الاشتراك في القناة
-async function handleCheckChannelSubscription(ctx) {
-    try {
-        const userId = ctx.from.id.toString();
-        const isSubscribed = await checkChannelSubscription(userId);
-        
-        if (isSubscribed) {
-            await dbManager.setChannelSubscription(userId, true);
-            await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
-            await ctx.deleteMessage();
-            
-            const userName = ctx.from.first_name;
-            
-            const welcomeMessage = `
-🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
-
-🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
-🤖 *خوارزمية ذكية مخفية تحلل المباريات بدقة عالية*
-
-📋 *خطوات الدخول:*
-1️⃣ أدخل رقم حساب 1xBet (10 أرقام)
-2️⃣ استلم كود التحقق (6 أرقام)  
-3️⃣ أدخل كود التحقق
-4️⃣ ابدأ باستخدام المحاولات المجانية
-
-💎 *المطور:* ${CONFIG.DEVELOPER}
-📢 *القناة:* ${CONFIG.CHANNEL}
-
-🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
-            `;
-
-            await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
-        } else {
-            await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
-            await ctx.replyWithMarkdown(
-                `❌ *لم يتم العثور على اشتراكك في القناة*\n\n` +
-                `📢 يرجى الاشتراك في القناة أولاً:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-        }
-    } catch (error) {
-        console.error('Channel subscription check error:', error);
-        await ctx.answerCbQuery('❌ حدث خطأ في التحقق');
-    }
-}
 
 // 🎯 HANDLER FUNCTIONS - ENHANCED WITH AI PREDICTION
 
@@ -2016,6 +2048,7 @@ async function startBot() {
             console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
             console.log('💾 Enhanced Persistent Data Storage: ✅ ACTIVE');
             console.log('🔐 Duplicate Account Prevention: ✅ ACTIVE');
+            console.log('🔧 Fixed Registration Flow: ✅ ACTIVE');
             console.log('💳 Payment Systems: Binance + Bank Transfer');
             console.log('🤖 Enhanced AI Prediction with Result Tracking');
             console.log('👤 Developer:', CONFIG.DEVELOPER);
@@ -2055,4 +2088,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with ENHANCED PERSISTENCE Ready!');
+console.log('✅ AI Goal Prediction System with FIXED REGISTRATION FLOW Ready!');
