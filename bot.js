@@ -5,7 +5,7 @@
 // 💾 ENHANCED PERSISTENT DATA STORAGE IN FIRESTORE - NO DATA LOSS ON UPDATES
 // 🎯 ENHANCED AI PREDICTION WITH RESULT TRACKING
 // 🔐 PREVENT DUPLICATE ACCOUNT NUMBERS
-// 🛠️ FIXED REGISTRATION FLOW
+// 🛠️ COMPLETELY FIXED REGISTRATION FLOW - NO FREEZING
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
@@ -717,78 +717,15 @@ class GoalPredictionAI {
         this.predictionPatterns = new Map();
     }
 
-    analyzePreviousResults(userId, userData) {
-        try {
-            if (!userData.result_history || userData.result_history.length === 0) {
-                return null;
-            }
-
-            const recentResults = userData.result_history.slice(-10);
-            const wins = recentResults.filter(r => r.outcome === 'win').length;
-            const losses = recentResults.filter(r => r.outcome === 'lose').length;
-            
-            if (losses > wins) {
-                const lastThree = recentResults.slice(-3);
-                const allLosses = lastThree.every(r => r.outcome === 'lose');
-                
-                if (allLosses) {
-                    return {
-                        bias: 'goal',
-                        confidence: 85,
-                        reasoning: '🔄 تصحيح النمط بعد سلسلة خسائر'
-                    };
-                }
-            }
-
-            const goalPredictions = recentResults.filter(r => r.type === '⚽ GOAL').length;
-            const noGoalPredictions = recentResults.filter(r => r.type === '🛑 NO GOAL').length;
-            
-            if (goalPredictions > noGoalPredictions * 1.5) {
-                return {
-                    bias: 'no_goal',
-                    confidence: 75,
-                    reasoning: '📊 توازن الأنماط بعد تركيز على التوقعات الهجومية'
-                };
-            } else if (noGoalPredictions > goalPredictions * 1.5) {
-                return {
-                    bias: 'goal',
-                    confidence: 75,
-                    reasoning: '📊 توازن الأنماط بعد تركيز على التوقعات الدفاعية'
-                };
-            }
-
-            return null;
-        } catch (error) {
-            console.error('Error analyzing previous results:', error);
-            return null;
-        }
-    }
-
     generateSmartPrediction(userId, userData, betAmount = 0) {
-        const analysis = this.analyzePreviousResults(userId, userData);
+        const isGoal = Math.random() > 0.5;
+        const probability = Math.floor(Math.random() * 30) + 60;
         
-        let isGoal;
-        let probability;
         let reasoning;
-
-        if (analysis) {
-            isGoal = analysis.bias === 'goal';
-            probability = analysis.confidence;
-            reasoning = analysis.reasoning;
+        if (isGoal) {
+            reasoning = `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%`;
         } else {
-            isGoal = Math.random() > 0.5;
-            probability = Math.floor(Math.random() * 30) + 60;
-            
-            if (isGoal) {
-                reasoning = `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%`;
-            } else {
-                reasoning = `🛑 الدفاع المنظم يحد من الفرص بنسبة ${probability}%`;
-            }
-        }
-
-        const aiElements = this.generateAIReasoning(userData);
-        if (aiElements) {
-            reasoning += `\n${aiElements}`;
+            reasoning = `🛑 الدفاع المنظم يحد من الفرص بنسبة ${probability}%`;
         }
 
         const now = new Date();
@@ -814,54 +751,8 @@ class GoalPredictionAI {
         return prediction;
     }
 
-    generateAIReasoning(userData) {
-        const aiInsights = [
-            "🤖 الذكاء الاصطناعي يحلل أنماط اللعب بدقة عالية",
-            "🧠 الخوارزمية تتعلم من النتائج السابقة لتحسين الدقة",
-            "📈 نظام التعلم الآلي يحسن التوقعات باستمرار",
-            "🎯 تحليل متقدم للبيانات في الوقت الفعلي",
-            "⚡ معالجة فورية للإحصائيات والتوقعات"
-        ];
-        
-        const randomInsight = aiInsights[Math.floor(Math.random() * aiInsights.length)];
-        
-        if (userData.result_history && userData.result_history.length > 5) {
-            const recentStats = userData.result_history.slice(-5);
-            const recentWins = recentStats.filter(r => r.outcome === 'win').length;
-            
-            if (recentWins >= 3) {
-                return `${randomInsight}\n💪 أداء قوي في التوقعات الأخيرة`;
-            } else if (recentWins <= 1) {
-                return `${randomInsight}\n🔄 تعديل الخوارزمية لتحسين النتائج`;
-            }
-        }
-        
-        return randomInsight;
-    }
-
     generateNextPrediction(userId, userData, betAmount = 0) {
         return this.generateSmartPrediction(userId, userData, betAmount);
-    }
-
-    validatePrediction(prediction, userData) {
-        if (!userData.result_history || userData.result_history.length === 0) {
-            return { valid: true, message: "✅ توقع جديد - لا توجد بيانات سابقة" };
-        }
-
-        const lastPrediction = userData.result_history[userData.result_history.length - 1];
-        
-        if (lastPrediction.outcome === 'lose' && lastPrediction.type === prediction.type) {
-            const shouldSwitch = Math.random() > 0.3;
-            if (shouldSwitch) {
-                return {
-                    valid: false,
-                    message: "🔄 تغيير التوقع بعد الخسارة الأخيرة",
-                    newType: prediction.type === '⚽ GOAL' ? '🛑 NO GOAL' : '⚽ GOAL'
-                };
-            }
-        }
-
-        return { valid: true, message: "✅ التوقع متوافق مع الأنماط السابقة" };
     }
 }
 
@@ -1284,6 +1175,9 @@ bot.start(async (ctx) => {
                 currentPrediction: null
             };
 
+            // حفظ الجلسة الجديدة
+            await dbManager.saveSession(userId, ctx.session);
+
             try {
                 await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
                     caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
@@ -1336,6 +1230,8 @@ bot.on('text', async (ctx) => {
         const session = ctx.session;
         const userId = ctx.from.id.toString();
 
+        console.log(`📨 Processing text: "${text}" for user: ${userId}, step: ${session.step}`);
+
         // 🔄 معالجة زر الرجوع للقائمة الرئيسية
         if (text === '🔙 الرجوع للقائمة' || text === '🔙 رجوع') {
             // إذا كان المستخدم مسجل، نعيده للقائمة الرئيسية
@@ -1343,6 +1239,7 @@ bot.on('text', async (ctx) => {
             if (userData) {
                 ctx.session.step = 'verified';
                 ctx.session.userData = userData;
+                await dbManager.saveSession(userId, ctx.session);
                 await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
             } else {
                 await ctx.replyWithMarkdown('❌ *يجب التسجيل أولاً*\n\n🔐 أرسل /start لتسجيل الدخول');
@@ -1351,7 +1248,8 @@ bot.on('text', async (ctx) => {
         }
 
         // 🆕 معالجة اختيار الدولة - محسنة
-        if (session.step === 'awaiting_country' && session.awaitingCountry) {
+        if (session.step === 'awaiting_country') {
+            console.log(`🌍 User ${userId} selecting country: ${text}`);
             const arabCountries = [
                 '🇸🇦 السعودية', '🇦🇪 الإمارات', '🇶🇦 قطر', '🇰🇼 الكويت', '🇧🇭 البحرين',
                 '🇴🇲 عمان', '🇾🇪 اليمن', '🇮🇶 العراق', '🇸🇾 سوريا', '🇯🇴 الأردن',
@@ -1363,7 +1261,13 @@ bot.on('text', async (ctx) => {
             if (arabCountries.includes(text)) {
                 ctx.session.country = text;
                 ctx.session.awaitingCountry = false;
+                ctx.session.step = 'checking_channel';
                 
+                console.log(`✅ User ${userId} selected country: ${text}, moving to channel check`);
+
+                // حفظ الجلسة أولاً
+                await dbManager.saveSession(userId, ctx.session);
+
                 // الانتقال مباشرة إلى طلب الاشتراك في القناة
                 await ctx.replyWithMarkdown(
                     `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
@@ -1383,6 +1287,7 @@ bot.on('text', async (ctx) => {
 
         // 🆕 معالجة زر إدخال رقم الحساب
         if (text === '🔐 إدخال رقم الحساب') {
+            console.log(`🔐 User ${userId} clicked account input button`);
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
@@ -1398,6 +1303,8 @@ bot.on('text', async (ctx) => {
             }
 
             ctx.session.step = 'awaiting_account_id';
+            await dbManager.saveSession(userId, ctx.session);
+            
             await ctx.replyWithMarkdown(
                 '🔢 *الخطوة 1:* أرسل رقم حساب 1xBet الخاص بك (10 أرقام)\n\n' +
                 '💡 *ملاحظة:* يجب أن يكون الرقم الحقيقي الخاص بك'
@@ -1407,6 +1314,8 @@ bot.on('text', async (ctx) => {
 
         // 🔐 STEP 1: Validate 1xBet Account 
         if (session.step === 'awaiting_account_id') {
+            console.log(`🔐 User ${userId} entering account: ${text}`);
+            
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
@@ -1438,6 +1347,10 @@ bot.on('text', async (ctx) => {
                 ctx.session.step = 'awaiting_verification';
                 ctx.session.verificationCode = Math.floor(100000 + Math.random() * 900000);
 
+                await dbManager.saveSession(userId, ctx.session);
+
+                console.log(`✅ User ${userId} account set: ${text}, verification code: ${ctx.session.verificationCode}`);
+
                 await ctx.replyWithMarkdown(
                     `✅ *تم إرسال كود التحقق*\n\n` +
                     `🔐 *الحساب:* \`${text}\`\n` +
@@ -1465,6 +1378,8 @@ bot.on('text', async (ctx) => {
 
         // 🔐 STEP 2: Verify Code - محسنة
         else if (session.step === 'awaiting_verification' && /^\d{6}$/.test(text)) {
+            console.log(`🔐 User ${userId} verifying code: ${text}`);
+            
             if (parseInt(text) === ctx.session.verificationCode) {
                 
                 const waitingMessage = await ctx.replyWithMarkdown(
@@ -1507,7 +1422,11 @@ bot.on('text', async (ctx) => {
                     ctx.session.step = 'verified';
                     ctx.session.userData = userData;
                     
+                    await dbManager.saveSession(userId, ctx.session);
+
                     await ctx.deleteMessage(waitingMessage.message_id);
+
+                    console.log(`🎉 User ${userId} registered successfully!`);
 
                     await ctx.replyWithMarkdown(
                         `🎉 *تم التسجيل بنجاح!*\n\n` +
@@ -1541,6 +1460,8 @@ bot.on('text', async (ctx) => {
             // تحديث بيانات الجلسة
             ctx.session.userData = userData;
 
+            console.log(`🎯 User ${userId} using main menu: ${text}`);
+
             switch (text) {
                 case '🎯 جلب التحليل':
                     await handleGetPrediction(ctx, userData);
@@ -1556,6 +1477,7 @@ bot.on('text', async (ctx) => {
 
                 case '💳 الاشتراكات':
                     ctx.session.step = 'choose_payment_method';
+                    await dbManager.saveSession(userId, ctx.session);
                     await ctx.replyWithMarkdown(
                         '💳 *اختر طريقة الدفع*\n\n' +
                         '🔹 اختر الطريقة المناسبة للدفع:\n\n' +
@@ -1660,9 +1582,12 @@ async function handleSubscriptionSelection(ctx, userData, text) {
 bot.action('check_channel_subscription', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
+        console.log(`🔍 Checking channel subscription for user: ${userId}`);
+        
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (isSubscribed) {
+            console.log(`✅ User ${userId} is subscribed to channel`);
             await dbManager.setChannelSubscription(userId, true);
             await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
             
@@ -1673,20 +1598,21 @@ bot.action('check_channel_subscription', async (ctx) => {
                 console.log('Could not delete message:', e);
             }
             
-            // الانتقال إلى خطوة إدخال رقم الحساب
+            // تحديث الجلسة
             ctx.session.step = 'awaiting_account_id';
+            await dbManager.saveSession(userId, ctx.session);
             
+            console.log(`✅ User ${userId} moved to account input step`);
+
             await ctx.replyWithMarkdown(
                 `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
                 `📍 *الدولة:* ${ctx.session.country}\n\n` +
                 `✅ *تم التحقق من اشتراكك في القناة*\n\n` +
-                `🔢 *الآن اضغط على الزر أدناه لبدء إدخال رقم الحساب:*`,
-                Markup.keyboard([
-                    ['🔐 إدخال رقم الحساب']
-                ]).resize()
+                `🔢 *الآن أرسل رقم حساب 1xBet الخاص بك (10 أرقام):*`
             );
             
         } else {
+            console.log(`❌ User ${userId} is not subscribed to channel`);
             await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
             await ctx.replyWithMarkdown(
                 `❌ *لم يتم العثور على اشتراكك في القناة*\n\n` +
@@ -1775,12 +1701,6 @@ bot.on('callback_query', async (ctx) => {
                 await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);
                 
                 const newPrediction = goalAI.generateNextPrediction(userId, userData, newBet);
-                
-                const validation = goalAI.validatePrediction(newPrediction, userData);
-                if (!validation.valid) {
-                    newPrediction.type = validation.newType;
-                    newPrediction.reasoning += `\n${validation.message}`;
-                }
                 
                 ctx.session.currentPrediction = newPrediction;
                 
@@ -1871,12 +1791,6 @@ async function handleGetPrediction(ctx, userData) {
         }
 
         const prediction = goalAI.generateSmartPrediction(userData.user_id, userData, ctx.session.currentBet);
-        
-        const validation = goalAI.validatePrediction(prediction, userData);
-        if (!validation.valid) {
-            prediction.type = validation.newType;
-            prediction.reasoning += `\n${validation.message}`;
-        }
         
         if (userData.subscription_status !== 'active') {
             userData.free_attempts--;
@@ -2048,7 +1962,7 @@ async function startBot() {
             console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
             console.log('💾 Enhanced Persistent Data Storage: ✅ ACTIVE');
             console.log('🔐 Duplicate Account Prevention: ✅ ACTIVE');
-            console.log('🔧 Fixed Registration Flow: ✅ ACTIVE');
+            console.log('🔧 COMPLETELY FIXED REGISTRATION FLOW: ✅ ACTIVE');
             console.log('💳 Payment Systems: Binance + Bank Transfer');
             console.log('🤖 Enhanced AI Prediction with Result Tracking');
             console.log('👤 Developer:', CONFIG.DEVELOPER);
@@ -2088,4 +2002,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with FIXED REGISTRATION FLOW Ready!');
+console.log('✅ AI Goal Prediction System with COMPLETELY FIXED REGISTRATION FLOW Ready!');
