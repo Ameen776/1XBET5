@@ -1,0 +1,29 @@
+{
+  "name": "ai-goal-predictor-bot",
+  "version": "16.0.0",
+  "description": "AI Goal Predictor Telegram Bot with Firebase",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.7.2",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.1",
+    "form-data": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "ai",
+    "predictor",
+    "firebase"
+  ],
+  "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
+  "license": "MIT"
+}
