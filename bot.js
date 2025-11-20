@@ -79,8 +79,6 @@ const CONFIG = {
 };
 
 console.log('✅ Dual Payment Configuration loaded successfully');
-console.log('📢 CHANNEL_ID:', CONFIG.CHANNEL_ID);
-console.log('👤 ADMIN_ID:', CONFIG.ADMIN_ID);
 
 // 🚀 INITIALIZE BOT
 const { Telegraf, Markup, session } = require('telegraf');
@@ -941,41 +939,25 @@ function getSubscriptionDisplayName(type) {
     return names[type] || type;
 }
 
-// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED AND FIXED
+// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED
 async function checkChannelSubscription(userId) {
     try {
-        console.log(`🔍 Checking channel subscription for user ${userId} in channel ${CONFIG.CHANNEL_ID}`);
-        
-        // التحقق من أن CHANNEL_ID موجود وصحيح
-        if (!CONFIG.CHANNEL_ID || CONFIG.CHANNEL_ID === '') {
-            console.error('❌ CHANNEL_ID is missing or empty');
-            return false;
-        }
-
-        // استخدام getChatMember للتحقق من حالة العضوية
         const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-        console.log(`📊 Chat member status for user ${userId}:`, chatMember.status);
-        
-        // العضوية النشطة تشمل: member, administrator, creator
         const isSubscribed = ['member', 'administrator', 'creator'].includes(chatMember.status);
         
         // تحديث حالة الاشتراك في قاعدة البيانات
         await dbManager.setChannelSubscription(userId, isSubscribed);
         
-        console.log(`✅ Channel subscription check result for user ${userId}:`, isSubscribed);
         return isSubscribed;
-        
     } catch (error) {
-        console.error('❌ Error checking channel subscription:', error);
+        console.error('Error checking channel subscription:', error);
         
-        // في حالة الخطأ، نتحقق من حالة الاشتراك المخزنة في قاعدة البيانات
+        // في حالة الخطأ، نتحقق من حالة الاشتراك المخزنة
         try {
             const userData = await dbManager.getUser(userId);
-            const storedStatus = userData?.channel_subscribed || false;
-            console.log(`📦 Using stored subscription status for user ${userId}:`, storedStatus);
-            return storedStatus;
+            return userData?.channel_subscribed || false;
         } catch (dbError) {
-            console.error('❌ Error getting user subscription status from DB:', dbError);
+            console.error('Error getting user subscription status:', dbError);
             return false;
         }
     }
@@ -1724,12 +1706,10 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - IMPROVED
+// 🆕 معالجة التحقق من الاشتراك في القناة
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        console.log(`🔍 Manual channel subscription check for user ${userId}`);
-        
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (isSubscribed) {
@@ -3373,7 +3353,7 @@ async function handlePaymentReject(ctx, paymentId) {
                 payment.user_id,
                 `❌ *تم رفض طلب الدفع*\n\n` +
                 `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
-                `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
+                `📞 للاستفسار: ${CONFIG.DEVELPER}`,
                 { parse_mode: 'Markdown' }
             );
         } catch (error) {
