@@ -642,7 +642,7 @@ ${prediction.reasoning}
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
 
-// 🔍 IMPROVED CHANNEL SUBSCRIPTION CHECK FUNCTION
+// 🔍 IMPROVED CHANNEL SUBSCRIPTION CHECK FUNCTION - FIXED VERSION
 async function checkChannelSubscription(userId) {
     try {
         console.log(`🔍 Checking channel subscription for user ${userId} in channel ${CONFIG.CHANNEL_ID}`);
@@ -651,13 +651,6 @@ async function checkChannelSubscription(userId) {
         if (!CONFIG.CHANNEL_ID || CONFIG.CHANNEL_ID === '') {
             console.error('❌ CHANNEL_ID is missing or empty');
             return false;
-        }
-
-        // التحقق أولاً من حالة الاشتراك المخزنة في قاعدة البيانات
-        const userData = await dbManager.getUser(userId);
-        if (userData && userData.channel_subscribed) {
-            console.log(`✅ User ${userId} has stored subscription status: true`);
-            return true;
         }
 
         // استخدام getChatMember للتحقق من حالة العضوية
@@ -1020,7 +1013,7 @@ bot.start(async (ctx) => {
             if (!existingUser.channel_subscribed) {
                 const isSubscribed = await checkChannelSubscription(userId);
                 
-                if (!isSubscribed && ctx.session.step !== 'awaiting_verification' && ctx.session.step !== 'awaiting_account_id') {
+                if (!isSubscribed) {
                     await ctx.replyWithMarkdown(
                         `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
                         `📢 يرجى الاشتراك في القناة:\n` +
@@ -1033,6 +1026,7 @@ bot.start(async (ctx) => {
                     return;
                 } else {
                     ctx.session.subscriptionVerified = true;
+                    await dbManager.setChannelSubscription(userId, true);
                 }
             }
 
@@ -1235,8 +1229,7 @@ bot.on('text', async (ctx) => {
         }
 
         // التحقق من الاشتراك في القناة للمستخدمين الجدد
-        const existingUser = await dbManager.getUser(userId);
-        if (!existingUser && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id' && session.step !== 'awaiting_country') {
+        if (!session.subscriptionVerified) {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
@@ -1251,25 +1244,7 @@ bot.on('text', async (ctx) => {
                 return;
             } else {
                 ctx.session.subscriptionVerified = true;
-            }
-        }
-
-        // التحقق من الاشتراك للمستخدمين المسجلين
-        if (existingUser && !session.subscriptionVerified && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id') {
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            } else {
-                ctx.session.subscriptionVerified = true;
+                await dbManager.setChannelSubscription(userId, true);
             }
         }
 
@@ -1762,7 +1737,7 @@ bot.on('callback_query', async (ctx) => {
             await ctx.replyWithMarkdown('💳 *باقات الاشتراك المتاحة*', getSubscriptionKeyboard());
         }
         
-        // 🆕 معالجة زر التحقق من الاشتراك في القناة
+        // 🆕 معالجة زر التحقق من الاشتراك في القناة - IMPROVED
         else if (callbackData === 'check_channel_subscription') {
             await handleCheckChannelSubscription(ctx);
         }
@@ -3285,189 +3260,3 @@ async function handleAdminGeneralSettings(ctx) {
 • شهري: ${settings.prices.bank.month}$
 • 3 أشهر: ${settings.prices.bank.three_months}$ 
 • سنوي: ${settings.prices.bank.year}$
-
-🔗 *معلومات باينانس:*
-• أسبوعي: ${settings.payment_links.binance.week.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.binance.week}
-• شهري: ${settings.payment_links.binance.month.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.binance.month}
-• 3 أشهر: ${settings.payment_links.binance.three_months.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.binance.three_months}
-• سنوي: ${settings.payment_links.binance.year.startsWith('https://i.ibb.co') ? '[صورة]' : settings.payment_links.binance.year}
-
-💳 *معلومات البنك:*
-• أسبوعي: ${settings.payment_links.bank.week?.account || 'غير محدد'}
-• شهري: ${settings.payment_links.bank.month?.account || 'غير محدد'}
-• 3 أشهر: ${settings.payment_links.bank.three_months?.account || 'غير محدد'}
-• سنوي: ${settings.payment_links.bank.year?.account || 'غير محدد'}
-        `;
-        
-        await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
-    } catch (error) {
-        console.error('Admin general settings error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الإعدادات العامة', getAdminSettingsKeyboard());
-    }
-}
-
-async function handleAdminReset(ctx) {
-    try {
-        const resetKeyboard = Markup.inlineKeyboard([
-            [
-                Markup.button.callback('✅ نعم، إعادة التعيين', 'confirm_reset'),
-                Markup.button.callback('❌ إلغاء', 'cancel_reset')
-            ]
-        ]);
-
-        await ctx.replyWithMarkdown(
-            '⚠️ *تحذير: إعادة التعيين*\n\n' +
-            'هذا الإجراء سيعيد جميع الإعدادات إلى القيم الافتراضية.\n\n' +
-            '❌ *سيتم حذف:*\n' +
-            '• جميع إعدادات الأسعار\n' +
-            '• جميع روابط الدفع\n' +
-            '• إعدادات الصور\n\n' +
-            '✅ *لن يتم حذف:*\n' +
-            '• بيانات المستخدمين\n' +
-            '• طلبات الدفع\n\n' +
-            '⚠️ *هل أنت متأكد من المتابعة؟*',
-            resetKeyboard
-        );
-    } catch (error) {
-        console.error('Admin reset error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في إعداد إعادة التعيين', getAdminSettingsKeyboard());
-    }
-}
-
-async function handlePaymentAccept(ctx, paymentId) {
-    try {
-        const payment = await dbManager.getPayment(paymentId);
-        if (!payment) {
-            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
-            return;
-        }
-        
-        const userData = await dbManager.getUser(payment.user_id);
-        if (!userData) {
-            await ctx.answerCbQuery('❌ المستخدم غير موجود');
-            return;
-        }
-        
-        const startDate = new Date().toISOString();
-        const endDate = addSubscriptionDays(startDate, payment.subscription_type);
-        
-        userData.subscription_status = 'active';
-        userData.subscription_type = payment.subscription_type;
-        userData.subscription_start_date = startDate;
-        userData.subscription_end_date = endDate;
-        userData.free_attempts = 0;
-        
-        await dbManager.saveUser(payment.user_id, userData);
-        await dbManager.updatePayment(paymentId, { 
-            status: 'accepted',
-            processed_at: new Date().toISOString()
-        });
-        
-        // إشعار المستخدم
-        try {
-            await bot.telegram.sendMessage(
-                payment.user_id,
-                `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
-                `✅ ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
-                `💰 ${payment.amount}$\n` +
-                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
-                `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
-                `⏳ المتبقي: ${calculateRemainingDays(endDate)} يوم\n\n` +
-                `🎯 يمكنك الآن استخدام الخدمة بدون حدود`,
-                { parse_mode: 'Markdown' }
-            );
-        } catch (error) {
-            console.error('Error notifying user:', error);
-        }
-
-        // إرسال الإشعار للقناة
-        await channelNotifier.sendSubscriptionNotification(userData, payment.subscription_type, payment.amount, payment.payment_system);
-        
-        await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
-        
-        try {
-            await ctx.editMessageCaption(
-                `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
-                `👤 ${userData.username}\n` +
-                `🔐 ${userData.onexbet}\n` +
-                `📦 ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
-                `💰 ${payment.amount}$\n` +
-                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
-                `🕒 ${new Date().toLocaleString('ar-EG')}`,
-                { parse_mode: 'Markdown' }
-            );
-        } catch (editError) {
-            console.log('Could not edit message:', editError);
-        }
-
-    } catch (error) {
-        console.error('Payment accept error:', error);
-        await ctx.answerCbQuery('❌ حدث خطأ في قبول الدفع');
-    }
-}
-
-async function handlePaymentReject(ctx, paymentId) {
-    try {
-        const payment = await dbManager.getPayment(paymentId);
-        if (!payment) {
-            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
-            return;
-        }
-        
-        await dbManager.updatePayment(paymentId, { 
-            status: 'rejected',
-            processed_at: new Date().toLocaleString('ar-EG')
-        });
-        
-        // إشعار المستخدم
-        try {
-            await bot.telegram.sendMessage(
-                payment.user_id,
-                `❌ *تم رفض طلب الدفع*\n\n` +
-                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
-                `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
-                { parse_mode: 'Markdown' }
-            );
-        } catch (error) {
-            console.error('Error notifying user:', error);
-        }
-        
-        await ctx.answerCbQuery('❌ تم رفض الطلب');
-        
-        try {
-            await ctx.editMessageCaption(
-                `❌ *تم رفض طلب الدفع*\n\n` +
-                `🆔 ${paymentId}\n` +
-                `👤 ${payment.username}\n` +
-                `🔐 ${payment.onexbet}\n` +
-                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
-                `🕒 ${new Date().toLocaleString('ar-EG')}`,
-                { parse_mode: 'Markdown' }
-            );
-        } catch (editError) {
-            console.log('Could not edit message:', editError);
-        }
-
-    } catch (error) {
-        console.error('Payment reject error:', error);
-        await ctx.answerCbQuery('❌ حدث خطأ في رفض الدفع');
-    }
-}
-
-// 🚀 START BOT
-bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with FIREBASE is RUNNING!');
-    console.log('💳 Payment Systems: Binance + Bank Transfer');
-    console.log('💾 Firebase Persistent Data Storage: ENABLED');
-    console.log('👤 Developer:', CONFIG.DEVELOPER);
-    console.log('📢 Channel:', CONFIG.CHANNEL);
-    console.log('🌐 Health check: http://localhost:' + PORT);
-    console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
-    console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
-}).catch(console.error);
-
-// 🛑 GRACEFUL SHUTDOWN
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
-console.log('✅ AI Goal Prediction System with Firebase & Persistent Data Ready!');
