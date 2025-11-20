@@ -2,7 +2,7 @@
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
-// 💾 PERSISTENT DATA STORAGE WITH FIREBASE
+// 💾 PERSISTENT DATA STORAGE WITH FIREBASE - SESSION ISSUE FIXED
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
@@ -145,27 +145,45 @@ try {
 
 const db = admin.firestore();
 
-// 🗄️ FIREBASE DATABASE MANAGER
+// 🗄️ FIREBASE DATABASE MANAGER - IMPROVED WITH BETTER ERROR HANDLING AND LOGS
 class FirebaseDatabaseManager {
     constructor() {
         this.maintenanceMode = false;
+        console.log('🗄️ Firebase Database Manager initialized');
     }
 
     async getUser(userId) {
         try {
+            console.log(`🔍 [FIRESTORE] Fetching user data for ID: ${userId}`);
             const userDoc = await db.collection('users').doc(userId.toString()).get();
+            
             if (userDoc.exists) {
-                return userDoc.data();
+                const userData = userDoc.data();
+                console.log(`✅ [FIRESTORE] User found: ${userId}`, {
+                    username: userData.username,
+                    step: userData.step,
+                    onexbet: userData.onexbet,
+                    subscription_status: userData.subscription_status
+                });
+                return userData;
+            } else {
+                console.log(`❌ [FIRESTORE] User not found: ${userId}`);
+                return null;
             }
-            return null;
         } catch (error) {
-            console.error('Get user error:', error);
+            console.error('❌ [FIRESTORE] Get user error:', error);
             return null;
         }
     }
 
     async saveUser(userId, userData) {
         try {
+            console.log(`💾 [FIRESTORE] Saving user data for ID: ${userId}`, {
+                username: userData.username,
+                step: userData.step,
+                onexbet: userData.onexbet
+            });
+
             const completeUserData = {
                 user_id: userId,
                 username: userData.username || 'Unknown',
@@ -191,15 +209,18 @@ class FirebaseDatabaseManager {
             };
 
             await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
+            console.log(`✅ [FIRESTORE] User saved successfully: ${userId}`);
             return true;
         } catch (error) {
-            console.error('Error saving user:', error);
+            console.error('❌ [FIRESTORE] Error saving user:', error);
             return false;
         }
     }
 
     async updateUserSession(userId, step, sessionData = {}) {
         try {
+            console.log(`🔄 [FIRESTORE] Updating user session for ID: ${userId}`, { step, sessionData: Object.keys(sessionData) });
+
             const updateData = {
                 step: step,
                 last_updated: new Date().toISOString()
@@ -210,9 +231,10 @@ class FirebaseDatabaseManager {
             }
 
             await db.collection('users').doc(userId.toString()).update(updateData);
+            console.log(`✅ [FIRESTORE] User session updated: ${userId} -> step: ${step}`);
             return true;
         } catch (error) {
-            console.error('Update user session error:', error);
+            console.error('❌ [FIRESTORE] Update user session error:', error);
             return false;
         }
     }
@@ -237,7 +259,7 @@ class FirebaseDatabaseManager {
                 updated_at: new Date().toISOString()
             };
         } catch (error) {
-            console.error('Get settings error:', error);
+            console.error('❌ [FIRESTORE] Get settings error:', error);
             return {
                 prices: { 
                     binance: { ...CONFIG.SUBSCRIPTION_PRICES.binance },
@@ -263,7 +285,7 @@ class FirebaseDatabaseManager {
             await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
             return updatedSettings;
         } catch (error) {
-            console.error('Update settings error:', error);
+            console.error('❌ [FIRESTORE] Update settings error:', error);
             return null;
         }
     }
@@ -273,7 +295,7 @@ class FirebaseDatabaseManager {
             const usersSnapshot = await db.collection('users').get();
             return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
-            console.error('Get all users error:', error);
+            console.error('❌ [FIRESTORE] Get all users error:', error);
             return [];
         }
     }
@@ -291,7 +313,7 @@ class FirebaseDatabaseManager {
             await db.collection('payments').doc(paymentId).set(fullPaymentData);
             return paymentId;
         } catch (error) {
-            console.error('Add payment error:', error);
+            console.error('❌ [FIRESTORE] Add payment error:', error);
             return null;
         }
     }
@@ -301,7 +323,7 @@ class FirebaseDatabaseManager {
             await db.collection('payments').doc(paymentId).update(updates);
             return true;
         } catch (error) {
-            console.error('Update payment error:', error);
+            console.error('❌ [FIRESTORE] Update payment error:', error);
             return false;
         }
     }
@@ -314,7 +336,7 @@ class FirebaseDatabaseManager {
             }
             return null;
         } catch (error) {
-            console.error('Get payment error:', error);
+            console.error('❌ [FIRESTORE] Get payment error:', error);
             return null;
         }
     }
@@ -324,7 +346,7 @@ class FirebaseDatabaseManager {
             const paymentsSnapshot = await db.collection('payments').get();
             return paymentsSnapshot.docs.map(doc => doc.data());
         } catch (error) {
-            console.error('Get all payments error:', error);
+            console.error('❌ [FIRESTORE] Get all payments error:', error);
             return [];
         }
     }
@@ -334,7 +356,7 @@ class FirebaseDatabaseManager {
             const payments = await this.getAllPayments();
             return payments.filter(p => p.status === 'pending');
         } catch (error) {
-            console.error('Get pending payments error:', error);
+            console.error('❌ [FIRESTORE] Get pending payments error:', error);
             return [];
         }
     }
@@ -347,7 +369,7 @@ class FirebaseDatabaseManager {
             }
             return null;
         } catch (error) {
-            console.error('Get user by onexbet error:', error);
+            console.error('❌ [FIRESTORE] Get user by onexbet error:', error);
             return null;
         }
     }
@@ -363,7 +385,7 @@ class FirebaseDatabaseManager {
                 (user.onexbet && user.onexbet.toString().includes(query))
             );
         } catch (error) {
-            console.error('Search users error:', error);
+            console.error('❌ [FIRESTORE] Search users error:', error);
             return [];
         }
     }
@@ -376,7 +398,7 @@ class FirebaseDatabaseManager {
             });
             return true;
         } catch (error) {
-            console.error('Set channel subscription error:', error);
+            console.error('❌ [FIRESTORE] Set channel subscription error:', error);
             return false;
         }
     }
@@ -404,7 +426,7 @@ class FirebaseDatabaseManager {
                 pendingPayments: payments.filter(p => p.status === 'pending').length
             };
         } catch (error) {
-            console.error('Get all stats error:', error);
+            console.error('❌ [FIRESTORE] Get all stats error:', error);
             return {
                 totalUsers: 0,
                 activeUsers: 0,
@@ -426,7 +448,7 @@ class FirebaseDatabaseManager {
             this.maintenanceMode = enabled;
             return true;
         } catch (error) {
-            console.error('Set maintenance mode error:', error);
+            console.error('❌ [FIRESTORE] Set maintenance mode error:', error);
             return false;
         }
     }
@@ -549,7 +571,7 @@ class ImgBBUploader {
                 };
             }
         } catch (error) {
-            console.error('ImgBB upload error:', error);
+            console.error('❌ ImgBB upload error:', error);
             return {
                 success: false,
                 error: error.message
@@ -566,7 +588,7 @@ class ImgBBUploader {
             const imageBuffer = Buffer.from(response.data);
             return await this.uploadImage(imageBuffer);
         } catch (error) {
-            console.error('ImgBB upload from URL error:', error);
+            console.error('❌ ImgBB upload from URL error:', error);
             return {
                 success: false,
                 error: error.message
@@ -608,7 +630,7 @@ class ChannelNotifier {
                 parse_mode: 'Markdown'
             });
         } catch (error) {
-            console.error('Error sending subscription notification:', error);
+            console.error('❌ Error sending subscription notification:', error);
         }
     }
 
@@ -633,23 +655,31 @@ ${prediction.reasoning}
                 parse_mode: 'Markdown'
             });
         } catch (error) {
-            console.error('Error sending prediction notification:', error);
+            console.error('❌ Error sending prediction notification:', error);
         }
     }
 }
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
 
-// 🎯 BOT SETUP WITH FIREBASE SESSION MANAGEMENT
+// 🎯 BOT SETUP WITH IMPROVED FIREBASE SESSION MANAGEMENT
 bot.use(async (ctx, next) => {
     const userId = ctx.from?.id.toString();
     if (!userId) return next();
+
+    console.log(`🔄 [SESSION] Middleware started for user: ${userId}`);
 
     try {
         // جلب بيانات المستخدم من Firebase
         const userData = await dbManager.getUser(userId);
         
         if (userData) {
+            console.log(`✅ [SESSION] User data loaded from Firebase for: ${userId}`, {
+                step: userData.step,
+                onexbet: userData.onexbet,
+                username: userData.username
+            });
+
             // إذا كان المستخدم موجوداً، نقوم بتحميل جلسته
             ctx.session = {
                 step: userData.step || 'start',
@@ -679,8 +709,14 @@ bot.use(async (ctx, next) => {
                 country: userData.session_data?.country || null,
                 awaitingCountry: userData.session_data?.awaitingCountry || false
             };
+
+            console.log(`✅ [SESSION] Session restored for user: ${userId}`, {
+                step: ctx.session.step,
+                onexbet: ctx.session.userData.onexbet
+            });
         } else {
             // إذا كان المستخدم جديداً، ننشئ جلسة جديدة
+            console.log(`🆕 [SESSION] New user detected: ${userId}`);
             ctx.session = { 
                 step: 'start',
                 userData: {},
@@ -711,7 +747,7 @@ bot.use(async (ctx, next) => {
             };
         }
     } catch (error) {
-        console.error('Session middleware error:', error);
+        console.error('❌ [SESSION] Middleware error:', error);
         ctx.session = { 
             step: 'start',
             userData: {},
@@ -747,6 +783,11 @@ bot.use(async (ctx, next) => {
     // حفظ الجلسة بعد كل تحديث
     if (userId && ctx.session) {
         try {
+            console.log(`💾 [SESSION] Saving session for user: ${userId}`, {
+                step: ctx.session.step,
+                hasUserData: !!ctx.session.userData
+            });
+
             const sessionData = {
                 verificationCode: ctx.session.verificationCode,
                 accountId: ctx.session.accountId,
@@ -775,8 +816,9 @@ bot.use(async (ctx, next) => {
             };
 
             await dbManager.updateUserSession(userId, ctx.session.step, sessionData);
+            console.log(`✅ [SESSION] Session saved successfully for user: ${userId}`);
         } catch (error) {
-            console.error('Error saving session:', error);
+            console.error('❌ [SESSION] Error saving session:', error);
         }
     }
 });
@@ -941,78 +983,52 @@ function getSubscriptionDisplayName(type) {
     return names[type] || type;
 }
 
-// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED AND FIXED VERSION
+// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED AND FIXED
 async function checkChannelSubscription(userId) {
     try {
-        console.log(`🔍 [CHANNEL CHECK] Starting channel subscription check for user ${userId}`);
-        console.log(`🔍 [CHANNEL CHECK] Channel ID: ${CONFIG.CHANNEL_ID}`);
+        console.log(`🔍 [CHANNEL] Checking channel subscription for user ${userId} in channel ${CONFIG.CHANNEL_ID}`);
         
-        // التحقق من صحة CHANNEL_ID
+        // التحقق من أن CHANNEL_ID موجود وصحيح
         if (!CONFIG.CHANNEL_ID || CONFIG.CHANNEL_ID === '') {
-            console.error('❌ [CHANNEL CHECK] CHANNEL_ID is missing or empty');
-            return false;
-        }
-
-        // التحقق من أن البوت له صلاحية في القناة
-        try {
-            const chat = await bot.telegram.getChat(CONFIG.CHANNEL_ID);
-            console.log(`🔍 [CHANNEL CHECK] Bot has access to channel: ${chat.title}`);
-        } catch (botAccessError) {
-            console.error('❌ [CHANNEL CHECK] Bot does not have access to channel:', botAccessError.message);
+            console.error('❌ [CHANNEL] CHANNEL_ID is missing or empty');
             return false;
         }
 
         // استخدام getChatMember للتحقق من حالة العضوية
-        let chatMember;
-        try {
-            chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-            console.log(`🔍 [CHANNEL CHECK] Chat member status for user ${userId}:`, chatMember.status);
-        } catch (apiError) {
-            console.error('❌ [CHANNEL CHECK] Error calling getChatMember API:', apiError.message);
-            
-            // محاولة بديلة: التحقق من الحالة المخزنة
-            const userData = await dbManager.getUser(userId);
-            const storedStatus = userData?.channel_subscribed || false;
-            console.log(`🔍 [CHANNEL CHECK] Using stored subscription status:`, storedStatus);
-            return storedStatus;
-        }
+        const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
+        console.log(`📊 [CHANNEL] Chat member status for user ${userId}:`, chatMember.status);
         
         // العضوية النشطة تشمل: member, administrator, creator
-        const validStatuses = ['member', 'administrator', 'creator'];
-        const isSubscribed = validStatuses.includes(chatMember.status);
-        
-        console.log(`🔍 [CHANNEL CHECK] User ${userId} subscription status: ${isSubscribed} (${chatMember.status})`);
+        const isSubscribed = ['member', 'administrator', 'creator'].includes(chatMember.status);
         
         // تحديث حالة الاشتراك في قاعدة البيانات
-        try {
-            await dbManager.setChannelSubscription(userId, isSubscribed);
-            console.log(`🔍 [CHANNEL CHECK] Updated subscription status in database: ${isSubscribed}`);
-        } catch (dbError) {
-            console.error('❌ [CHANNEL CHECK] Error updating subscription status in database:', dbError.message);
-        }
+        await dbManager.setChannelSubscription(userId, isSubscribed);
         
+        console.log(`✅ [CHANNEL] Channel subscription check result for user ${userId}:`, isSubscribed);
         return isSubscribed;
         
     } catch (error) {
-        console.error('❌ [CHANNEL CHECK] Unexpected error checking channel subscription:', error);
+        console.error('❌ [CHANNEL] Error checking channel subscription:', error);
         
-        // في حالة الخطأ، نستخدم الحالة المخزنة في قاعدة البيانات
+        // في حالة الخطأ، نتحقق من حالة الاشتراك المخزنة في قاعدة البيانات
         try {
             const userData = await dbManager.getUser(userId);
             const storedStatus = userData?.channel_subscribed || false;
-            console.log(`🔍 [CHANNEL CHECK] Fallback to stored subscription status:`, storedStatus);
+            console.log(`📦 [CHANNEL] Using stored subscription status for user ${userId}:`, storedStatus);
             return storedStatus;
         } catch (dbError) {
-            console.error('❌ [CHANNEL CHECK] Error getting stored subscription status:', dbError);
+            console.error('❌ [CHANNEL] Error getting user subscription status from DB:', dbError);
             return false;
         }
     }
 }
 
-// 🎯 BOT COMMANDS
+// 🎯 BOT COMMANDS - IMPROVED SESSION HANDLING
 
 bot.start(async (ctx) => {
     try {
+        console.log(`🚀 [START] /start command received from user: ${ctx.from.id}`);
+        
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: ' + CONFIG.DEVELOPER);
@@ -1022,18 +1038,24 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // التحقق إذا كان المستخدم مسجل مسبقاً
-        const existingUser = await dbManager.getUser(userId);
-        
-        if (existingUser) {
-            // المستخدم مسجل مسبقاً - نقوم بتحديث الجلسة
-            ctx.session.step = existingUser.step || 'verified';
-            ctx.session.userData = existingUser;
+        console.log(`👤 [START] Processing user: ${userId} (${userName})`);
+
+        // 🔍 FIX: استخدام بيانات الجلسة المحملة مسبقاً من middleware
+        // بدلاً من جلب البيانات مرة أخرى من Firebase
+        if (ctx.session.userData && ctx.session.userData.user_id) {
+            // ✅ المستخدم مسجل مسبقاً - استخدام البيانات من الجلسة
+            const userData = ctx.session.userData;
+            console.log(`✅ [START] Existing user detected in session: ${userId}`, {
+                step: userData.step,
+                onexbet: userData.onexbet,
+                username: userData.username
+            });
 
             // التحقق من الاشتراك في القناة
             const isSubscribed = await checkChannelSubscription(userId);
             
             if (!isSubscribed && ctx.session.step !== 'awaiting_verification' && ctx.session.step !== 'awaiting_account_id') {
+                console.log(`❌ [START] User ${userId} not subscribed to channel`);
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
                     `📢 يرجى الاشتراك في القناة:\n` +
@@ -1046,32 +1068,35 @@ bot.start(async (ctx) => {
                 return;
             }
 
-            const remainingDays = calculateRemainingDays(existingUser.subscription_end_date);
+            const remainingDays = calculateRemainingDays(userData.subscription_end_date);
             
             let statusMessage = '';
-            if (existingUser.subscription_status === 'active' && remainingDays > 0) {
+            if (userData.subscription_status === 'active' && remainingDays > 0) {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `✅ *اشتراكك نشط*\n` +
-                               `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `📦 النوع: ${getSubscriptionDisplayName(existingUser.subscription_type)}\n` +
-                               `📅 الانتهاء: ${new Date(existingUser.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
+                               `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                               `📦 النوع: ${getSubscriptionDisplayName(userData.subscription_type)}\n` +
+                               `📅 الانتهاء: ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                                `⏳ متبقي: ${remainingDays} يوم`;
-            } else if (existingUser.free_attempts > 0) {
+            } else if (userData.free_attempts > 0) {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🎯 *محاولات مجانية متاحة*\n` +
-                               `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `🆓 محاولات مجانية: ${existingUser.free_attempts}`;
+                               `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                               `🆓 محاولات مجانية: ${userData.free_attempts}`;
             } else {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🚫 *انتهت المحاولات*\n` +
-                               `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
+                               `🔐 الحساب: \`${userData.onexbet}\`\n` +
                                `💳 يرجى الاشتراك للمتابعة`;
             }
 
+            console.log(`✅ [START] Sending welcome back message to user: ${userId}`);
             await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
             
         } else {
-            // مستخدم جديد - إنشاء مستخدم جديد
+            // 🆕 مستخدم جديد - إنشاء مستخدم جديد
+            console.log(`🆕 [START] New user detected: ${userId}, creating new user record`);
+            
             const newUserData = {
                 user_id: userId,
                 username: ctx.from.username || ctx.from.first_name,
@@ -1102,6 +1127,8 @@ bot.start(async (ctx) => {
             ctx.session.userData = newUserData;
             ctx.session.awaitingCountry = true;
 
+            console.log(`✅ [START] New user created: ${userId}`);
+
             // إرسال الصورة أولاً
             try {
                 await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
@@ -1111,6 +1138,7 @@ bot.start(async (ctx) => {
                             `📢 *القناة:* ${CONFIG.CHANNEL}`
                 });
             } catch (photoError) {
+                console.log('❌ [START] Error sending start image:', photoError);
                 await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
             }
 
@@ -1137,12 +1165,12 @@ bot.start(async (ctx) => {
         }
 
     } catch (error) {
-        console.error('Start command error:', error);
+        console.error('❌ [START] Start command error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في النظام، يرجى المحاولة لاحقاً');
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED FOR FIREBASE SESSIONS
+// 📝 HANDLE TEXT MESSAGES - UPDATED WITH BETTER SESSION HANDLING
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -1154,6 +1182,8 @@ bot.on('text', async (ctx) => {
         const text = ctx.message.text;
         const session = ctx.session;
         const userId = ctx.from.id.toString();
+
+        console.log(`📝 [TEXT] Message from user ${userId}: "${text}", step: ${session.step}`);
 
         // 🔐 ADMIN COMMANDS - للإدمن فقط
         if (userId === CONFIG.ADMIN_ID) {
@@ -1191,12 +1221,16 @@ bot.on('text', async (ctx) => {
                     userData.step = 'start';
                     await dbManager.saveUser(userId, userData);
                     ctx.session.userData = userData;
+                    ctx.session.step = 'start';
                 }
+                
+                console.log(`✅ [TEXT] User ${userId} selected country: ${text}`);
                 
                 // التحقق من الاشتراك في القناة بعد اختيار الدولة
                 const isSubscribed = await checkChannelSubscription(userId);
                 
                 if (!isSubscribed) {
+                    console.log(`❌ [TEXT] User ${userId} not subscribed to channel after country selection`);
                     // إرسال رسالة طلب الاشتراك في القناة
                     await ctx.replyWithMarkdown(
                         `🔐 *مرحباً ${ctx.from.first_name}*\n\n` +
@@ -1244,14 +1278,18 @@ bot.on('text', async (ctx) => {
         }
 
         // التحقق من الاشتراك في القناة للمستخدمين الجدد
-        const existingUser = await dbManager.getUser(userId);
-        if (!existingUser && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id' && session.step !== 'awaiting_country') {
+        // 🔍 FIX: استخدام بيانات الجلسة بدلاً من جلب البيانات من Firebase
+        if (!ctx.session.userData && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id' && session.step !== 'awaiting_country') {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
-                    `❌ *يجب التسجيل أولاً*\n\n` +
-                    '🔐 أرسل /start لتسجيل الدخول',
-                    getLoginKeyboard()
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
                 );
                 return;
             }
@@ -1609,7 +1647,7 @@ bot.on('text', async (ctx) => {
         }
 
     } catch (error) {
-        console.error('Text handler error:', error);
+        console.error('❌ [TEXT] Text handler error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ غير متوقع', getMainKeyboard());
     }
 });
@@ -1646,7 +1684,7 @@ bot.on('photo', async (ctx) => {
         );
 
     } catch (error) {
-        console.error('Photo handler error:', error);
+        console.error('❌ [PHOTO] Photo handler error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الصورة*', getMainKeyboard());
     }
 });
@@ -1743,16 +1781,16 @@ bot.on('callback_query', async (ctx) => {
         }
         
     } catch (error) {
-        console.error('Callback query error:', error);
+        console.error('❌ [CALLBACK] Callback query error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - IMPROVED AND FIXED
+// 🆕 معالجة التحقق من الاشتراك في القناة - IMPROVED
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        console.log(`🔍 [MANUAL CHECK] Manual channel subscription check for user ${userId}`);
+        console.log(`🔍 [CHANNEL] Manual channel subscription check for user ${userId}`);
         
         const isSubscribed = await checkChannelSubscription(userId);
         
@@ -1820,7 +1858,7 @@ async function handleCheckChannelSubscription(ctx) {
             );
         }
     } catch (error) {
-        console.error('Channel subscription check error:', error);
+        console.error('❌ [CHANNEL] Channel subscription check error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في التحقق');
     }
 }
@@ -1932,7 +1970,7 @@ ${userData.subscription_status !== 'active' ?
         await ctx.deleteMessage(loadingMsg.message_id);
 
     } catch (error) {
-        console.error('Get prediction error:', error);
+        console.error('❌ [PREDICTION] Get prediction error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب التحليل*', getMainKeyboard());
     }
 }
@@ -1992,7 +2030,7 @@ async function handleSubscriptions(ctx, userData) {
             getSubscriptionKeyboard()
         );
     } catch (error) {
-        console.error('Subscriptions error:', error);
+        console.error('❌ [SUBSCRIPTIONS] Subscriptions error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب معلومات الاشتراكات*', getMainKeyboard());
     }
 }
@@ -2047,7 +2085,7 @@ async function handleSubscriptionSelection(ctx, userData, text) {
                         }
                     });
                 } catch (photoError) {
-                    console.error('Error sending payment image:', photoError);
+                    console.error('❌ Error sending payment image:', photoError);
                     await ctx.replyWithMarkdown(
                         `❌ *تعذر تحميل صورة الدفع*\n\n${subscriptionMessage}`,
                         {
@@ -2110,7 +2148,7 @@ async function handleSubscriptionSelection(ctx, userData, text) {
                         }
                     });
                 } catch (photoError) {
-                    console.error('Error sending bank image:', photoError);
+                    console.error('❌ Error sending bank image:', photoError);
                     await ctx.replyWithMarkdown(subscriptionMessage, {
                         reply_markup: {
                             inline_keyboard: [
@@ -2133,7 +2171,7 @@ async function handleSubscriptionSelection(ctx, userData, text) {
         }
 
     } catch (error) {
-        console.error('Subscription selection error:', error);
+        console.error('❌ [SUBSCRIPTION] Subscription selection error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getSubscriptionKeyboard());
     }
 }
@@ -2194,7 +2232,7 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
         }
 
     } catch (error) {
-        console.error('Subscription confirmation error:', error);
+        console.error('❌ [SUBSCRIPTION] Subscription confirmation error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 }
@@ -2310,7 +2348,7 @@ async function handlePaymentScreenshot(ctx, userId) {
                 }
             );
         } catch (error) {
-            console.error('Error notifying admin:', error);
+            console.error('❌ Error notifying admin:', error);
         }
 
         await ctx.replyWithMarkdown(
@@ -2330,7 +2368,7 @@ async function handlePaymentScreenshot(ctx, userId) {
         ctx.session.awaitingPaymentAccount = false;
         ctx.session.paymentAccount = null;
     } catch (error) {
-        console.error('Payment screenshot error:', error);
+        console.error('❌ [PAYMENT] Payment screenshot error:', error);
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة صورة الدفع*', getMainKeyboard());
     }
 }
@@ -2500,7 +2538,7 @@ async function handleAdminCommands(ctx, text) {
                 break;
         }
     } catch (error) {
-        console.error('Admin commands error:', error);
+        console.error('❌ [ADMIN] Admin commands error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
     }
 }
@@ -2508,7 +2546,7 @@ async function handleAdminCommands(ctx, text) {
 // البحث عن مستخدم
 async function handleAdminSearchUser(ctx, query) {
     try {
-        console.log('🔍 Searching for users with query:', query);
+        console.log('🔍 [ADMIN] Searching for users with query:', query);
         
         const users = await dbManager.searchUsers(query);
         
@@ -2540,7 +2578,7 @@ async function handleAdminSearchUser(ctx, query) {
         ctx.session.adminStep = 'main';
         
     } catch (error) {
-        console.error('Admin search user error:', error);
+        console.error('❌ [ADMIN] Admin search user error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في البحث', getAdminMainKeyboard());
         ctx.session.adminStep = 'main';
     }
@@ -2549,7 +2587,7 @@ async function handleAdminSearchUser(ctx, query) {
 // الإشعار الجماعي
 async function handleAdminBroadcast(ctx, message) {
     try {
-        console.log('📢 Starting broadcast to all users');
+        console.log('📢 [ADMIN] Starting broadcast to all users');
         
         const users = await dbManager.getAllUsers();
         let success = 0;
@@ -2587,7 +2625,7 @@ async function handleAdminBroadcast(ctx, message) {
         ctx.session.adminStep = 'main';
         
     } catch (error) {
-        console.error('Admin broadcast error:', error);
+        console.error('❌ [ADMIN] Admin broadcast error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في إرسال الإشعار', getAdminMainKeyboard());
         ctx.session.adminStep = 'main';
     }
@@ -2606,7 +2644,7 @@ async function handleAdminToggleMaintenance(ctx) {
             await ctx.replyWithMarkdown('🔓 *تم فتح البوت للمستخدمين*', getAdminMainKeyboard());
         }
     } catch (error) {
-        console.error('Toggle maintenance error:', error);
+        console.error('❌ [ADMIN] Toggle maintenance error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في تغيير حالة البوت', getAdminMainKeyboard());
     }
 }
@@ -2644,7 +2682,7 @@ async function handleAdminStats(ctx) {
         
         await ctx.replyWithMarkdown(statsMessage, getAdminMainKeyboard());
     } catch (error) {
-        console.error('Admin stats error:', error);
+        console.error('❌ [ADMIN] Admin stats error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الإحصائيات', getAdminMainKeyboard());
     }
 }
@@ -2667,7 +2705,7 @@ async function handleAdminUsersList(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
     } catch (error) {
-        console.error('Admin users list error:', error);
+        console.error('❌ [ADMIN] Admin users list error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب قائمة المستخدمين', getAdminUsersKeyboard());
     }
 }
@@ -2687,7 +2725,7 @@ async function handleAdminActiveUsers(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
     } catch (error) {
-        console.error('Admin active users error:', error);
+        console.error('❌ [ADMIN] Admin active users error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المشتركين النشطين', getAdminUsersKeyboard());
     }
 }
@@ -2706,7 +2744,7 @@ async function handleAdminFreeUsers(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
     } catch (error) {
-        console.error('Admin free users error:', error);
+        console.error('❌ [ADMIN] Admin free users error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المستخدمين المجانين', getAdminUsersKeyboard());
     }
 }
@@ -2735,7 +2773,7 @@ async function handleAdminUsersStats(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
     } catch (error) {
-        console.error('Admin users stats error:', error);
+        console.error('❌ [ADMIN] Admin users stats error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إحصائيات المستخدمين', getAdminUsersKeyboard());
     }
 }
@@ -2772,7 +2810,7 @@ async function handleAdminPendingPayments(ctx) {
             );
         }
     } catch (error) {
-        console.error('Admin pending payments error:', error);
+        console.error('❌ [ADMIN] Admin pending payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المعلقة', getAdminPaymentsKeyboard());
     }
 }
@@ -2796,7 +2834,7 @@ async function handleAdminAcceptedPayments(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
     } catch (error) {
-        console.error('Admin accepted payments error:', error);
+        console.error('❌ [ADMIN] Admin accepted payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المقبولة', getAdminPaymentsKeyboard());
     }
 }
@@ -2820,7 +2858,7 @@ async function handleAdminRejectedPayments(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
     } catch (error) {
-        console.error('Admin rejected payments error:', error);
+        console.error('❌ [ADMIN] Admin rejected payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المرفوضة', getAdminPaymentsKeyboard());
     }
 }
@@ -2853,7 +2891,7 @@ async function handleAdminAllPayments(ctx) {
         
         await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
     } catch (error) {
-        console.error('Admin all payments error:', error);
+        console.error('❌ [ADMIN] Admin all payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب جميع الطلبات', getAdminPaymentsKeyboard());
     }
 }
@@ -2869,7 +2907,7 @@ async function handleAdminPriceAndPaymentSettings(ctx) {
         );
         ctx.session.adminStep = 'select_payment_system';
     } catch (error) {
-        console.error('Admin price and payment settings error:', error);
+        console.error('❌ [ADMIN] Admin price and payment settings error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في بدء التعديل', getAdminSettingsKeyboard());
     }
 }
@@ -2904,7 +2942,7 @@ async function handleAdminSelectPaymentSystem(ctx, text) {
         );
 
     } catch (error) {
-        console.error('Admin select payment system error:', error);
+        console.error('❌ [ADMIN] Admin select payment system error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ', getAdminSettingsKeyboard());
     }
 }
@@ -2975,7 +3013,7 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
         }
 
     } catch (error) {
-        console.error('Admin select subscription edit error:', error);
+        console.error('❌ [ADMIN] Admin select subscription edit error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ', getAdminSettingsKeyboard());
     }
 }
@@ -3010,7 +3048,7 @@ async function handleAdminEditBankPrice(ctx, text) {
         }
 
     } catch (error) {
-        console.error('Admin edit bank price error:', error);
+        console.error('❌ [ADMIN] Admin edit bank price error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
     }
 }
@@ -3045,7 +3083,7 @@ async function handleAdminEditBankAccount(ctx, text) {
         }
 
     } catch (error) {
-        console.error('Admin edit bank account error:', error);
+        console.error('❌ [ADMIN] Admin edit bank account error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل');
     }
 }
@@ -3111,7 +3149,7 @@ async function handleAdminBankImageUpload(ctx, userId) {
         ctx.session.bankEditData = {};
 
     } catch (error) {
-        console.error('Admin bank image upload error:', error);
+        console.error('❌ [ADMIN] Admin bank image upload error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
@@ -3158,7 +3196,7 @@ async function handleAdminPaymentImageUpload(ctx, userId) {
         ctx.session.editingSubscriptionType = null;
         ctx.session.adminPaymentSystem = null;
     } catch (error) {
-        console.error('Admin payment image upload error:', error);
+        console.error('❌ [ADMIN] Admin payment image upload error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في رفع الصورة', getAdminSettingsKeyboard());
     }
 }
@@ -3230,7 +3268,7 @@ async function handleAdminEditPriceAndPayment(ctx, text) {
         }
 
     } catch (error) {
-        console.error('Admin edit price and payment error:', error);
+        console.error('❌ [ADMIN] Admin edit price and payment error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في التعديل: ' + error.message);
     }
 }
@@ -3273,7 +3311,7 @@ async function handleAdminGeneralSettings(ctx) {
         
         await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
     } catch (error) {
-        console.error('Admin general settings error:', error);
+        console.error('❌ [ADMIN] Admin general settings error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الإعدادات العامة', getAdminSettingsKeyboard());
     }
 }
@@ -3301,7 +3339,7 @@ async function handleAdminReset(ctx) {
             resetKeyboard
         );
     } catch (error) {
-        console.error('Admin reset error:', error);
+        console.error('❌ [ADMIN] Admin reset error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في إعداد إعادة التعيين', getAdminSettingsKeyboard());
     }
 }
@@ -3349,7 +3387,7 @@ async function handlePaymentAccept(ctx, paymentId) {
                 { parse_mode: 'Markdown' }
             );
         } catch (error) {
-            console.error('Error notifying user:', error);
+            console.error('❌ Error notifying user:', error);
         }
 
         // إرسال الإشعار للقناة
@@ -3373,7 +3411,7 @@ async function handlePaymentAccept(ctx, paymentId) {
         }
 
     } catch (error) {
-        console.error('Payment accept error:', error);
+        console.error('❌ [PAYMENT] Payment accept error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في قبول الدفع');
     }
 }
@@ -3401,7 +3439,7 @@ async function handlePaymentReject(ctx, paymentId) {
                 { parse_mode: 'Markdown' }
             );
         } catch (error) {
-            console.error('Error notifying user:', error);
+            console.error('❌ Error notifying user:', error);
         }
         
         await ctx.answerCbQuery('❌ تم رفض الطلب');
@@ -3421,7 +3459,7 @@ async function handlePaymentReject(ctx, paymentId) {
         }
 
     } catch (error) {
-        console.error('Payment reject error:', error);
+        console.error('❌ [PAYMENT] Payment reject error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في رفض الدفع');
     }
 }
@@ -3436,6 +3474,7 @@ bot.launch().then(() => {
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
+    console.log('✅ SESSION ISSUE FIXED: Bot now properly recognizes existing users');
 }).catch(console.error);
 
 // 🛑 GRACEFUL SHUTDOWN
@@ -3443,3 +3482,4 @@ process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 console.log('✅ AI Goal Prediction System with Firebase & Persistent Data Ready!');
+console.log('✅ SESSION MANAGEMENT FIXED: Bot will now recognize existing users properly');
