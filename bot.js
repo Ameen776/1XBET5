@@ -941,41 +941,69 @@ function getSubscriptionDisplayName(type) {
     return names[type] || type;
 }
 
-// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED AND FIXED
+// 🔍 FUNCTION TO CHECK CHANNEL SUBSCRIPTION - IMPROVED AND FIXED VERSION
 async function checkChannelSubscription(userId) {
     try {
-        console.log(`🔍 Checking channel subscription for user ${userId} in channel ${CONFIG.CHANNEL_ID}`);
+        console.log(`🔍 [CHANNEL CHECK] Starting channel subscription check for user ${userId}`);
+        console.log(`🔍 [CHANNEL CHECK] Channel ID: ${CONFIG.CHANNEL_ID}`);
         
-        // التحقق من أن CHANNEL_ID موجود وصحيح
+        // التحقق من صحة CHANNEL_ID
         if (!CONFIG.CHANNEL_ID || CONFIG.CHANNEL_ID === '') {
-            console.error('❌ CHANNEL_ID is missing or empty');
+            console.error('❌ [CHANNEL CHECK] CHANNEL_ID is missing or empty');
+            return false;
+        }
+
+        // التحقق من أن البوت له صلاحية في القناة
+        try {
+            const chat = await bot.telegram.getChat(CONFIG.CHANNEL_ID);
+            console.log(`🔍 [CHANNEL CHECK] Bot has access to channel: ${chat.title}`);
+        } catch (botAccessError) {
+            console.error('❌ [CHANNEL CHECK] Bot does not have access to channel:', botAccessError.message);
             return false;
         }
 
         // استخدام getChatMember للتحقق من حالة العضوية
-        const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-        console.log(`📊 Chat member status for user ${userId}:`, chatMember.status);
+        let chatMember;
+        try {
+            chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
+            console.log(`🔍 [CHANNEL CHECK] Chat member status for user ${userId}:`, chatMember.status);
+        } catch (apiError) {
+            console.error('❌ [CHANNEL CHECK] Error calling getChatMember API:', apiError.message);
+            
+            // محاولة بديلة: التحقق من الحالة المخزنة
+            const userData = await dbManager.getUser(userId);
+            const storedStatus = userData?.channel_subscribed || false;
+            console.log(`🔍 [CHANNEL CHECK] Using stored subscription status:`, storedStatus);
+            return storedStatus;
+        }
         
         // العضوية النشطة تشمل: member, administrator, creator
-        const isSubscribed = ['member', 'administrator', 'creator'].includes(chatMember.status);
+        const validStatuses = ['member', 'administrator', 'creator'];
+        const isSubscribed = validStatuses.includes(chatMember.status);
+        
+        console.log(`🔍 [CHANNEL CHECK] User ${userId} subscription status: ${isSubscribed} (${chatMember.status})`);
         
         // تحديث حالة الاشتراك في قاعدة البيانات
-        await dbManager.setChannelSubscription(userId, isSubscribed);
+        try {
+            await dbManager.setChannelSubscription(userId, isSubscribed);
+            console.log(`🔍 [CHANNEL CHECK] Updated subscription status in database: ${isSubscribed}`);
+        } catch (dbError) {
+            console.error('❌ [CHANNEL CHECK] Error updating subscription status in database:', dbError.message);
+        }
         
-        console.log(`✅ Channel subscription check result for user ${userId}:`, isSubscribed);
         return isSubscribed;
         
     } catch (error) {
-        console.error('❌ Error checking channel subscription:', error);
+        console.error('❌ [CHANNEL CHECK] Unexpected error checking channel subscription:', error);
         
-        // في حالة الخطأ، نتحقق من حالة الاشتراك المخزنة في قاعدة البيانات
+        // في حالة الخطأ، نستخدم الحالة المخزنة في قاعدة البيانات
         try {
             const userData = await dbManager.getUser(userId);
             const storedStatus = userData?.channel_subscribed || false;
-            console.log(`📦 Using stored subscription status for user ${userId}:`, storedStatus);
+            console.log(`🔍 [CHANNEL CHECK] Fallback to stored subscription status:`, storedStatus);
             return storedStatus;
         } catch (dbError) {
-            console.error('❌ Error getting user subscription status from DB:', dbError);
+            console.error('❌ [CHANNEL CHECK] Error getting stored subscription status:', dbError);
             return false;
         }
     }
@@ -1221,13 +1249,9 @@ bot.on('text', async (ctx) => {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
+                    `❌ *يجب التسجيل أولاً*\n\n` +
+                    '🔐 أرسل /start لتسجيل الدخول',
+                    getLoginKeyboard()
                 );
                 return;
             }
@@ -1724,11 +1748,11 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - IMPROVED
+// 🆕 معالجة التحقق من الاشتراك في القناة - IMPROVED AND FIXED
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        console.log(`🔍 Manual channel subscription check for user ${userId}`);
+        console.log(`🔍 [MANUAL CHECK] Manual channel subscription check for user ${userId}`);
         
         const isSubscribed = await checkChannelSubscription(userId);
         
