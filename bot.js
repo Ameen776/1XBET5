@@ -200,15 +200,12 @@ bot.use(async (ctx, next) => {
         
         // تخطي التحقق للأدمن
         if (userId === CONFIG.ADMIN_ID) {
-            console.log(`👑 Admin ${userId} skipped channel check`);
             return next();
         }
         
         // تخطي لأوامر البدء والتحقق
         if (ctx.message?.text === '/start' || 
-            ctx.callbackQuery?.data === 'check_channel_subscription' ||
-            ctx.message?.text === '✅ تحقق من الاشتراك') {
-            console.log(`🔄 Skipping channel check for command: ${ctx.message?.text || ctx.callbackQuery?.data}`);
+            ctx.callbackQuery?.data === 'check_channel_subscription') {
             return next();
         }
 
@@ -216,15 +213,11 @@ bot.use(async (ctx, next) => {
         
         // إذا لم يكن مسجلاً بعد، تخطي
         if (!userData) {
-            console.log(`👤 User ${userId} not registered, skipping channel check`);
             return next();
         }
         
-        console.log(`🔍 Checking channel for registered user: ${userId}, Current status: ${userData.channel_subscribed}`);
-        
         // إذا كان مشتركاً مسبقاً، تخطي التحقق
         if (userData.channel_subscribed === true) {
-            console.log(`✅ User ${userId} already subscribed, skipping check`);
             return next();
         }
         
@@ -232,7 +225,6 @@ bot.use(async (ctx, next) => {
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (!isSubscribed) {
-            console.log(`❌ User ${userId} not subscribed to channel`);
             await ctx.replyWithMarkdown(
                 `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
                 `📢 يرجى الاشتراك في القناة:\n` +
@@ -245,11 +237,9 @@ bot.use(async (ctx, next) => {
             return;
         }
         
-        console.log(`✅ User ${userId} is subscribed to channel, proceeding...`);
         await next();
     } catch (error) {
         console.error('❌ Middleware error:', error);
-        // في حالة الخطأ، نسمح للمستخدم بالمتابعة
         await next();
     }
 });
@@ -258,7 +248,6 @@ bot.use(async (ctx, next) => {
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        console.log(`🔄 Manual channel check for user: ${userId}`);
         
         const isSubscribed = await checkChannelSubscription(userId);
         
@@ -266,14 +255,12 @@ async function handleCheckChannelSubscription(ctx) {
             await dbManager.setChannelSubscription(userId, true);
             await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
             
-            // حذف الرسالة القديمة
             try {
                 await ctx.deleteMessage();
             } catch (deleteError) {
                 console.log('Could not delete message:', deleteError);
             }
             
-            // إرسال رسالة الترحيب بعد التحقق
             const userName = ctx.from.first_name;
             
             const welcomeMessage = `
@@ -291,15 +278,6 @@ async function handleCheckChannelSubscription(ctx) {
             await ctx.replyWithMarkdown(welcomeMessage, getMainKeyboard());
         } else {
             await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
-            await ctx.replyWithMarkdown(
-                `❌ *لم يتم العثور على اشتراكك في القناة*\n\n` +
-                `📢 يرجى الاشتراك في القناة أولاً:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
         }
     } catch (error) {
         console.error('❌ Channel subscription check error:', error);
@@ -417,26 +395,25 @@ class EnhancedDatabaseManager {
 
     async saveUser(userId, userData) {
         try {
-            const completeUserData = {
-                user_id: userId,
-                username: userData.username || 'Unknown',
-                onexbet: userData.onexbet || '',
-                country: userData.country || '', // 🆕 إضافة الدولة
-                free_attempts: userData.free_attempts || 0,
-                subscription_status: userData.subscription_status || 'free',
-                subscription_type: userData.subscription_type || 'none',
-                subscription_start_date: userData.subscription_start_date || null,
-                subscription_end_date: userData.subscription_end_date || null,
-                joined_at: userData.joined_at || new Date().toISOString(),
-                total_predictions: userData.total_predictions || 0,
-                correct_predictions: userData.correct_predictions || 0,
-                wins: userData.wins || 0,
-                losses: userData.losses || 0,
-                total_bets: userData.total_bets || 0,
-                total_profit: userData.total_profit || 0,
-                last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false
-            };
+           const userData = {
+    user_id: userId,
+    username: ctx.from.first_name,
+    onexbet: ctx.session.accountId,
+    country: ctx.session.country || 'غير محدد',
+    free_attempts: 10,
+    subscription_status: 'free',
+    subscription_type: 'none',
+    subscription_start_date: null,
+    subscription_end_date: null,
+    joined_at: new Date().toISOString(),
+    total_predictions: 0,
+    correct_predictions: 0,
+    wins: 0,
+    losses: 0,
+    total_bets: 0,
+    total_profit: 0,
+    channel_subscribed: true  // 🆕 غيرها لـ true مباشرة
+};
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
             if (db) {
