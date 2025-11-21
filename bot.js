@@ -3,7 +3,7 @@
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
-// 🆕 ENHANCED: DUPLICATE ACCOUNT PREVENTION + REAL-TIME CHANNEL CHECK + SESSION MANAGEMENT
+// 🆕 ENHANCED: DUPLICATE ACCOUNT PREVENTION + SESSION MANAGEMENT
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
@@ -746,25 +746,20 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // 🆕 ENHANCED: Real-time channel subscription check with immediate verification
-    async checkChannelSubscriptionRealTime(userId) {
+    // 🛡️ نظام التحقق من الاشتراك في القناة - كما كان في الكود الأصلي
+    async checkChannelSubscription(userId) {
         try {
             const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
             const isSubscribed = chatMember.status === 'member' || 
                                chatMember.status === 'administrator' || 
                                chatMember.status === 'creator';
             
-            // Update user data immediately
-            const userData = await this.getUser(userId);
-            if (userData) {
-                userData.channel_subscribed = isSubscribed;
-                userData.last_subscription_check = new Date().toISOString();
-                await this.saveUser(userId, userData);
-            }
+            // حفظ حالة الاشتراك في Firebase مع وقت التحقق
+            await this.setChannelSubscription(userId, isSubscribed, new Date().toISOString());
             
             return isSubscribed;
         } catch (error) {
-            console.error('Real-time channel subscription check error:', error);
+            console.error('Error checking channel subscription:', error);
             return false;
         }
     }
@@ -1215,7 +1210,7 @@ async function checkChannelSubscription(userId) {
     }
 }
 
-// 🛡️ تحقق من الاشتراك قبل كل أمر - محسن مع نظام الكاش
+// 🛡️ تحقق من الاشتراك قبل كل أمر - محسن مع نظام الكاش (نفس النظام القديم الذي كان يعمل)
 bot.use(async (ctx, next) => {
     try {
         const userId = ctx.from.id.toString();
@@ -1235,19 +1230,39 @@ bot.use(async (ctx, next) => {
         // إذا لم يكن مسجلاً بعد، تخطي
         if (!userData) return next();
         
-        // 🆕 REAL-TIME CHANNEL CHECK - التحقق الفوري المباشر
-        const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
-        if (!isSubscribed) {
-            await ctx.replyWithMarkdown(
-                `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                `📢 يرجى الاشتراك في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
+        // التحقق من الاشتراك في القناة مع نظام الكاش (5 دقائق) - النظام القديم المجرب
+        const now = new Date();
+        const lastCheck = userData.last_subscription_check ? new Date(userData.last_subscription_check) : null;
+        const shouldCheck = !lastCheck || (now - lastCheck) > 5 * 60 * 1000; // 5 دقائق
+
+        if (shouldCheck) {
+            const isSubscribed = await checkChannelSubscription(userId);
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
+        } else {
+            // استخدام البيانات المخزنة في الكاش - النظام القديم
+            if (!userData.channel_subscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
         }
         
         await next();
@@ -1637,7 +1652,7 @@ bot.on('text', async (ctx) => {
                 ctx.session.awaitingCountry = false;
                 
                 // التحقق من الاشتراك في القناة بعد اختيار الدولة
-                const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
+                const isSubscribed = await checkChannelSubscription(userId);
                 
                 if (!isSubscribed) {
                     // إرسال رسالة طلب الاشتراك في القناة
@@ -1688,7 +1703,7 @@ bot.on('text', async (ctx) => {
         // التحقق من الاشتراك في القناة للمستخدمين الجدد
         const existingUser = await dbManager.getUser(userId);
         if (!existingUser && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id') {
-            const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
+            const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
@@ -1794,7 +1809,7 @@ bot.on('text', async (ctx) => {
         // 🔐 زر إدخال رقم الحساب - التحقق من الاشتراك أولاً
         if (text === '🔐 إدخال رقم الحساب') {
             // التحقق من الاشتراك في القناة أولاً
-            const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
+            const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
@@ -1819,7 +1834,7 @@ bot.on('text', async (ctx) => {
         // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار
         if (session.step === 'awaiting_account_id') {
             // التحقق من الاشتراك في القناة أولاً
-            const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
+            const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
@@ -2313,11 +2328,11 @@ async function handleReconnectAlgorithm(ctx) {
     }
 }
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - محسنة ومتصلة مع Firebase
+// 🆕 معالجة التحقق من الاشتراك في القناة - النظام القديم المجرب
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        const isSubscribed = await dbManager.checkChannelSubscriptionRealTime(userId);
+        const isSubscribed = await checkChannelSubscription(userId);
         
         if (isSubscribed) {
             await dbManager.setChannelSubscription(userId, true, new Date().toISOString());
@@ -2932,7 +2947,7 @@ bot.launch().then(() => {
     console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
-    console.log('🔐 Channel Subscription: REAL-TIME CHECK ENABLED');
+    console.log('🔐 Channel Subscription: FIXED - OLD SYSTEM RESTORED');
     console.log('🔄 Analysis Sessions: 5-MINUTE TIMEOUT ENABLED');
     console.log('🎯 Win/Lose Buttons: ENHANCED WITH AUTO-PREDICTION');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
