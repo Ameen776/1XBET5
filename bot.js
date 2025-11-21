@@ -220,13 +220,7 @@ bot.use(async (ctx, next) => {
 async function handleCheckChannelSubscription(ctx) {
     await dbManager.setChannelSubscription(ctx.from.id.toString(), true);
     await ctx.answerCbQuery('✅ تم التحقق!');
-    
-    try {
-        await ctx.deleteMessage();
-    } catch (e) {}
-    
-    await ctx.replyWithMarkdown('🎯 يمكنك استخدام البوت الآن', getMainKeyboard());
-}
+   }
 });
 
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
