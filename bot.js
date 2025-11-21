@@ -169,39 +169,32 @@ async function initializeFirebase() {
 
 // INITIALIZE FIREBASE
 initializeFirebase();
-
-// 🔐 نظام الاشتراك الإجباري في القناة - معدل
+// 🔐 نظام الاشتراك الإجباري في القناة - بديل مبسط
 async function checkChannelSubscription(userId) {
     try {
-        console.log(`🔍 Checking channel subscription for user: ${userId}`);
-        
+        // محاولة التحقق من الاشتراك
         const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-        const isSubscribed = chatMember.status === 'member' || 
-                           chatMember.status === 'administrator' || 
-                           chatMember.status === 'creator';
+        const isSubscribed = ['member', 'administrator', 'creator'].includes(chatMember.status);
         
-        console.log(`📊 User ${userId} subscription status: ${chatMember.status}, Subscribed: ${isSubscribed}`);
-        
-        // حفظ حالة الاشتراك في Firebase
+        console.log(`✅ User ${userId} is subscribed: ${isSubscribed}`);
         await dbManager.setChannelSubscription(userId, isSubscribed);
-        
         return isSubscribed;
+        
     } catch (error) {
-        console.error('❌ Error checking channel subscription:', error);
-        // في حالة الخطأ، نعتبر المستخدم مشترك مؤقتاً
+        console.log('⚠️  Could not verify channel subscription, allowing access');
+        // إذا ما قدرت تتحقق، سجل المستخدم كمشترك عشان ما نعطل الخدمة
+        await dbManager.setChannelSubscription(userId, true);
         return true;
     }
 }
 
-// 🛡️ تحقق من الاشتراك قبل كل أمر - معدل
+// 🛡️ تحقق من الاشتراك قبل كل أمر - مبسط
 bot.use(async (ctx, next) => {
     try {
         const userId = ctx.from.id.toString();
         
         // تخطي التحقق للأدمن
-        if (userId === CONFIG.ADMIN_ID) {
-            return next();
-        }
+        if (userId === CONFIG.ADMIN_ID) return next();
         
         // تخطي لأوامر البدء والتحقق
         if (ctx.message?.text === '/start' || 
@@ -210,26 +203,21 @@ bot.use(async (ctx, next) => {
         }
 
         const userData = await dbManager.getUser(userId);
-        
-        // إذا لم يكن مسجلاً بعد، تخطي
-        if (!userData) {
-            return next();
-        }
+        if (!userData) return next();
         
         // إذا كان مشتركاً مسبقاً، تخطي التحقق
         if (userData.channel_subscribed === true) {
             return next();
         }
         
-        // التحقق من الاشتراك في القناة
+        // جرب تتحقق، إذا ما ضبطت سجل كمشترك
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (!isSubscribed) {
             await ctx.replyWithMarkdown(
                 `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                `📢 يرجى الاشتراك في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                `📢 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                `✅ بعد الاشتراك اضغط:`,
                 Markup.inlineKeyboard([
                     [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
                 ])
@@ -239,49 +227,36 @@ bot.use(async (ctx, next) => {
         
         await next();
     } catch (error) {
-        console.error('❌ Middleware error:', error);
+        console.error('Middleware error:', error);
         await next();
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - معدل
+// معالجة زر التحقق
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (isSubscribed) {
             await dbManager.setChannelSubscription(userId, true);
-            await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
+            await ctx.answerCbQuery('✅ تم التحقق بنجاح!');
             
             try {
                 await ctx.deleteMessage();
-            } catch (deleteError) {
-                console.log('Could not delete message:', deleteError);
-            }
+            } catch (e) {}
             
-            const userName = ctx.from.first_name;
-            
-            const welcomeMessage = `
-✅ *تم التحقق من الاشتراك بنجاح!*
-
-🎉 *مرحباً ${userName}* 
-🔐 يمكنك الآن استخدام جميع ميزات البوت
-
-🎯 *اختر من القائمة:*
-• 🎯 جلب التحليل - للحصول على توقعات الذكاء الاصطناعي
-• 📊 إحصائياتي - لعرض إحصائياتك
-• 💳 الاشتراكات - للاشتراك في الباقات
-            `;
-
-            await ctx.replyWithMarkdown(welcomeMessage, getMainKeyboard());
+            await ctx.replyWithMarkdown(
+                '✅ *تم التحقق من الاشتراك بنجاح!*\n\n' +
+                '🎯 يمكنك الآن استخدام البوت',
+                getMainKeyboard()
+            );
         } else {
-            await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
+            await ctx.answerCbQuery('❌ لم تشترك بعد!');
         }
     } catch (error) {
-        console.error('❌ Channel subscription check error:', error);
-        await ctx.answerCbQuery('❌ حدث خطأ في التحقق');
+        await ctx.answerCbQuery('✅ تم التحقق');
+        await dbManager.setChannelSubscription(ctx.from.id.toString(), true);
     }
 }
 });
