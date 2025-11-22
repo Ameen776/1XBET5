@@ -1,12 +1,12 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 ENHANCED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
-// 🆕 ENHANCED: SMART CHANNEL SUBSCRIPTION + DUPLICATE PREVENTION + SESSION RESTORE
+// 🔐 FIXED CHANNEL SUBSCRIPTION VERIFICATION
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -77,7 +77,7 @@ const CONFIG = {
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
     PREDICTION_IMAGE: "https://i.ibb.co/rGTZm2mB/IMG.jpg",
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee",
-    SUPPORT_BOT: "@GEMZGOOLBOT" // 🆕 تحديث الدعم الفني
+    SUPPORT_BOT: process.env.SUPPORT_BOT || "@GEMZGOOLBOT"
 };
 
 console.log('✅ Enhanced Configuration loaded successfully');
@@ -172,45 +172,68 @@ async function initializeFirebase() {
 // INITIALIZE FIREBASE
 initializeFirebase();
 
-// 🆕 ENHANCED CHANNEL SUBSCRIPTION SYSTEM WITH PERSISTENT MEMORY
+// 🔄 ENHANCED CHANNEL SUBSCRIPTION SYSTEM - FIXED
 class ChannelSubscriptionManager {
     constructor() {
         this.subscriptionCache = new Map();
     }
 
+    // 🆕 دالة التحقق من الاشتراك عبر Telegram API مباشرة
     async checkChannelSubscription(userId) {
         try {
-            // 🆕 التحقق من الذاكرة المؤقتة أولاً
+            console.log(`🔍 التحقق من اشتراك المستخدم ${userId} في القناة ${CONFIG.CHANNEL_ID}`);
+            
+            // استخدام Telegram API مباشرة للتحقق من الاشتراك
+            const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
+            console.log(`📊 حالة المستخدم ${userId}: ${chatMember.status}`);
+            
+            const isSubscribed = ["member", "administrator", "creator"].includes(chatMember.status);
+            
+            // 🆕 تحديث الذاكرة المؤقتة
+            this.subscriptionCache.set(userId, isSubscribed);
+            
+            return isSubscribed;
+        } catch (error) {
+            console.error('❌ خطأ في التحقق من الاشتراك:', error.message);
+            
+            // 🆕 محاولة بديلة باستخدام axios مباشرة
+            try {
+                console.log('🔄 محاولة التحقق عبر API مباشر...');
+                const response = await axios.get(
+                    `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getChatMember`,
+                    {
+                        params: {
+                            chat_id: CONFIG.CHANNEL_ID,
+                            user_id: userId
+                        }
+                    }
+                );
+                
+                const status = response.data.result.status;
+                const isSubscribed = ["member", "administrator", "creator"].includes(status);
+                console.log(`📊 حالة المستخدم عبر API مباشر: ${status} -> ${isSubscribed}`);
+                
+                this.subscriptionCache.set(userId, isSubscribed);
+                return isSubscribed;
+            } catch (apiError) {
+                console.error('❌ فشل التحقق عبر API مباشر:', apiError.message);
+                return false;
+            }
+        }
+    }
+
+    // 🆕 دالة التحقق المحسنة مع معالجة الأخطاء
+    async isMember(userId) {
+        try {
+            // التحقق من الذاكرة المؤقتة أولاً
             if (this.subscriptionCache.has(userId)) {
                 return this.subscriptionCache.get(userId);
             }
 
-            const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-            const isSubscribed = chatMember.status === 'member' || 
-                               chatMember.status === 'administrator' || 
-                               chatMember.status === 'creator';
-            
-            // 🆕 حفظ في الذاكرة المؤقتة
-            this.subscriptionCache.set(userId, isSubscribed);
-            
-            // حفظ حالة الاشتراك في Firebase
-            await dbManager.setChannelSubscription(userId, isSubscribed);
-            
+            const isSubscribed = await this.checkChannelSubscription(userId);
             return isSubscribed;
         } catch (error) {
-            console.error('Error checking channel subscription:', error);
-            
-            // 🆕 محاولة الاسترجاع من قاعدة البيانات في حالة الخطأ
-            try {
-                const userData = await dbManager.getUser(userId);
-                if (userData && userData.channel_subscribed) {
-                    this.subscriptionCache.set(userId, true);
-                    return true;
-                }
-            } catch (dbError) {
-                console.error('Error getting user data for subscription:', dbError);
-            }
-            
+            console.error('Error in isMember:', error);
             return false;
         }
     }
@@ -223,59 +246,11 @@ class ChannelSubscriptionManager {
     // 🆕 إضافة مستخدم إلى القائمة البيضاء (مشترك)
     addToWhitelist(userId) {
         this.subscriptionCache.set(userId, true);
-        dbManager.setChannelSubscription(userId, true);
     }
 }
 
 // INITIALIZE CHANNEL SUBSCRIPTION MANAGER
 const channelManager = new ChannelSubscriptionManager();
-
-// 🛡️ تحقق من الاشتراك قبل كل أمر - ENHANCED WITH PERSISTENT MEMORY
-bot.use(async (ctx, next) => {
-    try {
-        const userId = ctx.from.id.toString();
-        
-        // تخطي التحقق للأدمن
-        if (userId === CONFIG.ADMIN_ID) return next();
-        
-        // تخطي لأوامر البدء والتحقق
-        if (ctx.message?.text === '/start' || 
-            ctx.callbackQuery?.data === 'check_channel_subscription' ||
-            ctx.message?.text === '/admin') {
-            return next();
-        }
-
-        const userData = await dbManager.getUser(userId);
-        
-        // إذا لم يكن مسجلاً بعد، تخطي
-        if (!userData) return next();
-        
-        // 🆕 التحقق من الاشتراك في القناة مع الذاكرة المؤقتة
-        if (!userData.channel_subscribed) {
-            const isSubscribed = await channelManager.checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            } else {
-                // 🆕 إذا كان مشتركاً، تحديث البيانات
-                await dbManager.setChannelSubscription(userId, true);
-            }
-        }
-        
-        await next();
-    } catch (error) {
-        console.error('Middleware error:', error);
-        await next();
-    }
-});
 
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
 class PersistentStorage {
@@ -283,7 +258,7 @@ class PersistentStorage {
         this.userDatabase = new Map();
         this.paymentDatabase = new Map();
         this.settingsDatabase = new Map();
-        this.userSessions = new Map(); // 🆕 تخزين الجلسات
+        this.userSessions = new Map();
         this.backupInterval = null;
         this.init();
     }
@@ -319,13 +294,7 @@ class PersistentStorage {
                     this.settingsDatabase.set('config', settingsDoc.data());
                 }
 
-                // 🆕 LOAD SESSIONS FROM FIREBASE
-                const sessionsSnapshot = await db.collection('sessions').get();
-                sessionsSnapshot.forEach(doc => {
-                    this.userSessions.set(doc.id, doc.data());
-                });
-
-                console.log(`✅ Loaded backup: ${this.userDatabase.size} users, ${this.paymentDatabase.size} payments, ${this.userSessions.size} sessions`);
+                console.log(`✅ Loaded backup: ${this.userDatabase.size} users, ${this.paymentDatabase.size} payments`);
             }
         } catch (error) {
             console.error('Backup load error:', error);
@@ -339,7 +308,6 @@ class PersistentStorage {
                     users: Array.from(this.userDatabase.entries()),
                     payments: Array.from(this.paymentDatabase.entries()),
                     settings: Array.from(this.settingsDatabase.entries()),
-                    sessions: Array.from(this.userSessions.entries()), // 🆕 حفظ الجلسات
                     timestamp: new Date().toISOString(),
                     version: CONFIG.VERSION
                 };
@@ -349,66 +317,6 @@ class PersistentStorage {
             }
         } catch (error) {
             console.error('Auto-backup error:', error);
-        }
-    }
-
-    // 🆕 حفظ جلسة المستخدم
-    async saveUserSession(userId, sessionData) {
-        try {
-            const sessionToSave = {
-                ...sessionData,
-                lastUpdated: new Date().toISOString()
-            };
-
-            // 💾 SAVE TO FIREBASE
-            if (db) {
-                await db.collection('sessions').doc(userId.toString()).set(sessionToSave, { merge: true });
-            }
-            
-            // 💾 SAVE TO LOCAL STORAGE
-            this.userSessions.set(userId, sessionToSave);
-            
-            return true;
-        } catch (error) {
-            console.error('Save session error:', error);
-            this.userSessions.set(userId, sessionData);
-            return true;
-        }
-    }
-
-    // 🆕 استرجاع جلسة المستخدم
-    async getUserSession(userId) {
-        try {
-            // 🔄 TRY FIREBASE FIRST
-            if (db) {
-                const sessionDoc = await db.collection('sessions').doc(userId.toString()).get();
-                if (sessionDoc.exists) {
-                    const sessionData = sessionDoc.data();
-                    this.userSessions.set(userId, sessionData);
-                    return sessionData;
-                }
-            }
-            
-            // 🔄 FALLBACK TO LOCAL STORAGE
-            return this.userSessions.get(userId) || null;
-        } catch (error) {
-            console.error('Get session error:', error);
-            return this.userSessions.get(userId) || null;
-        }
-    }
-
-    // 🆕 حذف جلسة المستخدم
-    async deleteUserSession(userId) {
-        try {
-            if (db) {
-                await db.collection('sessions').doc(userId.toString()).delete();
-            }
-            this.userSessions.delete(userId);
-            return true;
-        } catch (error) {
-            console.error('Delete session error:', error);
-            this.userSessions.delete(userId);
-            return true;
         }
     }
 
@@ -423,12 +331,12 @@ class PersistentStorage {
 // INITIALIZE PERSISTENT STORAGE
 const persistentStorage = new PersistentStorage();
 
-// 💾 ENHANCED DATABASE MANAGER - PERSISTENT DATA WITH SESSION SUPPORT
+// 💾 ENHANCED DATABASE MANAGER - PERSISTENT DATA
 class EnhancedDatabaseManager {
     constructor() {
         this.maintenanceMode = false;
         this.storage = persistentStorage;
-        this.duplicateAccounts = new Set(); // 🆕 منع الحسابات المكررة
+        this.duplicateAccounts = new Set();
     }
 
     async getUser(userId) {
@@ -453,39 +361,6 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // 🆕 التحقق من الحسابات المكررة
-    async isDuplicateAccount(onexbet, currentUserId = null) {
-        try {
-            // 🔄 TRY FIREBASE FIRST
-            if (db) {
-                const usersSnapshot = await db.collection('users').where('onexbet', '==', onexbet).get();
-                if (!usersSnapshot.empty) {
-                    const userDoc = usersSnapshot.docs[0];
-                    // إذا كان نفس المستخدم، فلا يعتبر تكرار
-                    if (currentUserId && userDoc.id === currentUserId.toString()) {
-                        return false;
-                    }
-                    return true;
-                }
-            }
-
-            // 🔄 CHECK LOCAL STORAGE
-            for (let [userId, userData] of this.storage.userDatabase) {
-                if (userData.onexbet === onexbet) {
-                    // إذا كان نفس المستخدم، فلا يعتبر تكرار
-                    if (currentUserId && userId === currentUserId.toString()) {
-                        return false;
-                    }
-                    return true;
-                }
-            }
-            return false;
-        } catch (error) {
-            console.error('Duplicate account check error:', error);
-            return false;
-        }
-    }
-
     async saveUser(userId, userData) {
         try {
             const completeUserData = {
@@ -506,18 +381,8 @@ class EnhancedDatabaseManager {
                 total_bets: userData.total_bets || 0,
                 total_profit: userData.total_profit || 0,
                 last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false,
-                last_analysis_time: userData.last_analysis_time || null, // 🆕 وقت آخر تحليل
-                algorithm_linked: userData.algorithm_linked || true // 🆕 حالة ربط الخوارزمية
+                channel_subscribed: userData.channel_subscribed || false
             };
-
-            // 🆕 التحقق من التكرار قبل الحفظ
-            if (completeUserData.onexbet) {
-                const isDuplicate = await this.isDuplicateAccount(completeUserData.onexbet, userId);
-                if (isDuplicate) {
-                    throw new Error('DUPLICATE_ACCOUNT');
-                }
-            }
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
             if (db) {
@@ -530,59 +395,10 @@ class EnhancedDatabaseManager {
             return true;
             
         } catch (error) {
-            if (error.message === 'DUPLICATE_ACCOUNT') {
-                throw error;
-            }
             console.error('Error saving user:', error);
             // 🆘 EMERGENCY SAVE TO LOCAL STORAGE
             this.storage.userDatabase.set(userId, userData);
             return true;
-        }
-    }
-
-    // 🆕 تحديث وقت آخر تحليل
-    async updateLastAnalysisTime(userId) {
-        try {
-            const userData = await this.getUser(userId);
-            if (userData) {
-                userData.last_analysis_time = new Date().toISOString();
-                userData.algorithm_linked = true;
-                await this.saveUser(userId, userData);
-            }
-        } catch (error) {
-            console.error('Update last analysis time error:', error);
-        }
-    }
-
-    // 🆕 التحقق من انتهاء جلسة التحليل (5 دقائق)
-    async isAnalysisSessionExpired(userId) {
-        try {
-            const userData = await this.getUser(userId);
-            if (!userData || !userData.last_analysis_time) {
-                return true;
-            }
-
-            const lastAnalysisTime = new Date(userData.last_analysis_time);
-            const currentTime = new Date();
-            const diffMinutes = (currentTime - lastAnalysisTime) / (1000 * 60);
-
-            return diffMinutes > 5; // انتهت بعد 5 دقائق
-        } catch (error) {
-            console.error('Check analysis session error:', error);
-            return true;
-        }
-    }
-
-    // 🆕 فك ربط الخوارزمية
-    async unlinkAlgorithm(userId) {
-        try {
-            const userData = await this.getUser(userId);
-            if (userData) {
-                userData.algorithm_linked = false;
-                await this.saveUser(userId, userData);
-            }
-        } catch (error) {
-            console.error('Unlink algorithm error:', error);
         }
     }
 
@@ -796,178 +612,6 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // 🔄 SYNC ALL DATA TO FIREBASE
-    async syncAllDataToFirebase() {
-        try {
-            if (!db) {
-                console.log('❌ Firebase not available for sync');
-                return false;
-            }
-
-            console.log('🔄 Starting data synchronization to Firebase...');
-
-            // 📤 SYNC USERS
-            const users = Array.from(this.storage.userDatabase.entries());
-            for (const [userId, userData] of users) {
-                await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
-            }
-
-            // 📤 SYNC PAYMENTS
-            const payments = Array.from(this.storage.paymentDatabase.entries());
-            for (const [paymentId, paymentData] of payments) {
-                await db.collection('payments').doc(paymentId).set(paymentData, { merge: true });
-            }
-
-            // 📤 SYNC SETTINGS
-            const settings = this.storage.settingsDatabase.get('config');
-            if (settings) {
-                await db.collection('settings').doc('config').set(settings, { merge: true });
-            }
-
-            // 🆕 SYNC SESSIONS
-            const sessions = Array.from(this.storage.userSessions.entries());
-            for (const [userId, sessionData] of sessions) {
-                await db.collection('sessions').doc(userId.toString()).set(sessionData, { merge: true });
-            }
-
-            console.log(`✅ Data sync completed: ${users.length} users, ${payments.length} payments, ${sessions.length} sessions`);
-            return true;
-
-        } catch (error) {
-            console.error('Data sync error:', error);
-            return false;
-        }
-    }
-
-    // 📥 RESTORE FROM FIREBASE
-    async restoreFromFirebase() {
-        try {
-            if (!db) {
-                console.log('❌ Firebase not available for restore');
-                return false;
-            }
-
-            console.log('📥 Restoring data from Firebase...');
-
-            // CLEAR LOCAL STORAGE
-            this.storage.userDatabase.clear();
-            this.storage.paymentDatabase.clear();
-            this.storage.settingsDatabase.clear();
-            this.storage.userSessions.clear();
-
-            // 📥 RESTORE USERS
-            const usersSnapshot = await db.collection('users').get();
-            usersSnapshot.forEach(doc => {
-                this.storage.userDatabase.set(doc.id, doc.data());
-            });
-
-            // 📥 RESTORE PAYMENTS
-            const paymentsSnapshot = await db.collection('payments').get();
-            paymentsSnapshot.forEach(doc => {
-                this.storage.paymentDatabase.set(doc.id, doc.data());
-            });
-
-            // 📥 RESTORE SETTINGS
-            const settingsDoc = await db.collection('settings').doc('config').get();
-            if (settingsDoc.exists) {
-                this.storage.settingsDatabase.set('config', settingsDoc.data());
-            }
-
-            // 🆕 RESTORE SESSIONS
-            const sessionsSnapshot = await db.collection('sessions').get();
-            sessionsSnapshot.forEach(doc => {
-                this.storage.userSessions.set(doc.id, doc.data());
-            });
-
-            console.log(`✅ Restore completed: ${this.storage.userDatabase.size} users, ${this.storage.paymentDatabase.size} payments, ${this.storage.userSessions.size} sessions`);
-            return true;
-
-        } catch (error) {
-            console.error('Restore error:', error);
-            return false;
-        }
-    }
-
-    // 🔍 Get user by 1xBet account number
-    async getUserByOneXBet(onexbet) {
-        try {
-            // 🔄 TRY FIREBASE FIRST
-            if (db) {
-                const usersSnapshot = await db.collection('users').where('onexbet', '==', onexbet).get();
-                if (!usersSnapshot.empty) {
-                    return usersSnapshot.docs[0].data();
-                }
-            }
-
-            // 🔄 CHECK LOCAL STORAGE
-            for (let [userId, userData] of this.storage.userDatabase) {
-                if (userData.onexbet === onexbet) {
-                    return userData;
-                }
-            }
-            return null;
-            
-        } catch (error) {
-            console.error('Get user by onexbet error:', error);
-            return null;
-        }
-    }
-
-    isMaintenanceMode() {
-        return this.maintenanceMode;
-    }
-
-    async setMaintenanceMode(enabled) {
-        try {
-            const settings = await this.getSettings();
-            settings.maintenance_mode = enabled;
-            await this.updateSettings(settings);
-            this.maintenanceMode = enabled;
-            return true;
-        } catch (error) {
-            this.maintenanceMode = enabled;
-            return true;
-        }
-    }
-
-    async searchUsers(query) {
-        try {
-            const users = await this.getAllUsers();
-            const lowerQuery = query.toLowerCase();
-            
-            return users.filter(user => 
-                (user.user_id && user.user_id.toString().includes(query)) ||
-                (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
-                (user.onexbet && user.onexbet.toString().includes(query))
-            );
-        } catch (error) {
-            console.error('Search users error:', error);
-            return [];
-        }
-    }
-
-    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
-    async backupData() {
-        try {
-            const backupData = {
-                users: await this.getAllUsers(),
-                payments: await this.getAllPayments(),
-                settings: await this.getSettings(),
-                sessions: Array.from(this.storage.userSessions.entries()), // 🆕 إضافة الجلسات
-                timestamp: new Date().toISOString()
-            };
-            
-            if (db) {
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-            }
-            
-            return backupData;
-        } catch (error) {
-            console.error('Backup error:', error);
-            return null;
-        }
-    }
-
     // دالة جديدة للتحقق من اشتراك القناة
     async setChannelSubscription(userId, subscribed) {
         try {
@@ -1022,53 +666,10 @@ class EnhancedDatabaseManager {
             };
         }
     }
-
-    // 🆕 حفظ جلسة المستخدم
-    async saveUserSession(userId, sessionData) {
-        return await this.storage.saveUserSession(userId, sessionData);
-    }
-
-    // 🆕 استرجاع جلسة المستخدم
-    async getUserSession(userId) {
-        return await this.storage.getUserSession(userId);
-    }
 }
 
 // INITIALIZE ENHANCED DATABASE MANAGER
 const dbManager = new EnhancedDatabaseManager();
-
-// 🚀 INITIAL DATA SYNC ON STARTUP
-async function initializeDataSync() {
-    try {
-        console.log('🔄 Initializing data synchronization...');
-        
-        // 📥 TRY TO RESTORE FROM FIREBASE FIRST
-        const restoreSuccess = await dbManager.restoreFromFirebase();
-        
-        if (!restoreSuccess) {
-            console.log('🔄 No Firebase data found, checking local storage...');
-            
-            // 📊 CHECK IF WE HAVE LOCAL DATA
-            const settings = await dbManager.getSettings();
-            const users = await dbManager.getAllUsers();
-            
-            console.log(`📊 Local data found: ${users.length} users`);
-            
-            // 📤 SYNC LOCAL DATA TO FIREBASE
-            if (users.length > 0) {
-                await dbManager.syncAllDataToFirebase();
-            }
-        }
-        
-        console.log('✅ Data initialization completed');
-        
-    } catch (error) {
-        console.error('Data initialization error:', error);
-    }
-}
-
-// 🔄 CALL INITIALIZATION ON STARTUP
-initializeDataSync();
 
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
@@ -1104,36 +705,15 @@ class DynamicStatistics {
     }
 }
 
-// 🧠 SMART GOAL PREDICTION ENGINE WITH ENHANCED ALGORITHM
+// 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
         this.algorithmVersion = "16.0";
-        this.userAlgorithms = new Map(); // 🆕 خوارزميات منفصلة لكل مستخدم
-    }
-
-    // 🆕 إنشاء خوارزمية فريدة لكل مستخدم
-    getUserAlgorithm(userId) {
-        if (!this.userAlgorithms.has(userId)) {
-            // إنشاء خوارزمية فريدة بناءً على معرف المستخدم
-            const seed = parseInt(userId) % 1000;
-            this.userAlgorithms.set(userId, {
-                seed: seed,
-                pattern: (Date.now() % 3) + 1, // نمط 1، 2، أو 3
-                successRate: 65 + (seed % 15), // معدل نجاح بين 65% و 80%
-                lastPrediction: null
-            });
-        }
-        return this.userAlgorithms.get(userId);
     }
 
     generateSmartPrediction(userId) {
-        const userAlgorithm = this.getUserAlgorithm(userId);
-        const { seed, pattern, successRate } = userAlgorithm;
-        
-        // استخدام الخوارزمية الفريدة للمستخدم
-        const randomFactor = (Date.now() + seed) % 100;
-        const isGoal = randomFactor < successRate;
-        const probability = Math.floor(randomFactor % 30) + 60;
+        const isGoal = Math.random() > 0.5;
+        const probability = Math.floor(Math.random() * 30) + 60;
         
         // الحصول على الوقت الحقيقي الحالي
         const now = new Date();
@@ -1153,31 +733,14 @@ class GoalPredictionAI {
                 `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%` :
                 `🛡️ الدفاع المنظم يحد من الفرص بنسبة ${probability}%`,
             timestamp: realTime,
-            algorithm: this.algorithmVersion,
-            userAlgorithm: userAlgorithm.pattern // 🆕 إضافة نمط المستخدم
+            algorithm: this.algorithmVersion
         };
 
-        userAlgorithm.lastPrediction = prediction;
         return prediction;
     }
 
     generateNextPrediction(userId) {
         return this.generateSmartPrediction(userId);
-    }
-
-    // 🆕 تعديل الخوارزمية بعد الخسارة
-    adjustAlgorithmAfterLoss(userId) {
-        const userAlgorithm = this.getUserAlgorithm(userId);
-        // زيادة معدل النجاح قليلاً بعد الخسارة
-        userAlgorithm.successRate = Math.min(85, userAlgorithm.successRate + 2);
-        userAlgorithm.pattern = (userAlgorithm.pattern % 3) + 1; // تغيير النمط
-    }
-
-    // 🆕 الحفاظ على الخوارزمية بعد الفوز
-    maintainAlgorithmAfterWin(userId) {
-        const userAlgorithm = this.getUserAlgorithm(userId);
-        // الحفاظ على النمط الحالي مع تعديل طفيف
-        userAlgorithm.successRate = Math.max(65, userAlgorithm.successRate - 1);
     }
 }
 
@@ -1266,7 +829,6 @@ class ChannelNotifier {
 
 👤 *المستخدم:* ${userData.username}
 🔐 *الحساب:* ${userData.onexbet}
-📍 *الدولة:* ${userData.country || 'غير محدد'}
 📦 *الباقة:* ${subscriptionDisplayName}
 💰 *المبلغ:* ${amount}$
 💳 *النظام:* ${systemText}
@@ -1289,7 +851,6 @@ class ChannelNotifier {
 
 👤 *المستخدم:* ${userData.username}
 🔐 *الحساب:* ${userData.onexbet}
-📍 *الدولة:* ${userData.country || 'غير محدد'}
 🎯 *التوقع:* ${prediction.type}
 📈 *الاحتمالية:* ${prediction.probability}%
 💰 *مبلغ الرهان:* ${betAmount}$
@@ -1311,7 +872,56 @@ ${prediction.reasoning}
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
 
-// 🎯 BOT SETUP WITH ENHANCED SESSION MANAGEMENT
+// 🛡️ تحقق من الاشتراك قبل كل أمر - UPDATED WITH FIXED VERIFICATION
+bot.use(async (ctx, next) => {
+    try {
+        const userId = ctx.from.id.toString();
+        
+        // تخطي التحقق للأدمن
+        if (userId === CONFIG.ADMIN_ID) return next();
+        
+        // تخطي لأوامر البدء والتحقق
+        if (ctx.message?.text === '/start' || 
+            ctx.callbackQuery?.data === 'check_channel_subscription' ||
+            ctx.message?.text === '/admin') {
+            return next();
+        }
+
+        const userData = await dbManager.getUser(userId);
+        
+        // إذا لم يكن مسجلاً بعد، تخطي
+        if (!userData) return next();
+        
+        // 🆕 التحقق من الاشتراك في القناة مع النظام المحسن
+        if (!userData.channel_subscribed) {
+            const isSubscribed = await channelManager.isMember(userId);
+            console.log(`🔍 تحقق من اشتراك ${userId} في الميدلوير: ${isSubscribed}`);
+            
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            } else {
+                // 🆕 إذا كان مشتركاً، تحديث البيانات
+                await dbManager.setChannelSubscription(userId, true);
+            }
+        }
+        
+        await next();
+    } catch (error) {
+        console.error('Middleware error:', error);
+        await next();
+    }
+});
+
+// 🎯 BOT SETUP
 bot.use(session({ 
     defaultSession: () => ({ 
         step: 'start',
@@ -1339,37 +949,9 @@ bot.use(session({
         bankEditData: {},
         checkingChannel: false,
         country: null,
-        awaitingCountry: false,
-        lastActivity: Date.now(), // 🆕 تتبع آخر نشاط
-        algorithmConnected: true // 🆕 حالة اتصال الخوارزمية
+        awaitingCountry: false
     })
 }));
-
-// 🆕 MIDDLEWARE لحفظ الجلسات تلقائياً
-bot.use(async (ctx, next) => {
-    await next();
-    
-    // حفظ الجلسة بعد كل معالجة
-    if (ctx.from && ctx.session) {
-        const userId = ctx.from.id.toString();
-        try {
-            await dbManager.saveUserSession(userId, ctx.session);
-        } catch (error) {
-            console.error('Error saving session:', error);
-        }
-    }
-});
-
-// 🆕 استرجاع الجلسات عند بدء التشغيل
-async function restoreUserSessions() {
-    try {
-        console.log('🔄 Restoring user sessions...');
-        const sessions = await dbManager.getAllUserSessions();
-        console.log(`✅ Restored ${sessions.size} user sessions`);
-    } catch (error) {
-        console.error('Error restoring sessions:', error);
-    }
-}
 
 // 🎯 لوحة المفاتيح الثابتة - UPDATED FOR DUAL PAYMENT
 const getMainKeyboard = () => {
@@ -1508,18 +1090,6 @@ function getSubscriptionDuration(type) {
     return durations[type] || 'غير محدد';
 }
 
-// 🆕 دالة لإنشاء وصف البنك تلقائياً
-function generateBankDescription(subscriptionType, price, accountNumber) {
-    const typeNames = {
-        'week': 'أسبوعية',
-        'month': 'شهرية',
-        'three_months': '3 أشهر',
-        'year': 'سنوية'
-    };
-    
-    return `🔹 تحويل بنكي - باقة ${typeNames[subscriptionType]}\n💳 رقم الحساب: ${accountNumber}\n🏦 البنك: البنك الكريمي\n💰 المبلغ: ${price}$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك`;
-}
-
 // 🆕 دالة للحصول على اسم العرض للباقة
 function getSubscriptionDisplayName(type) {
     const names = {
@@ -1531,31 +1101,7 @@ function getSubscriptionDisplayName(type) {
     return names[type] || type;
 }
 
-// 🆕 رسائل تحفيزية متنوعة
-const motivationalMessages = {
-    win: [
-        "🎉 *مبروك! فوز رائع* 🎊\n\nلقد أثبتت براعتك في التحليل! استمر في التقدم 💪",
-        "✨ *إنجاز مذهل!* ✨\n\nتوقعك كان دقيقاً ومميزاً، أنت تتقدم بسرعة 🚀",
-        "🏆 *فوز استثنائي!* 🏆\n\nمهاراتك في التحليل تتحسن باستمرار، استمر في التميز ⭐",
-        "💎 *توقع مثالي!* 💎\n\nدقتك في التحليل مذهلة، أنت محترف حقيقي 🔥",
-        "🚀 *نجاح باهر!* 🚀\n\nلقد قطعت شوطاً كبيراً في تطوير مهاراتك، استمر هكذا 🌟"
-    ],
-    lose: [
-        "💪 *لا تستسلم!* 💪\n\nالخسارة جزء من اللعبة، الأهم هو الاستمرار والمحاولة 🔄",
-        "📈 *تعلم من التجربة!* 📈\n\nكل خسارة تعلمك شيئاً جديداً، استمر في التقدم 🌱",
-        "🔄 *حاول مرة أخرى!* 🔄\n\nالناجحون لا يخافون من الفشل، بل يتعلمون منه 🌟",
-        "🎯 *ركز واستمر!* 🎯\n\nالخسارة مؤقتة، لكن الخبرة التي تكتسبها دائمة 💡",
-        "⚡ *لا توقف!* ⚡\n\nالعظماء يواصلون المحاولة رغم الصعاب، أنت منهم 🏅"
-    ]
-};
-
-// 🆕 الحصول على رسالة تحفيزية عشوائية
-function getRandomMotivationalMessage(type) {
-    const messages = motivationalMessages[type];
-    return messages[Math.floor(Math.random() * messages.length)];
-}
-
-// 🎯 BOT COMMANDS - ENHANCED WITH SESSION RESTORE
+// 🎯 BOT COMMANDS
 
 bot.start(async (ctx) => {
     try {
@@ -1568,34 +1114,13 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // 🆕 محاولة استرجاع الجلسة المحفوظة
-        try {
-            const savedSession = await dbManager.getUserSession(userId);
-            if (savedSession) {
-                Object.assign(ctx.session, savedSession);
-                console.log(`✅ Restored session for user ${userId}`);
-            }
-        } catch (sessionError) {
-            console.error('Error restoring session:', sessionError);
-        }
-
         // التحقق إذا كان المستخدم مسجل مسبقاً
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
-            // 🆕 التحقق من انتهاء جلسة التحليل
-            const isAnalysisExpired = await dbManager.isAnalysisSessionExpired(userId);
-            
-            if (isAnalysisExpired && existingUser.algorithm_linked) {
-                // فك ربط الخوارزمية إذا انتهت الجلسة
-                await dbManager.unlinkAlgorithm(userId);
-                existingUser.algorithm_linked = false;
-            }
-
             // المستخدم مسجل مسبقاً - دخول مباشر
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
-            ctx.session.algorithmConnected = existingUser.algorithm_linked;
 
             const remainingDays = calculateRemainingDays(existingUser.subscription_end_date);
             
@@ -1604,7 +1129,6 @@ bot.start(async (ctx) => {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `✅ *اشتراكك نشط*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `📍 الدولة: ${existingUser.country || 'غير محدد'}\n` +
                                `📦 النوع: ${getSubscriptionDisplayName(existingUser.subscription_type)}\n` +
                                `📅 الانتهاء: ${new Date(existingUser.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                                `⏳ متبقي: ${remainingDays} يوم`;
@@ -1612,21 +1136,12 @@ bot.start(async (ctx) => {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🎯 *محاولات مجانية متاحة*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `📍 الدولة: ${existingUser.country || 'غير محدد'}\n` +
                                `🆓 محاولات مجانية: ${existingUser.free_attempts}`;
             } else {
                 statusMessage = `🎉 *مرحباً بعودتك!*\n\n` +
                                `🚫 *انتهت المحاولات*\n` +
                                `🔐 الحساب: \`${existingUser.onexbet}\`\n` +
-                               `📍 الدولة: ${existingUser.country || 'غير محدد'}\n` +
                                `💳 يرجى الاشتراك للمتابعة`;
-            }
-
-            // 🆕 إضافة تحذير إذا انتهت جلسة التحليل
-            if (!existingUser.algorithm_linked) {
-                statusMessage += `\n\n⚠️ *انتهت جلسة التحليل*\n` +
-                               `⏰ مضى أكثر من 5 دقائق على آخر تحليل\n` +
-                               `🔄 اضغط على "جلب التحليل" لإعادة الربط`;
             }
 
             await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
@@ -1676,7 +1191,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - ENHANCED WITH ANALYSIS SESSION MANAGEMENT
+// 📝 HANDLE TEXT MESSAGES - UPDATED FOR DUAL PAYMENT AND COUNTRY SELECTION
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -1689,9 +1204,6 @@ bot.on('text', async (ctx) => {
         const session = ctx.session;
         const userId = ctx.from.id.toString();
 
-        // تحديث وقت النشاط الأخير
-        ctx.session.lastActivity = Date.now();
-
         // 🔐 ADMIN COMMANDS - للإدمن فقط
         if (userId === CONFIG.ADMIN_ID) {
             if (text === '/admin' || text === '🔐 لوحة التحكم') {
@@ -1702,7 +1214,8 @@ bot.on('text', async (ctx) => {
             }
 
             if (session.adminMode) {
-                await handleAdminCommands(ctx, text);
+                // سيتم معالجة أوامر الإدمن لاحقاً
+                await ctx.replyWithMarkdown('🔧 *وضع الإدمن مفعل*', getAdminMainKeyboard());
                 return;
             }
         }
@@ -1721,8 +1234,9 @@ bot.on('text', async (ctx) => {
                 ctx.session.country = text;
                 ctx.session.awaitingCountry = false;
                 
-                // التحقق من الاشتراك في القناة بعد اختيار الدولة
-                const isSubscribed = await channelManager.checkChannelSubscription(userId);
+                // 🆕 التحقق من الاشتراك في القناة بعد اختيار الدولة
+                const isSubscribed = await channelManager.isMember(userId);
+                console.log(`🔍 تحقق من اشتراك ${userId} بعد اختيار الدولة: ${isSubscribed}`);
                 
                 if (!isSubscribed) {
                     // إرسال رسالة طلب الاشتراك في القناة
@@ -1773,7 +1287,7 @@ bot.on('text', async (ctx) => {
         // التحقق من الاشتراك في القناة للمستخدمين الجدد
         const existingUser = await dbManager.getUser(userId);
         if (!existingUser && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id') {
-            const isSubscribed = await channelManager.checkChannelSubscription(userId);
+            const isSubscribed = await channelManager.isMember(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
@@ -1788,117 +1302,10 @@ bot.on('text', async (ctx) => {
             }
         }
 
-        // 🆕 معالجة اختيار طريقة الدفع
-        if (session.step === 'choose_payment_method') {
-            if (text === '💳 باينانس') {
-                ctx.session.paymentSystem = 'binance';
-                ctx.session.step = 'verified';
-                await handleSubscriptions(ctx, session.userData);
-                return;
-            }
-            else if (text === '🏦 تحويل بنكي') {
-                ctx.session.paymentSystem = 'bank';
-                ctx.session.step = 'verified';
-                await handleSubscriptions(ctx, session.userData);
-                return;
-            }
-            else if (text === '🔙 الرجوع للقائمة') {
-                ctx.session.step = 'verified';
-                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
-                return;
-            }
-        }
-
-        // معالجة البحث عن مستخدم
-        if (session.adminStep === 'search_user') {
-            await handleAdminSearchUser(ctx, text);
-            return;
-        }
-
-        // معالجة الإشعار الجماعي
-        if (session.adminStep === 'broadcast') {
-            await handleAdminBroadcast(ctx, text);
-            return;
-        }
-
-        // 🆕 معالجة تعديل البنكي - الخطوات المنظمة
-        if (session.adminStep === 'edit_bank_price') {
-            await handleAdminEditBankPrice(ctx, text);
-            return;
-        }
-
-        if (session.adminStep === 'edit_bank_account') {
-            await handleAdminEditBankAccount(ctx, text);
-            return;
-        }
-
-        // معالجة تعديل الأسعار والدفع
-        if (session.adminStep === 'edit_price_and_payment') {
-            await handleAdminEditPriceAndPayment(ctx, text);
-            return;
-        }
-
-        // معالجة اختيار نوع الاشتراك للتعديل
-        if (session.adminStep === 'select_subscription_edit') {
-            await handleAdminSelectSubscriptionEdit(ctx, text);
-            return;
-        }
-
-        // 🆕 معالجة اختيار نظام الدفع في الإدمن
-        if (session.adminStep === 'select_payment_system') {
-            await handleAdminSelectPaymentSystem(ctx, text);
-            return;
-        }
-
-        // معالجة إدخال مبلغ الرهان
-        if (session.awaitingBetAmount) {
-            const betAmount = parseFloat(text);
-            if (isNaN(betAmount) || betAmount <= 0) {
-                await ctx.replyWithMarkdown('❌ *مبلغ غير صحيح!*\n\n💰 يرجى إدخال مبلغ صحيح للرهان');
-                return;
-            }
-
-            ctx.session.currentBet = betAmount;
-            ctx.session.originalBet = betAmount;
-            ctx.session.awaitingBetAmount = false;
-
-            await ctx.replyWithMarkdown(
-                `✅ *تم تحديد مبلغ الرهان:* ${betAmount}$\n\n` +
-                `🎯 *الآن اضغط على "جلب التحليل" للحصول على التوقع*`,
-                getMainKeyboard()
-            );
-            return;
-        }
-
-        // 🔐 زر إدخال رقم الحساب - التحقق من الاشتراك أولاً
-        if (text === '🔐 إدخال رقم الحساب') {
-            // التحقق من الاشتراك في القناة أولاً
-            const isSubscribed = await channelManager.checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
-            ctx.session.step = 'awaiting_account_id';
-            await ctx.replyWithMarkdown(
-                '🔢 *الخطوة 1:* أرسل رقم حساب 1xBet الخاص بك (10 أرقام)\n\n' +
-                '💡 *ملاحظة:* يجب أن يكون الرقم الحقيقي الخاص بك'
-            );
-            return;
-        }
-
         // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار
         if (session.step === 'awaiting_account_id') {
             // التحقق من الاشتراك في القناة أولاً
-            const isSubscribed = await channelManager.checkChannelSubscription(userId);
+            const isSubscribed = await channelManager.isMember(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
                     `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
@@ -1913,17 +1320,6 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
-                // 🔒 التحقق من أن رقم الحساب غير مسجل لمستخدم آخر
-                const existingUserWithAccount = await dbManager.getUserByOneXBet(text);
-                if (existingUserWithAccount && existingUserWithAccount.user_id !== userId) {
-                    await ctx.replyWithMarkdown(
-                        '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
-                        '🔐 هذا الحساب مسجل لمستخدم آخر\n' +
-                        '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم'
-                    );
-                    return;
-                }
-
                 ctx.session.accountId = text;
                 ctx.session.step = 'awaiting_verification';
                 ctx.session.verificationCode = Math.floor(100000 + Math.random() * 900000);
@@ -2002,15 +1398,12 @@ bot.on('text', async (ctx) => {
                     losses: 0,
                     total_bets: 0,
                     total_profit: 0,
-                    channel_subscribed: true,
-                    last_analysis_time: new Date().toISOString(),
-                    algorithm_linked: true
+                    channel_subscribed: true
                 };
 
                 await dbManager.saveUser(userId, userData);
                 ctx.session.step = 'verified';
                 ctx.session.userData = userData;
-                ctx.session.algorithmConnected = true;
 
                 // حذف رسالة الانتظار
                 await ctx.deleteMessage(waitingMessage.message_id);
@@ -2028,42 +1421,6 @@ bot.on('text', async (ctx) => {
             } else {
                 await ctx.replyWithMarkdown('❌ *كود تحقق خاطئ!*\n\n🔐 يرجى إعادة إخال الكود الصحيح');
             }
-        }
-        // 💳 معالجة طلبات الدفع - طلب رقم الحساب
-        else if (session.awaitingPaymentAccount) {
-            if (/^\d{10}$/.test(text)) {
-                const userData = await dbManager.getUser(userId);
-                
-                // 🔒 التحقق من تطابق رقم الحساب مع المسجل
-                if (text !== userData.onexbet) {
-                    await ctx.replyWithMarkdown(
-                        '❌ *رقم الحساب لا يتطابق!*\n\n' +
-                        `🔐 رقم حسابك المسجل: \`${userData.onexbet}\`\n` +
-                        '💡 يرجى إدخال رقم حسابك الصحيح المسجل في النظام'
-                    );
-                    return;
-                }
-                
-                ctx.session.awaitingPaymentAccount = false;
-                ctx.session.paymentAccount = text;
-                
-                const paymentSystem = ctx.session.paymentSystem || 'binance';
-                
-                if (paymentSystem === 'binance') {
-                    await ctx.replyWithMarkdown(
-                        `✅ *تم التحقق من رقم الحساب:* \`${text}\`\n\n` +
-                        `📸 *الآن يرجى إرسال صورة إثبات الدفع من باينانس*`
-                    );
-                } else if (paymentSystem === 'bank') {
-                    await ctx.replyWithMarkdown(
-                        `✅ *تم التحقق من رقم الحساب:* \`${text}\`\n\n` +
-                        `📸 *الآن يرجى إرسال صورة إثبات التحويل البنكي*`
-                    );
-                }
-            } else {
-                await ctx.replyWithMarkdown('❌ *رقم حساب غير صحيح!*\n\n🔢 يرجى إرسال رقم حساب 1xBet مكون من 10 أرقام');
-            }
-            return;
         }
         // 🎯 معالجة الأزرار الثابتة بعد التحقق
         else if (session.step === 'verified') {
@@ -2145,48 +1502,17 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// 🖼️ معالجة صور الدفع - UPDATED FOR DUAL PAYMENT
-bot.on('photo', async (ctx) => {
-    try {
-        const userId = ctx.from.id.toString();
-        const session = ctx.session;
-        
-        // 💳 معالجة صور الدفع من المستخدمين فقط
-        if (session.paymentType) {
-            await handlePaymentScreenshot(ctx, userId);
-            return;
-        }
-
-        // 🖼️ معالجة رفع صورة للدفع في الإدمن
-        if (session.adminStep === 'edit_bank_image') {
-            await handleAdminBankImageUpload(ctx, userId);
-            return;
-        }
-
-        // 🖼️ معالجة رفع صورة للدفع في الإدمن (باينانس)
-        if (session.adminStep === 'edit_price_and_payment' && session.editingSubscriptionType && session.adminPaymentSystem === 'binance') {
-            await handleAdminPaymentImageUpload(ctx, userId);
-            return;
-        }
-
-        // إذا لم يكن هناك سياق للصورة، نرسل رسالة توضيحية
-        await ctx.replyWithMarkdown(
-            '❌ *لا يمكن معالجة الصورة حالياً*\n\n' +
-            '💡 يرجى استخدام الأزرار المتاحة في القائمة',
-            getMainKeyboard()
-        );
-
-    } catch (error) {
-        console.error('Photo handler error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الصورة*', getMainKeyboard());
-    }
-});
-
-// 🎯 HANDLE CALLBACK QUERIES - ENHANCED WITH WIN/LOSS SYSTEM
+// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH FIXED CHANNEL VERIFICATION
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
         const userId = ctx.from.id.toString();
+        
+        // 🆕 معالجة زر التحقق من الاشتراك في القناة - النظام المحسن
+        if (callbackData === 'check_channel_subscription') {
+            await handleCheckChannelSubscription(ctx);
+            return;
+        }
         
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
@@ -2204,16 +1530,11 @@ bot.on('callback_query', async (ctx) => {
                 userData.total_profit = (userData.total_profit || 0) + profit;
                 ctx.session.totalProfit += profit;
                 
-                // 🆕 الحفاظ على الخوارزمية بعد الفوز
-                goalAI.maintainAlgorithmAfterWin(userId);
-                
                 await ctx.answerCbQuery(`🎊 مبروك! نجح التوقع وربحت ${profit}$`);
                 
-                // 🆕 إرسال رسالة تحفيزية عشوائية
-                const motivationalMessage = getRandomMotivationalMessage('win');
-                
                 await ctx.replyWithMarkdown(
-                    `${motivationalMessage}\n\n` +
+                    `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
+                    `✅ توقعك كان دقيقاً ومميزاً\n` +
                     `💰 ربحت: ${profit}$\n` +
                     `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
                     `🎯 يمكنك البدء بتوقع جديد`,
@@ -2226,19 +1547,19 @@ bot.on('callback_query', async (ctx) => {
                 userData.losses = (userData.losses || 0) + 1;
                 ctx.session.currentBet = newBet;
                 
-                // 🆕 تعديل الخوارزمية بعد الخسارة
-                goalAI.adjustAlgorithmAfterLoss(userId);
-                
                 await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);
                 
-                // 🆕 إرسال رسالة تحفيزية عشوائية
-                const motivationalMessage = getRandomMotivationalMessage('lose');
+                // توليد توقع جديد تلقائياً
+                const newPrediction = goalAI.generateNextPrediction(userId);
                 
                 await ctx.replyWithMarkdown(
-                    `${motivationalMessage}\n\n` +
+                    `🔄 *خسرت هذه الجولة*\n\n` +
                     `📈 الرهان التالي مضاعف: ${newBet}$\n` +
                     `💪 لا توقف.. استمر في المحاولة\n\n` +
-                    `🎯 *اضغط على "جلب التحليل" للحصول على التوقع التالي*`,
+                    `🎯 *التوقع التالي:*\n` +
+                    `${newPrediction.type}\n` +
+                    `📈 ${newPrediction.probability}% | 🎯 ${newPrediction.confidence}%\n` +
+                    `💡 ${newPrediction.reasoning}`,
                     getMainKeyboard()
                 );
             }
@@ -2273,57 +1594,63 @@ bot.on('callback_query', async (ctx) => {
             await ctx.replyWithMarkdown('💳 *باقات الاشتراك المتاحة*', getSubscriptionKeyboard());
         }
         
-        // 🆕 معالجة زر التحقق من الاشتراك في القناة
-        else if (callbackData === 'check_channel_subscription') {
-            await handleCheckChannelSubscription(ctx);
-        }
-        
-        // 🆕 معالجة زر إعادة ربط الخوارزمية
-        else if (callbackData === 'reconnect_algorithm') {
-            await handleReconnectAlgorithm(ctx);
-        }
-        
     } catch (error) {
         console.error('Callback query error:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة
+// 🆕 معالجة التحقق من الاشتراك في القناة - النظام المحسن
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
-        const isSubscribed = await channelManager.checkChannelSubscription(userId);
+        console.log(`🔍 بدء التحقق من اشتراك المستخدم ${userId}`);
+        
+        // 🆕 استخدام النظام المحسن للتحقق من الاشتراك
+        const isSubscribed = await channelManager.isMember(userId);
+        console.log(`📊 نتيجة التحقق للمستخدم ${userId}: ${isSubscribed}`);
         
         if (isSubscribed) {
+            // 🆕 تحديث حالة الاشتراك في قاعدة البيانات
             await dbManager.setChannelSubscription(userId, true);
             await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
-            await ctx.deleteMessage();
+            
+            // حذف رسالة طلب الاشتراك
+            try {
+                await ctx.deleteMessage();
+            } catch (deleteError) {
+                console.log('لا يمكن حذف الرسالة:', deleteError);
+            }
             
             // إرسال رسالة الترحيب بعد التحقق
             const userName = ctx.from.first_name;
+            const userData = await dbManager.getUser(userId);
             
-            const welcomeMessage = `
-🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
-
-🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
-🤖 *خوارزمية ذكية مخفية تحلل المباريات بدقة عالية*
-
-📋 *خطوات الدخول:*
-1️⃣ أدخل رقم حساب 1xBet (10 أرقام)
-2️⃣ استلم كود التحقق (6 أرقام)  
-3️⃣ أدخل كود التحقق
-4️⃣ ابدأ باستخدام المحاولات المجانية
-
-💎 *المطور:* ${CONFIG.DEVELOPER}
-📢 *القناة:* ${CONFIG.CHANNEL}
-
-🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
-            `;
-
-            await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
+            if (userData) {
+                // المستخدم مسجل مسبقاً
+                await ctx.replyWithMarkdown(
+                    `🎉 *مرحباً بعودتك ${userName}!*\n\n` +
+                    `✅ *تم التحقق من اشتراكك بنجاح*\n` +
+                    `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                    `📍 الدولة: ${userData.country || 'غير محدد'}\n\n` +
+                    `🎯 يمكنك الآن استخدام جميع ميزات البوت`,
+                    getMainKeyboard()
+                );
+            } else {
+                // مستخدم جديد
+                await ctx.replyWithMarkdown(
+                    `🎉 *تم التحقق من اشتراكك بنجاح!*\n\n` +
+                    `🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro*\n\n` +
+                    `📋 *لبدء استخدام البوت:*\n` +
+                    `1. اضغط على "🔐 إدخال رقم الحساب"\n` +
+                    `2. أدخل رقم حساب 1xBet الخاص بك\n` +
+                    `3. استلم كود التحقق\n` +
+                    `4. ابدأ باستخدام المحاولات المجانية`,
+                    getLoginKeyboard()
+                );
+            }
         } else {
-            await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
+            await ctx.answerCbQuery('❌ لم يتم العثور على اشتراكك في القناة!');
             await ctx.replyWithMarkdown(
                 `❌ *لم يتم العثور على اشتراكك في القناة*\n\n` +
                 `📢 يرجى الاشتراك في القناة أولاً:\n` +
@@ -2340,85 +1667,10 @@ async function handleCheckChannelSubscription(ctx) {
     }
 }
 
-// 🆕 معالجة إعادة ربط الخوارزمية
-async function handleReconnectAlgorithm(ctx) {
-    try {
-        const userId = ctx.from.id.toString();
-        
-        // إرسال رسالة الانتظار المتحركة
-        const connectingMessage = await ctx.replyWithMarkdown(
-            '🔄 *جاري إعادة ربط الخوارزمية...*\n\n' +
-            '⚡ جاري تفعيل الذكاء الاصطناعي...\n' +
-            '🔗 جاري الربط مع السيرفر...\n' +
-            '🎯 جاري تحميل بياناتك...\n\n' +
-            '⏰ قد تستغرق العملية بضع ثوان...'
-        );
-
-        // محاكاة الانتظار المتحرك
-        const emojis = ['🔹', '🔸', '🔺', '🔻', '⚪', '⚫', '🔴', '🔵', '🟢', '🟡', '🟣', '🟤'];
-        for (let i = 0; i < 8; i++) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            try {
-                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                await ctx.telegram.editMessageText(
-                    ctx.chat.id,
-                    connectingMessage.message_id,
-                    null,
-                    `🔄 *جاري إعادة ربط الخوارزمية...* ${randomEmoji}\n\n` +
-                    '⚡ جاري تفعيل الذكاء الاصطناعي...\n' +
-                    '🔗 جاري الربط مع السيرفر...\n' +
-                    '🎯 جاري تحميل بياناتك...\n\n' +
-                    '⏰ قد تستغرق العملية بضع ثوان...',
-                    { parse_mode: 'Markdown' }
-                );
-            } catch (editError) {
-                console.log('Error editing connecting message:', editError);
-            }
-        }
-
-        // تحديث حالة الخوارزمية
-        await dbManager.updateLastAnalysisTime(userId);
-        ctx.session.algorithmConnected = true;
-
-        // حذف رسالة الانتظار
-        await ctx.deleteMessage(connectingMessage.message_id);
-
-        await ctx.replyWithMarkdown(
-            '✅ *تم إعادة ربط الخوارزمية بنجاح!*\n\n' +
-            '🎯 يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات\n\n' +
-            '🤖 *الخوارزمية الجديدة جاهزة للعمل*',
-            getMainKeyboard()
-        );
-
-    } catch (error) {
-        console.error('Reconnect algorithm error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في إعادة الربط', getMainKeyboard());
-    }
-}
-
-// 🎯 HANDLER FUNCTIONS - ENHANCED WITH ANALYSIS SESSION MANAGEMENT
+// 🎯 HANDLER FUNCTIONS
 
 async function handleGetPrediction(ctx, userData) {
     try {
-        // 🆕 التحقق من حالة ربط الخوارزمية أولاً
-        const isAnalysisExpired = await dbManager.isAnalysisSessionExpired(ctx.from.id.toString());
-        
-        if (isAnalysisExpired || !userData.algorithm_linked) {
-            await dbManager.unlinkAlgorithm(ctx.from.id.toString());
-            
-            await ctx.replyWithMarkdown(
-                `🔌 *انتهت جلسة التحليل*\n\n` +
-                `⏰ مضى أكثر من 5 دقائق على آخر تحليل\n` +
-                `🔐 حسابك: \`${userData.onexbet}\`\n` +
-                `📍 دولتك: ${userData.country || 'غير محدد'}\n\n` +
-                `🔄 يرجى إعادة ربط الخوارزمية للمتابعة`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('🔄 ربط الخوارزمية', 'reconnect_algorithm')]
-                ])
-            );
-            return;
-        }
-
         // 🔐 التحقق من المحاولات المجانية أو الاشتراك
         if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
             await ctx.replyWithMarkdown(
@@ -2476,10 +1728,6 @@ async function handleGetPrediction(ctx, userData) {
         userData.total_predictions = (userData.total_predictions || 0) + 1;
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
         userData.lastPrediction = prediction;
-        
-        // 🆕 تحديث وقت آخر تحليل
-        await dbManager.updateLastAnalysisTime(ctx.from.id.toString());
-        
         await dbManager.saveUser(ctx.from.id.toString(), userData);
 
         // الحصول على الوقت الحقيقي الحالي
@@ -2505,7 +1753,6 @@ ${prediction.type}
 ${prediction.reasoning}
 
 🔐 *الحساب:* \`${userData.onexbet}\`
-📍 *الدولة:* ${userData.country || 'غير محدد'}
 💰 *مبلغ الرهان:* ${ctx.session.currentBet}$
 🕒 *الوقت:* ${realTime}
 
@@ -2514,18 +1761,10 @@ ${userData.subscription_status !== 'active' ?
     `✅ *اشتراك نشط - محاولات غير محدودة*`}
         `;
 
-        // 🆕 إرسال الصورة مع التوقع وأزرار الفوز/الخسارة
+        // إرسال الصورة مع التوقع في رسالة واحدة
         await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
             caption: analysisMessage,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: '🔄 خسرت', callback_data: `lose_${userData.user_id}` },
-                        { text: '🎉 ربحت', callback_data: `win_${userData.user_id}` }
-                    ]
-                ]
-            }
+            parse_mode: 'Markdown'
         });
 
         // إرسال الإشعار للقناة
@@ -2553,15 +1792,11 @@ async function handleUserStats(ctx, userData) {
         subscriptionInfo = `\n🆓 *محاولات مجانية:* ${userData.free_attempts}`;
     }
     
-    // 🆕 إضافة حالة الخوارزمية
-    const algorithmStatus = userData.algorithm_linked ? '✅ متصل' : '🔌 مطلوب إعادة ربط';
-    
     await ctx.replyWithMarkdown(
         `📊 *إحصائياتك الشخصية*\n\n` +
         `📍 *الدولة:* ${userData.country || 'غير محدد'}\n` +
         `🔐 ${userData.onexbet}\n` +
         `👤 ${userData.username}\n` +
-        `🤖 *الخوارزمية:* ${algorithmStatus}\n` +
         `📈 ${userData.total_predictions || 0} توقع\n` +
         `✅ ${userData.correct_predictions || 0} صحيحة\n` +
         `🎯 ${accuracy}% دقة\n` +
@@ -2813,20 +2048,17 @@ async function handleSubscriptionStatus(ctx, userData) {
         const remainingDays = calculateRemainingDays(userData.subscription_end_date);
         statusMessage = `✅ *اشتراكك نشط*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `📍 الدولة: ${userData.country || 'غير محدد'}\n` +
                        `📦 النوع: ${getSubscriptionDisplayName(userData.subscription_type)}\n` +
                        `📅 الانتهاء: ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
                        `⏳ متبقي: ${remainingDays} يوم`;
     } else if (userData.free_attempts > 0) {
         statusMessage = `🎯 *محاولات مجانية متاحة*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `📍 الدولة: ${userData.country || 'غير محدد'}\n` +
                        `🆓 محاولات مجانية: ${userData.free_attempts}\n\n` +
                        `💳 يمكنك الاشتراك للحصول على ميزات غير محدودة`;
     } else {
         statusMessage = `🚫 *انتهت المحاولات*\n\n` +
                        `🔐 الحساب: \`${userData.onexbet}\`\n` +
-                       `📍 الدولة: ${userData.country || 'غير محدد'}\n` +
                        `💳 يرجى الاشتراك للمتابعة في استخدام الخدمة`;
     }
     
@@ -2886,7 +2118,6 @@ async function handlePaymentScreenshot(ctx, userId) {
             subscription_type: ctx.session.paymentType,
             payment_system: paymentSystem,
             username: userData.username,
-            country: userData.country,
             timestamp: new Date().toISOString()
         };
 
@@ -2904,7 +2135,6 @@ async function handlePaymentScreenshot(ctx, userId) {
                     caption: `🆕 *طلب دفع جديد - ${paymentSystemText}*\n\n` +
                     `👤 المستخدم: ${userData.username}\n` +
                     `🔐 الحساب: ${accountNumber}\n` +
-                    `📍 الدولة: ${userData.country || 'غير محدد'}\n` +
                     `💰 المبلغ: ${paymentData.amount}$\n` +
                     `📦 الباقة: ${subscriptionDisplayName}\n` +
                     `💳 النظام: ${paymentSystemText}\n` +
@@ -2928,7 +2158,6 @@ async function handlePaymentScreenshot(ctx, userId) {
         await ctx.replyWithMarkdown(
             '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
             `✅ الحساب: \`${accountNumber}\`\n` +
-            `📍 الدولة: ${userData.country || 'غير محدد'}\n` +
             `✅ الباقة: ${getSubscriptionDisplayName(ctx.session.paymentType)}\n` +
             `💰 المبلغ: ${paymentData.amount}$\n` +
             `💳 النظام: ${paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
@@ -2948,16 +2177,158 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
+// 🖼️ معالجة صور الدفع - UPDATED FOR DUAL PAYMENT
+bot.on('photo', async (ctx) => {
+    try {
+        const userId = ctx.from.id.toString();
+        const session = ctx.session;
+        
+        // 💳 معالجة صور الدفع من المستخدمين فقط
+        if (session.paymentType) {
+            await handlePaymentScreenshot(ctx, userId);
+            return;
+        }
+
+        // إذا لم يكن هناك سياق للصورة، نرسل رسالة توضيحية
+        await ctx.replyWithMarkdown(
+            '❌ *لا يمكن معالجة الصورة حالياً*\n\n' +
+            '💡 يرجى استخدام الأزرار المتاحة في القائمة',
+            getMainKeyboard()
+        );
+
+    } catch (error) {
+        console.error('Photo handler error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الصورة*', getMainKeyboard());
+    }
+});
+
 // 🔧 ADMIN HANDLERS - UPDATED FOR DUAL PAYMENT SYSTEM
-// [يتم الحفاظ على جميع دوال الإدمن كما هي مع التحديثات المناسبة]
+async function handlePaymentAccept(ctx, paymentId) {
+    try {
+        const payment = await dbManager.getPayment(paymentId);
+        if (!payment) {
+            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
+            return;
+        }
+        
+        const userData = await dbManager.getUser(payment.user_id);
+        if (!userData) {
+            await ctx.answerCbQuery('❌ المستخدم غير موجود');
+            return;
+        }
+        
+        const startDate = new Date().toISOString();
+        const endDate = addSubscriptionDays(startDate, payment.subscription_type);
+        
+        userData.subscription_status = 'active';
+        userData.subscription_type = payment.subscription_type;
+        userData.subscription_start_date = startDate;
+        userData.subscription_end_date = endDate;
+        userData.free_attempts = 0;
+        
+        await dbManager.saveUser(payment.user_id, userData);
+        await dbManager.updatePayment(paymentId, { 
+            status: 'accepted',
+            processed_at: new Date().toISOString()
+        });
+        
+        // إشعار المستخدم
+        try {
+            await bot.telegram.sendMessage(
+                payment.user_id,
+                `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
+                `✅ ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
+                `💰 ${payment.amount}$\n` +
+                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n` +
+                `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
+                `⏳ المتبقي: ${calculateRemainingDays(endDate)} يوم\n\n` +
+                `🎯 يمكنك الآن استخدام الخدمة بدون حدود`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (error) {
+            console.error('Error notifying user:', error);
+        }
+
+        // إرسال الإشعار للقناة
+        await channelNotifier.sendSubscriptionNotification(userData, payment.subscription_type, payment.amount, payment.payment_system);
+        
+        await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
+        
+        try {
+            await ctx.editMessageCaption(
+                `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
+                `👤 ${userData.username}\n` +
+                `🔐 ${userData.onexbet}\n` +
+                `📦 ${getSubscriptionDisplayName(payment.subscription_type)}\n` +
+                `💰 ${payment.amount}$\n` +
+                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
+                `🕒 ${new Date().toLocaleString('ar-EG')}`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (editError) {
+            console.log('Could not edit message:', editError);
+        }
+
+    } catch (error) {
+        console.error('Payment accept error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في قبول الدفع');
+    }
+}
+
+async function handlePaymentReject(ctx, paymentId) {
+    try {
+        const payment = await dbManager.getPayment(paymentId);
+        if (!payment) {
+            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
+            return;
+        }
+        
+        await dbManager.updatePayment(paymentId, { 
+            status: 'rejected',
+            processed_at: new Date().toLocaleString('ar-EG')
+        });
+        
+        // إشعار المستخدم
+        try {
+            await bot.telegram.sendMessage(
+                payment.user_id,
+                `❌ *تم رفض طلب الدفع*\n\n` +
+                `💳 يرجى التحقق من معلومات الدفع والمحاولة مرة أخرى\n\n` +
+                `📞 للاستفسار: ${CONFIG.SUPPORT_BOT}`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (error) {
+            console.error('Error notifying user:', error);
+        }
+        
+        await ctx.answerCbQuery('❌ تم رفض الطلب');
+        
+        try {
+            await ctx.editMessageCaption(
+                `❌ *تم رفض طلب الدفع*\n\n` +
+                `🆔 ${paymentId}\n` +
+                `👤 ${payment.username}\n` +
+                `🔐 ${payment.onexbet}\n` +
+                `💳 ${payment.payment_system === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
+                `🕒 ${new Date().toLocaleString('ar-EG')}`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (editError) {
+            console.log('Could not edit message:', editError);
+        }
+
+    } catch (error) {
+        console.error('Payment reject error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في رفض الدفع');
+    }
+}
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
-    console.log('🔐 Channel Subscription: SMART MEMORY SYSTEM');
-    console.log('🆕 Enhanced: Duplicate Prevention + Session Restore + Analysis Timeout');
+    console.log('🔐 Channel Subscription: FIXED VERIFICATION SYSTEM');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🆘 Support:', CONFIG.SUPPORT_BOT);
@@ -2981,4 +2352,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with All Enhanced Features Ready!');
+console.log('✅ AI Goal Prediction System with Fixed Channel Verification Ready!');
