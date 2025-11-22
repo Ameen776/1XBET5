@@ -170,6 +170,67 @@ async function initializeFirebase() {
 // INITIALIZE FIREBASE
 initializeFirebase();
 
+// 🔐 نظام الاشتراك الإجباري في القناة
+async function checkChannelSubscription(userId) {
+    try {
+        const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
+        const isSubscribed = chatMember.status === 'member' || 
+                           chatMember.status === 'administrator' || 
+                           chatMember.status === 'creator';
+        
+        // حفظ حالة الاشتراك في Firebase
+        await dbManager.setChannelSubscription(userId, isSubscribed);
+        
+        return isSubscribed;
+    } catch (error) {
+        console.error('Error checking channel subscription:', error);
+        return false;
+    }
+}
+
+// 🛡️ تحقق من الاشتراك قبل كل أمر
+bot.use(async (ctx, next) => {
+    try {
+        const userId = ctx.from.id.toString();
+        
+        // تخطي التحقق للأدمن
+        if (userId === CONFIG.ADMIN_ID) return next();
+        
+        // تخطي لأوامر البدء والتحقق
+        if (ctx.message?.text === '/start' || 
+            ctx.callbackQuery?.data === 'check_channel_subscription') {
+            return next();
+        }
+
+        const userData = await dbManager.getUser(userId);
+        
+        // إذا لم يكن مسجلاً بعد، تخطي
+        if (!userData) return next();
+        
+        // التحقق من الاشتراك في القناة
+        if (!userData.channel_subscribed) {
+            const isSubscribed = await checkChannelSubscription(userId);
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
+        }
+        
+        await next();
+    } catch (error) {
+        console.error('Middleware error:', error);
+        await next();
+    }
+});
+
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
 class PersistentStorage {
     constructor() {
@@ -297,8 +358,7 @@ class EnhancedDatabaseManager {
                 total_bets: userData.total_bets || 0,
                 total_profit: userData.total_profit || 0,
                 last_updated: new Date().toISOString(),
-                channel_subscribed: userData.channel_subscribed || false,
-                last_subscription_check: userData.last_subscription_check || null
+                channel_subscribed: userData.channel_subscribed || false
             };
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
@@ -687,15 +747,12 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // 🆕 دالة محسنة للتحقق من اشتراك القناة مع Firebase
-    async setChannelSubscription(userId, subscribed, checkTime = null) {
+    // دالة جديدة للتحقق من اشتراك القناة
+    async setChannelSubscription(userId, subscribed) {
         try {
             const user = await this.getUser(userId);
             if (user) {
                 user.channel_subscribed = subscribed;
-                if (checkTime) {
-                    user.last_subscription_check = checkTime;
-                }
                 await this.saveUser(userId, user);
             }
             return true;
@@ -980,85 +1037,6 @@ ${prediction.reasoning}
 }
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
-
-// 🛡️ نظام الاشتراك الإجباري في القناة - محسن ومتصلة مع Firebase
-async function checkChannelSubscription(userId) {
-    try {
-        const chatMember = await bot.telegram.getChatMember(CONFIG.CHANNEL_ID, userId);
-        const isSubscribed = chatMember.status === 'member' || 
-                           chatMember.status === 'administrator' || 
-                           chatMember.status === 'creator';
-        
-        // حفظ حالة الاشتراك في Firebase مع وقت التحقق
-        await dbManager.setChannelSubscription(userId, isSubscribed, new Date().toISOString());
-        
-        return isSubscribed;
-    } catch (error) {
-        console.error('Error checking channel subscription:', error);
-        return false;
-    }
-}
-
-// 🛡️ تحقق من الاشتراك قبل كل أمر - محسن مع نظام الكاش
-bot.use(async (ctx, next) => {
-    try {
-        const userId = ctx.from.id.toString();
-        
-        // تخطي التحقق للأدمن
-        if (userId === CONFIG.ADMIN_ID) return next();
-        
-        // تخطي لأوامر البدء والتحقق
-        if (ctx.message?.text === '/start' || 
-            ctx.callbackQuery?.data === 'check_channel_subscription') {
-            return next();
-        }
-
-        const userData = await dbManager.getUser(userId);
-        
-        // إذا لم يكن مسجلاً بعد، تخطي
-        if (!userData) return next();
-        
-        // التحقق من الاشتراك في القناة مع نظام الكاش (5 دقائق)
-        const now = new Date();
-        const lastCheck = userData.last_subscription_check ? new Date(userData.last_subscription_check) : null;
-        const shouldCheck = !lastCheck || (now - lastCheck) > 5 * 60 * 1000; // 5 دقائق
-
-        if (shouldCheck) {
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-        } else {
-            // استخدام البيانات المخزنة في الكاش
-            if (!userData.channel_subscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ ثم اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-        }
-        
-        await next();
-    } catch (error) {
-        console.error('Middleware error:', error);
-        await next();
-    }
-});
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -1419,7 +1397,7 @@ bot.on('text', async (ctx) => {
 3️⃣ أدخل كود التحقق
 4️⃣ ابدأ باستخدام المحاولات المجانية
 
-💎 *المطور:* ${CONFIG.DEVELOPER}
+💎 *المطور:* ${CONFIG.DEVELPER}
 📢 *القناة:* ${CONFIG.CHANNEL}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
@@ -1939,34 +1917,21 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
-// 🆕 معالجة التحقق من الاشتراك في القناة - محسنة ومتصلة مع Firebase
+// 🆕 معالجة التحقق من الاشتراك في القناة
 async function handleCheckChannelSubscription(ctx) {
     try {
         const userId = ctx.from.id.toString();
         const isSubscribed = await checkChannelSubscription(userId);
         
         if (isSubscribed) {
-            await dbManager.setChannelSubscription(userId, true, new Date().toISOString());
+            await dbManager.setChannelSubscription(userId, true);
             await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
             await ctx.deleteMessage();
             
             // إرسال رسالة الترحيب بعد التحقق
             const userName = ctx.from.first_name;
             
-            // التحقق إذا كان المستخدم مسجل مسبقاً
-            const existingUser = await dbManager.getUser(userId);
-            
-            if (existingUser) {
-                // إذا كان مسجلاً مسبقاً، نرسله للقائمة الرئيسية
-                await ctx.replyWithMarkdown(
-                    `🎉 *مرحباً بعودتك ${userName}!*\n\n` +
-                    `✅ *تم التحقق من الاشتراك بنجاح*\n\n` +
-                    `🎯 يمكنك الآن استخدام البوت بالكامل`,
-                    getMainKeyboard()
-                );
-            } else {
-                // إذا كان جديداً، نكمل عملية التسجيل
-                const welcomeMessage = `
+            const welcomeMessage = `
 🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
 
 🎯 *النظام المتقدم لتوقع الأهداف في المباريات*
@@ -1982,10 +1947,9 @@ async function handleCheckChannelSubscription(ctx) {
 📢 *القناة:* ${CONFIG.CHANNEL}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
-                `;
+            `;
 
-                await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
-            }
+            await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
         } else {
             await ctx.answerCbQuery('❌ لم يتم الاشتراك بعد!');
             await ctx.replyWithMarkdown(
@@ -3615,7 +3579,7 @@ bot.launch().then(() => {
     console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with DUAL PAYMENT is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
-    console.log('🔐 Channel Subscription: MANDATORY - ENHANCED');
+    console.log('🔐 Channel Subscription: MANDATORY');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
