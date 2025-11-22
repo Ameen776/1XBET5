@@ -274,7 +274,7 @@ class PersistentStorage {
         }
     }
 
-    // 🆕 دالة لحفظ الاشتراك في القناة
+    // 🆕 دالة لحفظ الاشتراك في القناة - الإصلاح النهائي
     async setChannelSubscription(userId, subscribed, checkTime = null) {
         try {
             const subscriptionData = {
@@ -284,10 +284,27 @@ class PersistentStorage {
                 checked_at: new Date().toISOString()
             };
 
+            console.log(`💾 Saving subscription for ${userId}: ${subscribed}`);
+            
+            // حفظ في Firebase
             if (db) {
                 await db.collection('channel_subscriptions').doc(userId.toString()).set(subscriptionData, { merge: true });
+                console.log(`✅ Saved to Firebase for ${userId}`);
             }
+            
+            // حفظ محلي
             this.subscriptionDatabase.set(userId.toString(), subscriptionData);
+            console.log(`✅ Saved locally for ${userId}`);
+            
+            // تحديث بيانات المستخدم
+            const userData = await this.getUser(userId);
+            if (userData) {
+                userData.channel_subscribed = subscribed;
+                userData.last_subscription_check = new Date().toISOString();
+                await this.saveUser(userId, userData);
+                console.log(`✅ Updated user data for ${userId}`);
+            }
+            
             return true;
         } catch (error) {
             console.error('Set channel subscription error:', error);
@@ -3062,8 +3079,6 @@ async function handlePaymentScreenshot(ctx, userId) {
         await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة صورة الدفع*', getMainKeyboard());
     }
 }
-
-// ... (بقية الدوال الإدارية تبقى كما هي)
 
 // 🚀 START BOT
 bot.launch().then(() => {
