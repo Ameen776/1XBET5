@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: ai-goal-predictor-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN_HERE
+      - key: ADMIN_ID
+        value: YOUR_ADMIN_ID_HERE
+      - key: FIREBASE_PROJECT_ID
+        value: YOUR_FIREBASE_PROJECT_ID
+      - key: FIREBASE_PRIVATE_KEY_ID
+        value: YOUR_FIREBASE_PRIVATE_KEY_ID
+      - key: FIREBASE_PRIVATE_KEY
+        value: YOUR_FIREBASE_PRIVATE_KEY
+      - key: FIREBASE_CLIENT_EMAIL
+        value: YOUR_FIREBASE_CLIENT_EMAIL
+      - key: FIREBASE_CLIENT_ID
+        value: YOUR_FIREBASE_CLIENT_ID
+      - key: FIREBASE_AUTH_URI
+        value: https://accounts.google.com/o/oauth2/auth
+      - key: FIREBASE_TOKEN_URI
+        value: https://oauth2.googleapis.com/token
+      - key: FIREBASE_AUTH_PROVIDER_X509_CERT_URL
+        value: https://www.googleapis.com/oauth2/v1/certs
+      - key: FIREBASE_CLIENT_X509_CERT_URL
+        value: YOUR_FIREBASE_CLIENT_CERT_URL
