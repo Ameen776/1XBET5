@@ -1,20 +1,16 @@
 {
-  "name": "ai-goal-predictor-enhanced",
-  "version": "16.0.0",
-  "description": "AI Goal Predictor Bot with Dual Payment System and Enhanced Features",
+  "name": "ai-goal-predictor-simple",
+  "version": "1.0.0",
+  "description": "AI Goal Predictor Bot with Simple Channel Verification",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "nodemon bot.js"
+    "start": "node bot.js"
   },
   "dependencies": {
     "telegraf": "^4.16.3",
-    "axios": "^1.6.2",
-    "express": "^4.18.2",
-    "firebase-admin": "^11.11.1",
-    "form-data": "^4.0.0"
+    "express": "^4.18.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.0.0"
   }
 }
