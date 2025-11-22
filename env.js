@@ -1,0 +1,21 @@
+# 🔐 Firebase Configuration
+FIREBASE_PROJECT_ID=your_project_id_here
+FIREBASE_PRIVATE_KEY_ID=your_private_key_id_here
+FIREBASE_PRIVATE_KEY=your_private_key_here
+FIREBASE_CLIENT_EMAIL=your_client_email_here
+FIREBASE_CLIENT_ID=your_client_id_here
+FIREBASE_CLIENT_X509_CERT_URL=your_cert_url_here
+FIREBASE_DATABASE_URL=your_database_url_here
+
+# 🤖 Bot Configuration
+BOT_TOKEN=your_bot_token_here
+ADMIN_ID=your_admin_id_here
+CHANNEL_ID=your_channel_id_here
+CHANNEL_USERNAME=@your_channel_here
+
+# 🧠 AI APIs
+GEMINI_API_KEY=your_gemini_key_here
+OPENAI_API_KEY=your_openai_key_here
+
+# 📸 Image Upload
+IMGBB_API_KEY=your_imgbb_key_here
