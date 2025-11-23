@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: ai-goal-predictor-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BOT_TOKEN
+        fromSecret: true
+      - key: ADMIN_ID
+        fromSecret: true
+      - key: CHANNEL_ID
+        value: "-1003283663811"
+      - key: CHANNEL_USERNAME
+        value: "@GEMZGOOL"
+      - key: FIREBASE_PROJECT_ID
+        fromSecret: true
+      - key: FIREBASE_PRIVATE_KEY_ID
+        fromSecret: true
+      - key: FIREBASE_PRIVATE_KEY
+        fromSecret: true
+      - key: FIREBASE_CLIENT_EMAIL
+        fromSecret: true
+      - key: FIREBASE_CLIENT_ID
+        fromSecret: true
+      - key: FIREBASE_CLIENT_X509_CERT_URL
+        fromSecret: true
+      - key: FIREBASE_DATABASE_URL
+        fromSecret: true
+      - key: IMGBB_API_KEY
+        fromSecret: true
