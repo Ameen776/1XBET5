@@ -1,0 +1,28 @@
+# Telegram Bot Configuration
+BOT_TOKEN=your_bot_token_here
+ADMIN_ID=your_admin_id_here
+CHANNEL_ID=your_channel_id_here
+CHANNEL_USERNAME=your_channel_username_here
+
+# Firebase Configuration
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY_ID=your_private_key_id
+FIREBASE_PRIVATE_KEY=your_private_key
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_CLIENT_ID=your_client_id
+FIREBASE_CLIENT_X509_CERT_URL=your_cert_url
+FIREBASE_DATABASE_URL=your_database_url
+
+# API Keys
+GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
+IMGBB_API_KEY=your_imgbb_api_key
+
+# Payment Links
+PAYMENT_WEEK=your_weekly_payment_link
+PAYMENT_MONTH=your_monthly_payment_link
+PAYMENT_3MONTHS=your_3months_payment_link
+PAYMENT_YEAR=your_yearly_payment_link
+
+# Server Port
+PORT=3000
