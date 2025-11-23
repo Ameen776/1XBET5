@@ -1,7 +1,7 @@
 {
-  "name": "ai-goal-predictor-enhanced",
-  "version": "16.0.0",
-  "description": "AI Goal Predictor Bot with Dual Payment System and Enhanced Features",
+  "name": "ai-goal-predictor-bot",
+  "version": "17.1.0",
+  "description": "AI Goal Predictor Bot with Dual Payment System",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
@@ -14,19 +14,13 @@
     "firebase-admin": "^11.11.1",
     "form-data": "^4.0.0"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "keywords": [
-    "telegram",
-    "bot",
-    "ai",
-    "prediction",
-    "football",
-    "goal"
+    "telegram-bot",
+    "ai-predictions",
+    "goal-predictor"
   ],
   "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
   "license": "MIT"
