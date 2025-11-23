@@ -1,11 +1,12 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.1 ENHANCED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
+// 🆕 ENHANCED: UNIQUE ACCOUNT VALIDATION + IMPROVED BUTTONS
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v16.1 ENHANCED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
@@ -69,7 +70,7 @@ const CONFIG = {
         }
     },
     
-    VERSION: "16.0.0",
+    VERSION: "16.1.0",
     DEVELOPER: "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -78,7 +79,7 @@ const CONFIG = {
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
 };
 
-console.log('✅ Dual Payment Configuration loaded successfully');
+console.log('✅ Enhanced Configuration loaded successfully');
 
 // 🚀 INITIALIZE BOT
 const { Telegraf, Markup, session } = require('telegraf');
@@ -623,7 +624,7 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // 🔍 NEW: Get user by 1xBet account number
+    // 🔍 NEW: Get user by 1xBet account number - ENHANCED FOR DUPLICATE PREVENTION
     async getUserByOneXBet(onexbet) {
         try {
             // 🔄 TRY FIREBASE FIRST
@@ -645,6 +646,20 @@ class EnhancedDatabaseManager {
         } catch (error) {
             console.error('Get user by onexbet error:', error);
             return null;
+        }
+    }
+
+    // 🆕 NEW: Check if 1xBet account is already registered to another user
+    async isOneXBetAccountTaken(onexbet, currentUserId) {
+        try {
+            const existingUser = await this.getUserByOneXBet(onexbet);
+            if (existingUser && existingUser.user_id !== currentUserId) {
+                return true; // Account is taken by another user
+            }
+            return false; // Account is available
+        } catch (error) {
+            console.error('Check account taken error:', error);
+            return false;
         }
     }
 
@@ -814,7 +829,7 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "16.0";
+        this.algorithmVersion = "16.1";
     }
 
     generateSmartPrediction(userId) {
@@ -1008,7 +1023,9 @@ bot.use(session({
         country: null,
         awaitingCountry: false,
         lastPredictionTime: null,
-        predictionButtons: null
+        predictionButtons: null,
+        // 🆕 NEW: Track current prediction message for button management
+        currentPredictionMessageId: null
     })
 }));
 
@@ -1233,6 +1250,110 @@ async function reconnectAlgorithm(ctx, userData) {
         '🎯 *يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات*',
         getMainKeyboard()
     );
+}
+
+// 🆕 NEW: Enhanced function to handle prediction result buttons with auto-removal
+async function handlePredictionResult(ctx, isWin, userData, predictionMessageId) {
+    const userId = ctx.from.id.toString();
+    
+    try {
+        // إزالة الأزرار من الرسالة الأصلية أولاً
+        try {
+            await ctx.telegram.editMessageReplyMarkup(
+                ctx.chat.id,
+                predictionMessageId,
+                null,
+                { inline_keyboard: [] } // إزالة جميع الأزرار
+            );
+        } catch (editError) {
+            console.log('Could not remove buttons from message:', editError);
+        }
+
+        if (isWin) {
+            // حالة الفوز
+            const profit = ctx.session.currentBet;
+            userData.wins = (userData.wins || 0) + 1;
+            userData.correct_predictions = (userData.correct_predictions || 0) + 1;
+            userData.total_profit = (userData.total_profit || 0) + profit;
+            ctx.session.totalProfit += profit;
+            
+            // إرسال رسالة النجاح المؤقتة
+            const successMessage = await ctx.replyWithMarkdown(
+                `🎊 *مبروك! نجح التوقع وربحت ${profit}$* ✨\n\n` +
+                `✅ توقعك كان دقيقاً ومميزاً\n` +
+                `💰 ربحت: ${profit}$\n` +
+                `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
+                `🎯 يمكنك البدء بتوقع جديد`
+            );
+
+            // إرسال رسالة تحفيزية
+            const motivationMessages = [
+                "🔥 *استمر في التقدم!* أنت لاعب ممتاز 🎯",
+                "🚀 *مذهل!* مهاراتك في التحليل رائعة 💎",
+                "💪 *قوي!* استمر في تحقيق الأرباح ⚡",
+                "🎯 *دقة عالية!* أنت محترف في التوقع 🌟"
+            ];
+            
+            const randomMotivation = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
+            const motivationMessage = await ctx.replyWithMarkdown(randomMotivation);
+
+            // حذف الرسائل بعد 3 ثواني
+            setTimeout(async () => {
+                try {
+                    await ctx.deleteMessage(successMessage.message_id);
+                    await ctx.deleteMessage(motivationMessage.message_id);
+                } catch (deleteError) {
+                    console.log('Could not delete motivation messages:', deleteError);
+                }
+            }, 3000);
+
+        } else {
+            // حالة الخسارة - مضاعفة الرهان
+            const newBet = ctx.session.currentBet * 2;
+            userData.losses = (userData.losses || 0) + 1;
+            ctx.session.currentBet = newBet;
+            
+            // إرسال رسالة الخسارة المؤقتة
+            const lossMessage = await ctx.replyWithMarkdown(
+                `🔄 *خسرت هذه الجولة*\n\n` +
+                `📈 الرهان التالي مضاعف: ${newBet}$\n` +
+                `💪 لا توقف.. استمر في المحاولة`
+            );
+
+            // إرسال رسالة تحفيزية للخسارة
+            const lossMotivationMessages = [
+                "💪 *لا تستسلم!* الخسارة جزء من اللعبة 🎯",
+                "🔥 *استمر!* التالي سيكون أفضل ⚡",
+                "🚀 *لا تيأس!* كل محترف مر بهذه المرحلة 🌟",
+                "🎯 *تعلم من الخسارة!* القادم أفضل 💎"
+            ];
+            
+            const randomLossMotivation = lossMotivationMessages[Math.floor(Math.random() * lossMotivationMessages.length)];
+            const motivationMessage = await ctx.replyWithMarkdown(randomLossMotivation);
+
+            // حذف الرسائل بعد 3 ثواني
+            setTimeout(async () => {
+                try {
+                    await ctx.deleteMessage(lossMessage.message_id);
+                    await ctx.deleteMessage(motivationMessage.message_id);
+                } catch (deleteError) {
+                    console.log('Could not delete loss motivation messages:', deleteError);
+                }
+            }, 3000);
+
+            // توليد توقع جديد تلقائياً بعد الخسارة
+            setTimeout(async () => {
+                await handleGetPrediction(ctx, userData);
+            }, 3500);
+        }
+        
+        // حفظ بيانات المستخدم
+        await dbManager.saveUser(userId, userData);
+        
+    } catch (error) {
+        console.error('Prediction result handling error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في معالجة النتيجة');
+    }
 }
 
 // 🎯 BOT COMMANDS
@@ -1517,13 +1638,15 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
-                // 🔒 التحقق من أن رقم الحساب غير مسجل لمستخدم آخر
-                const existingUserWithAccount = await dbManager.getUserByOneXBet(text);
-                if (existingUserWithAccount && existingUserWithAccount.user_id !== userId) {
+                // 🆕 ENHANCED: التحقق من أن رقم الحساب غير مسجل لمستخدم آخر
+                const isAccountTaken = await dbManager.isOneXBetAccountTaken(text, userId);
+                if (isAccountTaken) {
                     await ctx.replyWithMarkdown(
                         '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
-                        '🔐 هذا الحساب مسجل لمستخدم آخر\n' +
-                        '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم'
+                        '🔐 هذا الحساب مسجل لمستخدم آخر في النظام\n' +
+                        '🚫 *ممنوع استخدام حساب 1xBet واحد لأكثر من مستخدم*\n\n' +
+                        '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم\n' +
+                        '📞 @GEMZGOOLBOT'
                     );
                     return;
                 }
@@ -1785,12 +1908,14 @@ bot.on('photo', async (ctx) => {
     }
 });
 
-// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH ALGORITHM RECONNECTION
+// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH ENHANCED BUTTON MANAGEMENT
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
         const userId = ctx.from.id.toString();
+        const messageId = ctx.callbackQuery.message.message_id;
         
+        // 🆕 NEW: Enhanced win/lose handling with auto-removal
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
             
@@ -1800,54 +1925,8 @@ bot.on('callback_query', async (ctx) => {
                 return;
             }
             
-            if (isWin) {
-                const profit = ctx.session.currentBet;
-                userData.wins = (userData.wins || 0) + 1;
-                userData.correct_predictions = (userData.correct_predictions || 0) + 1;
-                userData.total_profit = (userData.total_profit || 0) + profit;
-                ctx.session.totalProfit += profit;
-                
-                await ctx.answerCbQuery(`🎊 مبروك! نجح التوقع وربحت ${profit}$`);
-                
-                await ctx.replyWithMarkdown(
-                    `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
-                    `✅ توقعك كان دقيقاً ومميزاً\n` +
-                    `💰 ربحت: ${profit}$\n` +
-                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
-                    `🎯 يمكنك البدء بتوقع جديد`,
-                    getMainKeyboard()
-                );
-                
-            } else {
-                // مضاعفة الرهان وتوليد توقع جديد تلقائياً
-                const newBet = ctx.session.currentBet * 2;
-                userData.losses = (userData.losses || 0) + 1;
-                ctx.session.currentBet = newBet;
-                
-                await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);
-                
-                // توليد توقع جديد تلقائياً
-                const newPrediction = goalAI.generateNextPrediction(userId);
-                
-                await ctx.replyWithMarkdown(
-                    `🔄 *خسرت هذه الجولة*\n\n` +
-                    `📈 الرهان التالي مضاعف: ${newBet}$\n` +
-                    `💪 لا توقف.. استمر في المحاولة\n\n` +
-                    `🎯 *التوقع التالي:*\n` +
-                    `${newPrediction.type}\n` +
-                    `📈 ${newPrediction.probability}% | 🎯 ${newPrediction.confidence}%\n` +
-                    `💡 ${newPrediction.reasoning}`,
-                    getMainKeyboard()
-                );
-            }
-            
-            await dbManager.saveUser(userId, userData);
-            
-            try {
-                await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
-            } catch (deleteError) {
-                console.log('Could not delete message:', deleteError);
-            }
+            await handlePredictionResult(ctx, isWin, userData, messageId);
+            return;
         }
         
         // معالجة أزرار القبول والرفض في الإدمن
@@ -2051,18 +2130,21 @@ ${userData.subscription_status !== 'active' ?
     `✅ *اشتراك نشط - محاولات غير محدودة*`}
         `;
 
-        // حفظ الأزرار في الجلسة
-        ctx.session.predictionButtons = Markup.inlineKeyboard([
+        // 🆕 NEW: Enhanced buttons with unique IDs
+        const predictionButtons = Markup.inlineKeyboard([
             [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)],
             [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)]
         ]);
 
         // إرسال الصورة مع التوقع في رسالة واحدة
-        await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
+        const predictionMessage = await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
             caption: analysisMessage,
             parse_mode: 'Markdown',
-            reply_markup: ctx.session.predictionButtons.reply_markup
+            reply_markup: predictionButtons.reply_markup
         });
+
+        // حفظ معرف الرسالة في الجلسة لإدارة الأزرار لاحقاً
+        ctx.session.currentPredictionMessageId = predictionMessage.message_id;
 
         // إرسال الإشعار للقناة
         await channelNotifier.sendPredictionNotification(userData, prediction, ctx.session.currentBet);
@@ -3606,11 +3688,12 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with DUAL PAYMENT is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v16.1 ENHANCED is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
     console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
+    console.log('🆕 Enhanced Features: Unique Account Validation + Improved Buttons');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
@@ -3633,4 +3716,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with Dual Payment & Firebase Data Ready!');
+console.log('✅ AI Goal Prediction System with Enhanced Features Ready!');
