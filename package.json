@@ -1,7 +1,7 @@
 {
   "name": "ai-goal-predictor-bot",
-  "version": "17.1.0",
-  "description": "AI Goal Prediction Bot with Dual Payment Systems and Telegram Channel Subscription",
+  "version": "17.0.0",
+  "description": "AI Goal Predictor Bot with Dual Payment System",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
@@ -19,11 +19,8 @@
   },
   "keywords": [
     "telegram-bot",
-    "ai-prediction", 
-    "goal-predictor",
-    "payment-system",
-    "firebase",
-    "subscription"
+    "ai-predictions",
+    "goal-predictor"
   ],
   "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
   "license": "MIT"
