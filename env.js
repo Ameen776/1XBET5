@@ -1,21 +1,16 @@
-# Telegram Bot Configuration
 BOT_TOKEN=your_bot_token_here
 ADMIN_ID=your_admin_id_here
-CHANNEL_ID=-1003283663811
-CHANNEL_USERNAME=@GEMZGOOL
+CHANNEL_ID=your_channel_id_here
+CHANNEL_USERNAME=your_channel_username_here
 
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_PRIVATE_KEY_ID=your_private_key_id
-FIREBASE_PRIVATE_KEY=your_private_key
-FIREBASE_CLIENT_EMAIL=your_client_email
-FIREBASE_CLIENT_ID=your_client_id
-FIREBASE_CLIENT_X509_CERT_URL=your_cert_url
-FIREBASE_DATABASE_URL=your_database_url
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_DATABASE_URL=your_firebase_database_url
 
-# Image Upload Service
+PAYMENT_WEEK=your_payment_week_link
+PAYMENT_MONTH=your_payment_month_link
+PAYMENT_3MONTHS=your_payment_3months_link
+PAYMENT_YEAR=your_payment_year_link
+
 IMGBB_API_KEY=your_imgbb_api_key
-
-# AI APIs (Optional)
-GEMINI_API_KEY=your_gemini_api_key
-OPENAI_API_KEY=your_openai_api_key
