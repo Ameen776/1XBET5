@@ -316,12 +316,20 @@ class EnhancedDatabaseManager {
                     const userData = userDoc.data();
                     // 🗄️ SYNC WITH LOCAL STORAGE
                     this.storage.userDatabase.set(userId, userData);
+                    console.log(`✅ تم تحميل بيانات المستخدم ${userId} من Firebase`);
                     return userData;
                 }
             }
             
             // 🔄 FALLBACK TO LOCAL STORAGE
-            return this.storage.userDatabase.get(userId) || null;
+            const localUser = this.storage.userDatabase.get(userId);
+            if (localUser) {
+                console.log(`✅ تم تحميل بيانات المستخدم ${userId} من التخزين المحلي`);
+                return localUser;
+            }
+            
+            console.log(`❌ لم يتم العثور على بيانات المستخدم ${userId}`);
+            return null;
             
         } catch (error) {
             console.error('Get user error:', error);
@@ -885,36 +893,6 @@ class EnhancedDatabaseManager {
 // INITIALIZE ENHANCED DATABASE MANAGER
 const dbManager = new EnhancedDatabaseManager();
 
-// 🚀 INITIAL DATA SYNC ON STARTUP
-async function initializeDataSync() {
-    try {
-        console.log('🔄 Initializing data synchronization...');
-        
-        // 📥 TRY TO RESTORE FROM FIREBASE FIRST
-        const restoreSuccess = await dbManager.restoreFromFirebase();
-        
-        if (!restoreSuccess) {
-            console.log('🔄 No Firebase data found, checking local storage...');
-            
-            // 📊 CHECK IF WE HAVE LOCAL DATA
-            const settings = await dbManager.getSettings();
-            const users = await dbManager.getAllUsers();
-            
-            console.log(`📊 Local data found: ${users.length} users`);
-            
-            // 📤 SYNC LOCAL DATA TO FIREBASE
-            if (users.length > 0) {
-                await dbManager.syncAllDataToFirebase();
-            }
-        }
-        
-        console.log('✅ Data initialization completed');
-        
-    } catch (error) {
-        console.error('Data initialization error:', error);
-    }
-}
-
 // 🔄 نظام محسن لاستعادة البيانات من Firebase عند بدء التشغيل
 async function initializeEnhancedDataSync() {
     try {
@@ -1391,7 +1369,7 @@ function isAlgorithmExpired(lastCheckTime) {
 async function reconnectAlgorithm(ctx, userData) {
     const userId = ctx.from.id.toString();
     
-    // تحديث وقت الربط
+    // تحديث وقت الربح
     userData.algorithm_linked = true;
     userData.last_algorithm_check = new Date().toISOString();
     await dbManager.saveUserImmediately(userId, userData);
@@ -1454,11 +1432,13 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // التحقق إذا كان المستخدم مسجل مسبقاً
+        // التحقق إذا كان المستخدم مسجل مسبقاً - باستخدام النظام المحسن
+        console.log(`🔍 البحث عن المستخدم ${userId} في قاعدة البيانات...`);
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
             // المستخدم مسجل مسبقاً - دخول مباشر
+            console.log(`✅ تم العثور على المستخدم ${userId} - تحميل البيانات...`);
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
 
@@ -1510,6 +1490,7 @@ bot.start(async (ctx) => {
             
         } else {
             // مستخدم جديد - اختيار الدولة أولاً
+            console.log(`🆕 مستخدم جديد ${userId} - بدء التسجيل...`);
             ctx.session.step = 'awaiting_country';
             ctx.session.awaitingCountry = true;
 
@@ -1747,9 +1728,12 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
+                console.log(`🔍 التحقق من رقم الحساب ${text} للمستخدم ${userId}`);
+                
                 // 🔒 التحقق الفوري من أن رقم الحساب غير مسجل لمستخدم آخر
                 const existingUserWithAccount = await dbManager.getUserByOneXBetImmediately(text);
                 if (existingUserWithAccount && existingUserWithAccount.user_id !== userId) {
+                    console.log(`❌ رقم الحساب ${text} مسجل بالفعل للمستخدم ${existingUserWithAccount.user_id}`);
                     await ctx.replyWithMarkdown(
                         '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
                         '🔐 هذا الحساب مسجل لمستخدم آخر في النظام\n' +
@@ -1766,6 +1750,7 @@ bot.on('text', async (ctx) => {
                         if (!firebaseQuery.empty) {
                             const firebaseUser = firebaseQuery.docs[0].data();
                             if (firebaseUser.user_id !== userId) {
+                                console.log(`❌ رقم الحساب ${text} مسجل في Firebase للمستخدم ${firebaseUser.user_id}`);
                                 await ctx.replyWithMarkdown(
                                     '❌ *تم رفض التسجيل!*\n\n' +
                                     '🔐 هذا الحساب مسجل مسبقاً في قاعدة البيانات\n' +
@@ -1781,6 +1766,7 @@ bot.on('text', async (ctx) => {
                     }
                 }
 
+                console.log(`✅ رقم الحساب ${text} متاح للمستخدم ${userId}`);
                 ctx.session.accountId = text;
                 ctx.session.step = 'awaiting_verification';
                 ctx.session.verificationCode = Math.floor(100000 + Math.random() * 900000);
@@ -1865,6 +1851,7 @@ bot.on('text', async (ctx) => {
                     last_algorithm_check: new Date().toISOString()
                 };
 
+                // استخدام الحفظ الفوري للمستخدم الجديد
                 await dbManager.saveUserImmediately(userId, userData);
                 ctx.session.step = 'verified';
                 ctx.session.userData = userData;
@@ -2096,6 +2083,7 @@ bot.on('callback_query', async (ctx) => {
                 );
             }
             
+            // استخدام الحفظ الفوري لتحديث بيانات المستخدم
             await dbManager.saveUserImmediately(userId, userData);
             
             try {
@@ -2273,6 +2261,8 @@ async function handleGetPrediction(ctx, userData) {
         userData.total_predictions = (userData.total_predictions || 0) + 1;
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
         userData.lastPrediction = prediction;
+        
+        // استخدام الحفظ الفوري لتحديث بيانات المستخدم
         await dbManager.saveUserImmediately(ctx.from.id.toString(), userData);
 
         // الحصول على الوقت الحقيقي الحالي
@@ -3189,6 +3179,7 @@ async function handleAdminPendingPayments(ctx) {
                 }
             );
         }
+            }
     } catch (error) {
         console.error('Admin pending payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المعلقة', getAdminPaymentsKeyboard());
@@ -3762,6 +3753,7 @@ async function handlePaymentAccept(ctx, paymentId) {
         userData.subscription_end_date = endDate;
         userData.free_attempts = 0;
         
+        // استخدام الحفظ الفوري لتحديث بيانات المستخدم
         await dbManager.saveUserImmediately(payment.user_id, userData);
         await dbManager.updatePayment(paymentId, { 
             status: 'accepted',
@@ -3868,6 +3860,7 @@ bot.launch().then(() => {
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
     console.log('🛠️ Enhanced Data Saving: IMMEDIATE FIREBASE SYNC');
     console.log('🔒 Duplicate Prevention: ENHANCED ACCOUNT CHECKING');
+    console.log('🔥 DATA PERSISTENCE: USERS & SUBSCRIPTIONS SAVED IMMEDIATELY');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
@@ -3890,4 +3883,4 @@ process.once('SIGTERM', async () => {
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with Dual Payment & Enhanced Firebase Data Ready!');
+console.log('✅ AI Goal Prediction System with Dual Payment & Enhanced Firebase Data Ready! 🔥');
