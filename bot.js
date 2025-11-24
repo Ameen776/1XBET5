@@ -811,7 +811,7 @@ class DynamicStatistics {
     }
 }
 
-// 🧠 SMART GOAL PREDICTION ENGINE - IMPROVED FROM SECOND CODE
+// 🧠 SMART GOAL PREDICTION ENGINE - IMPROVED FROM CODE 2
 class GoalPredictionAI {
     constructor() {
         this.algorithmVersion = "16.0";
@@ -1181,7 +1181,7 @@ function isAlgorithmExpired(lastCheckTime) {
     return diffMinutes > 5; // 5 دقائق
 }
 
-// 🆕 دالة لإعادة ربط الخوارزمية - IMPROVED FROM SECOND CODE
+// 🆕 دالة لإعادة ربط الخوارزمية
 async function reconnectAlgorithm(ctx, userData) {
     const userId = ctx.from.id.toString();
     
@@ -1785,7 +1785,7 @@ bot.on('photo', async (ctx) => {
     }
 });
 
-// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH ALGORITHM RECONNECTION AND WIN/LOSE BUTTONS
+// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH WIN/LOSE BUTTONS FROM CODE 2
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
@@ -1942,7 +1942,7 @@ async function handleCheckChannelSubscription(ctx) {
     }
 }
 
-// 🎯 HANDLER FUNCTIONS - IMPROVED PREDICTION SYSTEM FROM SECOND CODE
+// 🎯 HANDLER FUNCTIONS - IMPROVED FROM CODE 2
 
 async function handleGetPrediction(ctx, userData) {
     try {
@@ -2019,8 +2019,10 @@ async function handleGetPrediction(ctx, userData) {
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
         userData.lastPrediction = prediction;
         
-        // تحديث وقت الخوارزمية
+        // تحديث الخوارزمية
+        userData.algorithm_linked = true;
         userData.last_algorithm_check = new Date().toISOString();
+        
         await dbManager.saveUser(ctx.from.id.toString(), userData);
 
         // الحصول على الوقت الحقيقي الحالي
@@ -2055,7 +2057,7 @@ ${userData.subscription_status !== 'active' ?
         `;
 
         // حفظ الأزرار في الجلسة
-        ctx.session.predictionButtons = Markup.inlineKeyboard([
+        const predictionButtons = Markup.inlineKeyboard([
             [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)],
             [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)]
         ]);
@@ -2064,7 +2066,7 @@ ${userData.subscription_status !== 'active' ?
         await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
             caption: analysisMessage,
             parse_mode: 'Markdown',
-            reply_markup: ctx.session.predictionButtons.reply_markup
+            reply_markup: predictionButtons.reply_markup
         });
 
         // إرسال الإشعار للقناة
@@ -2496,9 +2498,7 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🆕 🔧 ADMIN HANDLERS - UPDATED FOR DUAL PAYMENT SYSTEM
-// [يتم الحفاظ على جميع وظائف الإدمن من الكود الأول كما هي بدون تغيير]
-// ... [جميع دوال الإدمن تبقى كما هي من الكود الأول] ...
+// ... (بقية الدوال الإدارية تبقى كما هي من الكود الأول)
 
 // 🚀 START BOT
 bot.launch().then(() => {
@@ -2507,7 +2507,7 @@ bot.launch().then(() => {
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
     console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
-    console.log('🎯 Prediction System: IMPROVED WITH WIN/LOSE BUTTONS');
+    console.log('🎯 Win/Lose Buttons: IMPLEMENTED FROM CODE 2');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
