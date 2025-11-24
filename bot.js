@@ -1,4 +1,3 @@
-
 // --- BEGIN initAll wrapper (inserted by assistant) ---
 (async function initAll(){
   try{
@@ -221,8 +220,6 @@ async function initializeFirebase() {
     }
 }
 
-// INITIALIZE FIREBASE
-// initializeFirebase called in initAll()
 // 🔐 نظام التحقق من الاشتراك في القناة عبر Telegram API فقط
 async function checkChannelSubscription(userId) {
     try {
@@ -313,8 +310,6 @@ class PersistentStorage {
     }
 }
 
-// INITIALIZE PERSISTENT STORAGE
-// persistentStorage created in initAll()
 // 💾 ENHANCED DATABASE MANAGER - PERSISTENT DATA
 class EnhancedDatabaseManager {
     constructor() {
@@ -793,8 +788,6 @@ class EnhancedDatabaseManager {
     }
 }
 
-// INITIALIZE ENHANCED DATABASE MANAGER
-// dbManager created in initAll()
 // 🚀 INITIAL DATA SYNC ON STARTUP
 async function initializeDataSync() {
     try {
@@ -825,8 +818,6 @@ async function initializeDataSync() {
     }
 }
 
-// 🔄 CALL INITIALIZATION ON STARTUP
-// initializeDataSync called in initAll()
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
     constructor() {
@@ -963,11 +954,6 @@ class ImgBBUploader {
     }
 }
 
-// INITIALIZE SYSTEMS
-const goalAI = new GoalPredictionAI();
-const dynamicStats = new DynamicStatistics();
-const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
-
 // 📢 CHANNEL NOTIFICATION SYSTEM
 class ChannelNotifier {
     constructor(bot, channelId) {
@@ -1026,6 +1012,10 @@ ${prediction.reasoning}
     }
 }
 
+// INITIALIZE SYSTEMS
+const goalAI = new GoalPredictionAI();
+const dynamicStats = new DynamicStatistics();
+const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
 
 // 🎯 BOT SETUP
@@ -2102,16 +2092,13 @@ ${userData.subscription_status !== 'active' ?
         `;
 
         // حفظ الأزرار في الجلسة
-        ctx.session.predictionButtons = Markup.inlineKeyboard([
-            [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)],
-            [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)]
-        ]);
+        ctx.session.predictionButtons = createPredictionKeyboard('prediction');
 
         // إرسال الصورة مع التوقع في رسالة واحدة
         await ctx.replyWithPhoto(CONFIG.PREDICTION_IMAGE, {
             caption: analysisMessage,
             parse_mode: 'Markdown',
-            reply_markup: ctx.session.predictionButtons.reply_markup
+            reply_markup: ctx.session.predictionButtons
         });
 
         // إرسال الإشعار للقناة
@@ -3179,7 +3166,7 @@ async function handleAdminSelectSubscriptionEdit(ctx, text) {
             const settings = await dbManager.getSettings();
             
             // 🔧 FIX: التحقق من وجود الأسعار والتفاصيل
-            const currentPrice = settings.prices?.bank?.[subscriptionType] || CONFIG.SUBSCRIPTION_PRICES.bank[subscriptionType];
+            const currentPrice = settings.prices?.bank?
             const currentBankDetails = settings.payment_links?.bank?.[subscriptionType] || CONFIG.PAYMENT_LINKS.bank[subscriptionType];
 
             await ctx.replyWithMarkdown(
