@@ -1453,6 +1453,30 @@ bot.on('text', async (ctx) => {
             }
         }
 
+        // 🆕 معالجة إدخال مبلغ الرهان - الإصلاح الرئيسي هنا
+        if (session.awaitingBetAmount) {
+            const betAmount = parseFloat(text);
+            if (isNaN(betAmount) || betAmount <= 0) {
+                await ctx.replyWithMarkdown('❌ *مبلغ غير صحيح!*\n\nيرجى إدخال مبلغ صحيح (أرقام فقط)');
+                return;
+            }
+
+            // حفظ مبلغ الرهان في الجلسة
+            ctx.session.currentBet = betAmount;
+            ctx.session.originalBet = betAmount;
+            ctx.session.awaitingBetAmount = false;
+
+            // الآن ننتقل إلى جلب التحليل
+            const userData = await dbManager.getUser(userId);
+            if (!userData) {
+                await ctx.replyWithMarkdown('❌ *جلسة منتهية*\n\n🔐 أرسل /start للبدء', getLoginKeyboard());
+                return;
+            }
+
+            await handleGetPrediction(ctx, userData);
+            return;
+        }
+
         // 🆕 معالجة اختيار طريقة الدفع
         if (session.step === 'choose_payment_method') {
             if (text === '💳 باينانس') {
@@ -2053,8 +2077,8 @@ ${userData.subscription_status !== 'active' ?
 
         // حفظ الأزرار في الجلسة
         ctx.session.predictionButtons = Markup.inlineKeyboard([
-            [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)],
-            [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)]
+            [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)],
+            [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)]
         ]);
 
         // إرسال الصورة مع التوقع في رسالة واحدة
