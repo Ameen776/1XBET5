@@ -1,3 +1,57 @@
+
+// --- BEGIN initAll wrapper (inserted by assistant) ---
+(async function initAll(){
+  try{
+    if (typeof initializeFirebase === 'function') {
+      console.log('initAll: waiting for initializeFirebase...');
+      await initializeFirebase();
+      console.log('initAll: firebase initialized.');
+    } else {
+      console.log('initAll: initializeFirebase not found — skipping.');
+    }
+
+    // create persistentStorage after firebase is ready (if constructor exists)
+    if (typeof PersistentStorage === 'function') {
+      global.persistentStorage = new PersistentStorage();
+      // allow short time for any sync in constructors
+      await new Promise(r=>setTimeout(r, 300));
+      console.log('initAll: persistentStorage created.');
+    }
+
+    if (typeof EnhancedDatabaseManager === 'function') {
+      global.dbManager = new EnhancedDatabaseManager();
+      console.log('initAll: dbManager created.');
+    }
+
+    if (typeof initializeDataSync === 'function') {
+      await initializeDataSync();
+      console.log('initAll: data sync complete.');
+    }
+
+    console.log('✅ Full initialization complete (initAll).');
+  } catch(err){
+    console.error('❌ initAll error:', err);
+  }
+})();
+ // --- END initAll wrapper ---
+
+// Helper: create inline keyboard for prediction result with unique callback data
+function createPredictionKeyboard(prefix){
+  const ts = Date.now();
+  // Telegraf Markup or raw schema: produce inline_keyboard structure
+  try {
+    if (typeof Markup !== 'undefined' && Markup.inlineKeyboard) {
+      return Markup.inlineKeyboard([
+        [ Markup.button.callback('❌ خسرت', `lose_${prefix}_${ts}`), Markup.button.callback('✅ ربحت', `win_${prefix}_${ts}`) ]
+      ]);
+    }
+  } catch(e){}
+  // fallback raw inline_keyboard
+  return { inline_keyboard: [
+    [ { text: '❌ خسرت', callback_data: `lose_${prefix}_${ts}` }, { text: '✅ ربحت', callback_data: `win_${prefix}_${ts}` } ]
+  ]};
+}
+
 // ===================================================
 // 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 FIXED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
@@ -168,8 +222,7 @@ async function initializeFirebase() {
 }
 
 // INITIALIZE FIREBASE
-initializeFirebase();
-
+// initializeFirebase called in initAll()
 // 🔐 نظام التحقق من الاشتراك في القناة عبر Telegram API فقط
 async function checkChannelSubscription(userId) {
     try {
@@ -261,8 +314,7 @@ class PersistentStorage {
 }
 
 // INITIALIZE PERSISTENT STORAGE
-const persistentStorage = new PersistentStorage();
-
+// persistentStorage created in initAll()
 // 💾 ENHANCED DATABASE MANAGER - PERSISTENT DATA
 class EnhancedDatabaseManager {
     constructor() {
@@ -742,8 +794,7 @@ class EnhancedDatabaseManager {
 }
 
 // INITIALIZE ENHANCED DATABASE MANAGER
-const dbManager = new EnhancedDatabaseManager();
-
+// dbManager created in initAll()
 // 🚀 INITIAL DATA SYNC ON STARTUP
 async function initializeDataSync() {
     try {
@@ -775,8 +826,7 @@ async function initializeDataSync() {
 }
 
 // 🔄 CALL INITIALIZATION ON STARTUP
-initializeDataSync();
-
+// initializeDataSync called in initAll()
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
     constructor() {
@@ -3634,3 +3684,37 @@ process.once('SIGTERM', async () => {
 });
 
 console.log('✅ AI Goal Prediction System with Dual Payment & Firebase Data Ready!');
+
+// assistant_safe_callback_handler
+
+// assistant_safe_callback_handler: ensures callback queries are acknowledged and keyboards removed
+// This will not override existing handlers but adds a fallback acknowledgement and keyboard cleanup.
+try {
+  if (typeof bot !== 'undefined' && bot.on) {
+    bot.on('callback_query', async (ctx) => {
+      try {
+        // try to answer quickly (supports both telegraf ctx.answerCbQuery or node-telegram-bot-api style)
+        if (ctx.answerCbQuery) {
+          await ctx.answerCbQuery();
+        } else if (ctx._client && ctx._client.answerCallbackQuery && ctx.update && ctx.update.callback_query) {
+          ctx._client.answerCallbackQuery(ctx.update.callback_query.id).catch(()=>{});
+        }
+      } catch(e){}
+      // attempt to remove inline keyboard from the message to prevent duplicate actions
+      try {
+        const msg = ctx.update && (ctx.update.callback_query && ctx.update.callback_query.message);
+        if (msg && msg.message_id) {
+          // try editMessageReplyMarkup
+          if (ctx.editMessageReplyMarkup) {
+            try { await ctx.editMessageReplyMarkup({ inline_keyboard: [] }); } catch(e){}
+          }
+          // as a fallback try deleting the message
+          if (ctx.deleteMessage && msg.message_id) {
+            try { await ctx.deleteMessage(msg.message_id); } catch(e){}
+          }
+        }
+      } catch(e){}
+      // do not block other handlers
+    });
+  }
+} catch(e){}
