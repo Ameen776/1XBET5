@@ -3,7 +3,6 @@
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
-// 🛠️ ENHANCED DATA SAVING & DUPLICATE PREVENTION
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
@@ -144,7 +143,7 @@ async function initializeFirebase() {
         if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
-                databaseURL: process.env.FIREBASE_DATABASE_URL || "https://bot-tlegram-9f4b5.firebaseio.com"
+                databaseURL: process.env.FIREBASE_DATABASE_URL || "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
             });
         }
         
@@ -168,8 +167,14 @@ async function initializeFirebase() {
     }
 }
 
-// INITIALIZE FIREBASE
-initializeFirebase();
+// INITIALIZE FIREBASE FIRST
+initializeFirebase().then(success => {
+    if (success) {
+        console.log('✅ Firebase connection established');
+    } else {
+        console.log('❌ Firebase connection failed, using local storage');
+    }
+});
 
 // 🔐 نظام التحقق من الاشتراك في القناة عبر Telegram API فقط
 async function checkChannelSubscription(userId) {
@@ -200,15 +205,12 @@ class PersistentStorage {
         // 🗄️ LOAD DATA FROM BACKUP ON STARTUP
         await this.loadBackup();
         
-        // 🔄 AUTO BACKUP EVERY 10 MINUTES (ENHANCED)
+        // 🔄 AUTO BACKUP EVERY 10 MINUTES
         this.backupInterval = setInterval(() => {
-            this.enhancedAutoBackup();
-        }, 10 * 60 * 1000);
+            this.createBackup();
+        }, 10 * 60 * 1000); // كل 10 دقائق بدلاً من 30
         
-        // 🔄 مزامنة فورية بعد دقيقة من التشغيل
-        setTimeout(() => {
-            this.enhancedAutoBackup();
-        }, 60000);
+        console.log(`✅ Persistent storage initialized: ${this.userDatabase.size} users loaded`);
     }
 
     async loadBackup() {
@@ -220,53 +222,10 @@ class PersistentStorage {
                     this.userDatabase.set(doc.id, doc.data());
                 });
 
-                // 📥 LOAD PAYMENTS FROM FIREBASE
-                const paymentsSnapshot = await db.collection('payments').get();
-                paymentsSnapshot.forEach(doc => {
-                    this.paymentDatabase.set(doc.id, doc.data());
-                });
-
-                // 📥 LOAD SETTINGS FROM FIREBASE
-                const settingsDoc = await db.collection('settings').doc('config').get();
-                if (settingsDoc.exists) {
-                    this.settingsDatabase.set('config', settingsDoc.data());
-                }
-
-                console.log(`✅ Loaded backup: ${this.userDatabase.size} users, ${this.paymentDatabase.size} payments`);
+                console.log(`✅ Loaded ${this.userDatabase.size} users from Firebase`);
             }
         } catch (error) {
             console.error('Backup load error:', error);
-        }
-    }
-
-    // 🔄 نظام النسخ الاحتياطي التلقائي المحسن
-    async enhancedAutoBackup() {
-        try {
-            if (db) {
-                const backupData = {
-                    users: Array.from(this.userDatabase.entries()),
-                    payments: Array.from(this.paymentDatabase.entries()),
-                    settings: Array.from(this.settingsDatabase.entries()),
-                    timestamp: new Date().toISOString(),
-                    version: CONFIG.VERSION,
-                    backup_type: 'auto_backup'
-                };
-
-                await db.collection('backups').doc(`auto_${Date.now()}`).set(backupData);
-                console.log('✅ تم إنشاء نسخة احتياطية تلقائية');
-                
-                // 🔄 مزامنة فورية للمستخدمين النشطين
-                const activeUsers = Array.from(this.userDatabase.entries()).slice(0, 50); // أول 50 مستخدم
-                for (const [userId, userData] of activeUsers) {
-                    try {
-                        await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
-                    } catch (userError) {
-                        console.error(`❌ خطأ في مزامنة المستخدم ${userId}:`, userError);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('❌ خطأ في النسخ الاحتياطي التلقائي:', error);
         }
     }
 
@@ -305,114 +264,43 @@ class EnhancedDatabaseManager {
     constructor() {
         this.maintenanceMode = false;
         this.storage = persistentStorage;
+        this.firebaseEnabled = false;
+        this.init();
+    }
+
+    async init() {
+        // التحقق من حالة Firebase
+        try {
+            if (db) {
+                const testDoc = await db.collection('connection_test').doc('test').get();
+                this.firebaseEnabled = testDoc.exists;
+                console.log(`✅ Firebase status: ${this.firebaseEnabled ? 'ENABLED' : 'DISABLED'}`);
+            }
+        } catch (error) {
+            console.log('❌ Firebase check failed:', error.message);
+            this.firebaseEnabled = false;
+        }
     }
 
     async getUser(userId) {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const userDoc = await db.collection('users').doc(userId.toString()).get();
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     // 🗄️ SYNC WITH LOCAL STORAGE
                     this.storage.userDatabase.set(userId, userData);
-                    console.log(`✅ تم تحميل بيانات المستخدم ${userId} من Firebase`);
                     return userData;
                 }
             }
             
             // 🔄 FALLBACK TO LOCAL STORAGE
-            const localUser = this.storage.userDatabase.get(userId);
-            if (localUser) {
-                console.log(`✅ تم تحميل بيانات المستخدم ${userId} من التخزين المحلي`);
-                return localUser;
-            }
-            
-            console.log(`❌ لم يتم العثور على بيانات المستخدم ${userId}`);
-            return null;
+            return this.storage.userDatabase.get(userId) || null;
             
         } catch (error) {
             console.error('Get user error:', error);
             return this.storage.userDatabase.get(userId) || null;
-        }
-    }
-
-    // 🔄 دالة محسنة لحفظ البيانات في Firebase فورياً
-    async saveUserImmediately(userId, userData) {
-        try {
-            const completeUserData = {
-                user_id: userId,
-                username: userData.username || 'Unknown',
-                onexbet: userData.onexbet || '',
-                country: userData.country || '',
-                free_attempts: userData.free_attempts || 0,
-                subscription_status: userData.subscription_status || 'free',
-                subscription_type: userData.subscription_type || 'none',
-                subscription_start_date: userData.subscription_start_date || null,
-                subscription_end_date: userData.subscription_end_date || null,
-                joined_at: userData.joined_at || new Date().toISOString(),
-                total_predictions: userData.total_predictions || 0,
-                correct_predictions: userData.correct_predictions || 0,
-                wins: userData.wins || 0,
-                losses: userData.losses || 0,
-                total_bets: userData.total_bets || 0,
-                total_profit: userData.total_profit || 0,
-                last_updated: new Date().toISOString(),
-                algorithm_linked: userData.algorithm_linked || true,
-                last_algorithm_check: userData.last_algorithm_check || new Date().toISOString()
-            };
-
-            // 💾 الحفظ الفوري في Firebase مع معالجة الأخطاء
-            if (db) {
-                try {
-                    await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                    console.log(`✅ تم الحفظ الفوري في Firebase للمستخدم: ${userId}`);
-                } catch (firebaseError) {
-                    console.error('❌ خطأ في الحفظ الفوري في Firebase:', firebaseError);
-                    // الاستمرار في الحفظ المحلي رغم الخطأ
-                }
-            }
-            
-            // 💾 الحفظ في التخزين المحلي
-            this.storage.userDatabase.set(userId, completeUserData);
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ خطأ في الحفظ الفوري:', error);
-            // 🆘 حفظ طارئ في التخزين المحلي
-            this.storage.userDatabase.set(userId, userData);
-            return true;
-        }
-    }
-
-    // 🔍 دالة محسنة للبحث عن مستخدم برقم 1xBet مع التحقق من Firebase أولاً
-    async getUserByOneXBetImmediately(onexbet) {
-        try {
-            // 🔄 البحث في Firebase أولاً
-            if (db) {
-                const usersSnapshot = await db.collection('users').where('onexbet', '==', onexbet).get();
-                if (!usersSnapshot.empty) {
-                    const userData = usersSnapshot.docs[0].data();
-                    console.log(`✅ تم العثور على المستخدم في Firebase بالرقم: ${onexbet}`);
-                    return userData;
-                }
-            }
-
-            // 🔄 البحث في التخزين المحلي
-            for (let [userId, userData] of this.storage.userDatabase) {
-                if (userData.onexbet === onexbet) {
-                    console.log(`✅ تم العثور على المستخدم محلياً بالرقم: ${onexbet}`);
-                    return userData;
-                }
-            }
-            
-            console.log(`❌ لم يتم العثور على مستخدم بالرقم: ${onexbet}`);
-            return null;
-            
-        } catch (error) {
-            console.error('❌ خطأ في البحث عن المستخدم بالرقم:', error);
-            return null;
         }
     }
 
@@ -440,44 +328,20 @@ class EnhancedDatabaseManager {
                 last_algorithm_check: userData.last_algorithm_check || new Date().toISOString()
             };
 
-            // 💾 الحفظ الفوري في Firebase (الأولوية القصوى)
-            if (db) {
-                try {
-                    await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                    console.log(`✅ تم حفظ بيانات المستخدم في Firebase: ${userId}`);
-                } catch (firebaseError) {
-                    console.error('❌ خطأ في حفظ Firebase:', firebaseError);
-                    // نحاول مرة أخرى بعد ثانية
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    try {
-                        await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                        console.log(`✅ تمت إعادة الحفظ في Firebase بنجاح: ${userId}`);
-                    } catch (retryError) {
-                        console.error('❌ فشل إعادة الحفظ في Firebase:', retryError);
-                    }
-                }
+            // 💾 SAVE TO FIREBASE (PRIMARY)
+            if (this.firebaseEnabled && db) {
+                await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
+                console.log(`✅ User ${userId} saved to Firebase`);
             }
             
-            // 💾 الحفظ في التخزين المحلي (نسخة احتياطية)
+            // 💾 SAVE TO LOCAL STORAGE (BACKUP)
             this.storage.userDatabase.set(userId, completeUserData);
-            
-            // 📤 مزامنة إضافية مع Firebase للتأكد
-            if (db) {
-                setTimeout(async () => {
-                    try {
-                        await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                        console.log(`✅ تمت المزامنة الإضافية لـ: ${userId}`);
-                    } catch (syncError) {
-                        console.error('❌ خطأ في المزامنة الإضافية:', syncError);
-                    }
-                }, 2000);
-            }
             
             return true;
             
         } catch (error) {
-            console.error('❌ خطأ عام في حفظ المستخدم:', error);
-            // 🆘 حفظ طارئ في التخزين المحلي
+            console.error('Error saving user:', error);
+            // 🆘 EMERGENCY SAVE TO LOCAL STORAGE
             this.storage.userDatabase.set(userId, userData);
             return true;
         }
@@ -486,7 +350,7 @@ class EnhancedDatabaseManager {
     async getSettings() {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const settingsDoc = await db.collection('settings').doc('config').get();
                 if (settingsDoc.exists) {
                     const settingsData = settingsDoc.data();
@@ -535,7 +399,7 @@ class EnhancedDatabaseManager {
             };
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
             }
             
@@ -558,7 +422,7 @@ class EnhancedDatabaseManager {
     async getAllUsers() {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const usersSnapshot = await db.collection('users').get();
                 const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
@@ -590,7 +454,7 @@ class EnhancedDatabaseManager {
             };
 
             // 💾 SAVE TO FIREBASE (PRIMARY)
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 await db.collection('payments').doc(paymentId).set(fullPaymentData);
             }
             
@@ -615,7 +479,7 @@ class EnhancedDatabaseManager {
     async updatePayment(paymentId, updates) {
         try {
             // 🔄 UPDATE FIREBASE
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 await db.collection('payments').doc(paymentId).update(updates);
             }
             
@@ -640,7 +504,7 @@ class EnhancedDatabaseManager {
     async getPayment(paymentId) {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const paymentDoc = await db.collection('payments').doc(paymentId).get();
                 if (paymentDoc.exists) {
                     const paymentData = paymentDoc.data();
@@ -662,7 +526,7 @@ class EnhancedDatabaseManager {
     async getAllPayments() {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const paymentsSnapshot = await db.collection('payments').get();
                 const payments = paymentsSnapshot.docs.map(doc => doc.data());
                 
@@ -696,7 +560,7 @@ class EnhancedDatabaseManager {
     // 🔄 SYNC ALL DATA TO FIREBASE
     async syncAllDataToFirebase() {
         try {
-            if (!db) {
+            if (!this.firebaseEnabled || !db) {
                 console.log('❌ Firebase not available for sync');
                 return false;
             }
@@ -705,23 +569,23 @@ class EnhancedDatabaseManager {
 
             // 📤 SYNC USERS
             const users = Array.from(this.storage.userDatabase.entries());
+            let userCount = 0;
+            
             for (const [userId, userData] of users) {
-                await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
+                try {
+                    await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
+                    userCount++;
+                    
+                    // تأخير بسيط لتجنب تجاوز حدود Firebase
+                    if (userCount % 50 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } catch (userError) {
+                    console.error(`Error syncing user ${userId}:`, userError);
+                }
             }
 
-            // 📤 SYNC PAYMENTS
-            const payments = Array.from(this.storage.paymentDatabase.entries());
-            for (const [paymentId, paymentData] of payments) {
-                await db.collection('payments').doc(paymentId).set(paymentData, { merge: true });
-            }
-
-            // 📤 SYNC SETTINGS
-            const settings = this.storage.settingsDatabase.get('config');
-            if (settings) {
-                await db.collection('settings').doc('config').set(settings, { merge: true });
-            }
-
-            console.log(`✅ Data sync completed: ${users.length} users, ${payments.length} payments`);
+            console.log(`✅ Data sync completed: ${userCount} users`);
             return true;
 
         } catch (error) {
@@ -733,7 +597,7 @@ class EnhancedDatabaseManager {
     // 📥 RESTORE FROM FIREBASE
     async restoreFromFirebase() {
         try {
-            if (!db) {
+            if (!this.firebaseEnabled || !db) {
                 console.log('❌ Firebase not available for restore');
                 return false;
             }
@@ -742,28 +606,18 @@ class EnhancedDatabaseManager {
 
             // CLEAR LOCAL STORAGE
             this.storage.userDatabase.clear();
-            this.storage.paymentDatabase.clear();
-            this.storage.settingsDatabase.clear();
 
             // 📥 RESTORE USERS
             const usersSnapshot = await db.collection('users').get();
+            let restoredCount = 0;
+            
             usersSnapshot.forEach(doc => {
-                this.storage.userDatabase.set(doc.id, doc.data());
+                const userData = doc.data();
+                this.storage.userDatabase.set(doc.id, userData);
+                restoredCount++;
             });
 
-            // 📥 RESTORE PAYMENTS
-            const paymentsSnapshot = await db.collection('payments').get();
-            paymentsSnapshot.forEach(doc => {
-                this.storage.paymentDatabase.set(doc.id, doc.data());
-            });
-
-            // 📥 RESTORE SETTINGS
-            const settingsDoc = await db.collection('settings').doc('config').get();
-            if (settingsDoc.exists) {
-                this.storage.settingsDatabase.set('config', settingsDoc.data());
-            }
-
-            console.log(`✅ Restore completed: ${this.storage.userDatabase.size} users, ${this.storage.paymentDatabase.size} payments`);
+            console.log(`✅ Restore completed: ${restoredCount} users`);
             return true;
 
         } catch (error) {
@@ -776,10 +630,13 @@ class EnhancedDatabaseManager {
     async getUserByOneXBet(onexbet) {
         try {
             // 🔄 TRY FIREBASE FIRST
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 const usersSnapshot = await db.collection('users').where('onexbet', '==', onexbet).get();
                 if (!usersSnapshot.empty) {
-                    return usersSnapshot.docs[0].data();
+                    const userData = usersSnapshot.docs[0].data();
+                    // 🗄️ SYNC WITH LOCAL STORAGE
+                    this.storage.userDatabase.set(userData.user_id, userData);
+                    return userData;
                 }
             }
 
@@ -793,6 +650,12 @@ class EnhancedDatabaseManager {
             
         } catch (error) {
             console.error('Get user by onexbet error:', error);
+            // 🔄 FALLBACK TO LOCAL STORAGE
+            for (let [userId, userData] of this.storage.userDatabase) {
+                if (userData.onexbet === onexbet) {
+                    return userData;
+                }
+            }
             return null;
         }
     }
@@ -840,7 +703,7 @@ class EnhancedDatabaseManager {
                 timestamp: new Date().toISOString()
             };
             
-            if (db) {
+            if (this.firebaseEnabled && db) {
                 await db.collection('backups').doc(Date.now().toString()).set(backupData);
             }
             
@@ -893,73 +756,44 @@ class EnhancedDatabaseManager {
 // INITIALIZE ENHANCED DATABASE MANAGER
 const dbManager = new EnhancedDatabaseManager();
 
-// 🔄 نظام محسن لاستعادة البيانات من Firebase عند بدء التشغيل
-async function initializeEnhancedDataSync() {
+// 🚀 INITIAL DATA SYNC ON STARTUP
+async function initializeDataSync() {
     try {
-        console.log('🔄 بدء تحميل البيانات المحسن من Firebase...');
+        console.log('🔄 Initializing data synchronization...');
         
-        if (!db) {
-            console.log('❌ Firebase غير متاح، استخدام البيانات المحلية');
-            return false;
-        }
-
-        // 📥 تحميل جميع المستخدمين من Firebase
-        const usersSnapshot = await db.collection('users').get();
-        let loadedUsers = 0;
+        // 📥 TRY TO RESTORE FROM FIREBASE FIRST
+        const restoreSuccess = await dbManager.restoreFromFirebase();
         
-        usersSnapshot.forEach(doc => {
-            const userData = doc.data();
-            const userId = userData.user_id || doc.id;
+        if (restoreSuccess) {
+            console.log('✅ Data restored successfully from Firebase');
+        } else {
+            console.log('🔄 No Firebase data found, checking local storage...');
             
-            // تحديث التخزين المحلي ببيانات Firebase
-            dbManager.storage.userDatabase.set(userId, userData);
-            loadedUsers++;
-        });
-
-        // 📥 تحميل الإعدادات من Firebase
-        const settingsDoc = await db.collection('settings').doc('config').get();
-        if (settingsDoc.exists) {
-            dbManager.storage.settingsDatabase.set('config', settingsDoc.data());
-            console.log('✅ تم تحميل الإعدادات من Firebase');
-        }
-
-        // 📥 تحميل المدفوعات من Firebase
-        const paymentsSnapshot = await db.collection('payments').get();
-        let loadedPayments = 0;
-        
-        paymentsSnapshot.forEach(doc => {
-            const paymentData = doc.data();
-            dbManager.storage.paymentDatabase.set(paymentData.id || doc.id, paymentData);
-            loadedPayments++;
-        });
-
-        console.log(`✅ تم تحميل ${loadedUsers} مستخدم و ${loadedPayments} عملية دفع من Firebase`);
-        
-        // 🔄 مزامنة إضافية بعد 10 ثواني للتأكد
-        setTimeout(() => {
-            dbManager.syncAllDataToFirebase().then(success => {
-                if (success) {
-                    console.log('✅ تمت المزامنة الإضافية بنجاح');
+            // 📊 CHECK IF WE HAVE LOCAL DATA
+            const users = await dbManager.getAllUsers();
+            
+            console.log(`📊 Local data found: ${users.length} users`);
+            
+            // 📤 SYNC LOCAL DATA TO FIREBASE
+            if (users.length > 0) {
+                const syncSuccess = await dbManager.syncAllDataToFirebase();
+                if (syncSuccess) {
+                    console.log('✅ Local data synced to Firebase');
                 }
-            });
-        }, 10000);
-
-        return true;
+            }
+        }
+        
+        console.log('✅ Data initialization completed');
         
     } catch (error) {
-        console.error('❌ خطأ في تحميل البيانات المحسن:', error);
-        return false;
+        console.error('Data initialization error:', error);
     }
 }
 
-// 🔄 استدعاء التهيئة المحسنة عند بدء التشغيل
-initializeEnhancedDataSync().then(success => {
-    if (success) {
-        console.log('🎉 نظام حفظ البيانات المحسن جاهز للعمل!');
-    } else {
-        console.log('⚠️ استخدام نظام البيانات المحلي مع النسخ الاحتياطي');
-    }
-});
+// 🔄 CALL INITIALIZATION ON STARTUP - مع تأخير لضمان اكتمال تهيئة Firebase
+setTimeout(() => {
+    initializeDataSync();
+}, 3000);
 
 // 📊 DYNAMIC STATISTICS SYSTEM
 class DynamicStatistics {
@@ -1369,10 +1203,10 @@ function isAlgorithmExpired(lastCheckTime) {
 async function reconnectAlgorithm(ctx, userData) {
     const userId = ctx.from.id.toString();
     
-    // تحديث وقت الربح
+    // تحديث وقت الربط
     userData.algorithm_linked = true;
     userData.last_algorithm_check = new Date().toISOString();
-    await dbManager.saveUserImmediately(userId, userData);
+    await dbManager.saveUser(userId, userData);
     
     // إرسال رسالة إعادة الربط مع إيموجي متحرك
     const reconnectingMessage = await ctx.replyWithMarkdown(
@@ -1432,13 +1266,11 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // التحقق إذا كان المستخدم مسجل مسبقاً - باستخدام النظام المحسن
-        console.log(`🔍 البحث عن المستخدم ${userId} في قاعدة البيانات...`);
+        // التحقق إذا كان المستخدم مسجل مسبقاً
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
             // المستخدم مسجل مسبقاً - دخول مباشر
-            console.log(`✅ تم العثور على المستخدم ${userId} - تحميل البيانات...`);
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
 
@@ -1490,7 +1322,6 @@ bot.start(async (ctx) => {
             
         } else {
             // مستخدم جديد - اختيار الدولة أولاً
-            console.log(`🆕 مستخدم جديد ${userId} - بدء التسجيل...`);
             ctx.session.step = 'awaiting_country';
             ctx.session.awaitingCountry = true;
 
@@ -1710,7 +1541,7 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار الفوري
+        // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار
         if (session.step === 'awaiting_account_id') {
             // التحقق من الاشتراك في القناة أولاً
             const isSubscribed = await checkChannelSubscription(userId);
@@ -1728,45 +1559,29 @@ bot.on('text', async (ctx) => {
             }
 
             if (/^\d{10}$/.test(text)) {
-                console.log(`🔍 التحقق من رقم الحساب ${text} للمستخدم ${userId}`);
-                
-                // 🔒 التحقق الفوري من أن رقم الحساب غير مسجل لمستخدم آخر
-                const existingUserWithAccount = await dbManager.getUserByOneXBetImmediately(text);
-                if (existingUserWithAccount && existingUserWithAccount.user_id !== userId) {
-                    console.log(`❌ رقم الحساب ${text} مسجل بالفعل للمستخدم ${existingUserWithAccount.user_id}`);
-                    await ctx.replyWithMarkdown(
-                        '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
-                        '🔐 هذا الحساب مسجل لمستخدم آخر في النظام\n' +
-                        '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم\n\n' +
-                        '📞 للاستفسار: @GEMZGOOLBOT'
-                    );
-                    return;
-                }
-
-                // 🔒 تحقق إضافي من Firebase مباشرة للتأكد
-                if (db) {
-                    try {
-                        const firebaseQuery = await db.collection('users').where('onexbet', '==', text).get();
-                        if (!firebaseQuery.empty) {
-                            const firebaseUser = firebaseQuery.docs[0].data();
-                            if (firebaseUser.user_id !== userId) {
-                                console.log(`❌ رقم الحساب ${text} مسجل في Firebase للمستخدم ${firebaseUser.user_id}`);
-                                await ctx.replyWithMarkdown(
-                                    '❌ *تم رفض التسجيل!*\n\n' +
-                                    '🔐 هذا الحساب مسجل مسبقاً في قاعدة البيانات\n' +
-                                    '🚫 لا يمكن استخدام حساب مسجل من قبل\n\n' +
-                                    '📞 للاستفسار: @GEMZGOOLBOT'
-                                );
-                                return;
-                            }
-                        }
-                    } catch (firebaseError) {
-                        console.error('❌ خطأ في التحقق من Firebase:', firebaseError);
-                        // نستمر في العملية رغم الخطأ
+                // 🔒 التحقق من أن رقم الحساب غير مسجل لمستخدم آخر - تحسين النظام
+                const existingUserWithAccount = await dbManager.getUserByOneXBet(text);
+                if (existingUserWithAccount) {
+                    if (existingUserWithAccount.user_id === userId) {
+                        // نفس المستخدم يحاول إعادة التسجيل بنفس الحساب
+                        await ctx.replyWithMarkdown(
+                            '⚠️ *هذا الحساب مسجل لك بالفعل!*\n\n' +
+                            '🔐 يمكنك استخدام البوت مباشرة\n' +
+                            '💡 اضغط على /start للدخول بحسابك'
+                        );
+                        return;
+                    } else {
+                        // حساب مسجل لمستخدم آخر
+                        await ctx.replyWithMarkdown(
+                            '❌ *رقم الحساب مسجل بالفعل!*\n\n' +
+                            '🔐 هذا الحساب مسجل لمستخدم آخر\n' +
+                            '💡 يرجى استخدام حسابك الخاص أو التواصل مع الدعم\n\n' +
+                            '📞 للاستفسار: @GEMZGOOLBOT'
+                        );
+                        return;
                     }
                 }
 
-                console.log(`✅ رقم الحساب ${text} متاح للمستخدم ${userId}`);
                 ctx.session.accountId = text;
                 ctx.session.step = 'awaiting_verification';
                 ctx.session.verificationCode = Math.floor(100000 + Math.random() * 900000);
@@ -1778,12 +1593,10 @@ bot.on('text', async (ctx) => {
                     `🔢 *الخطوة 2:* أرسل كود التحقق خلال 5 دقائق`
                 );
 
-                // ⏰ انتهاء صلاحية الكود بعد 5 دقائق
                 setTimeout(() => {
                     if (ctx.session.step === 'awaiting_verification') {
                         ctx.session.verificationCode = null;
                         ctx.session.step = 'start';
-                        console.log(`⏰ انتهت صلاحية كود التحقق للمستخدم: ${userId}`);
                     }
                 }, 5 * 60 * 1000);
             } else {
@@ -1851,8 +1664,7 @@ bot.on('text', async (ctx) => {
                     last_algorithm_check: new Date().toISOString()
                 };
 
-                // استخدام الحفظ الفوري للمستخدم الجديد
-                await dbManager.saveUserImmediately(userId, userData);
+                await dbManager.saveUser(userId, userData);
                 ctx.session.step = 'verified';
                 ctx.session.userData = userData;
 
@@ -2083,8 +1895,7 @@ bot.on('callback_query', async (ctx) => {
                 );
             }
             
-            // استخدام الحفظ الفوري لتحديث بيانات المستخدم
-            await dbManager.saveUserImmediately(userId, userData);
+            await dbManager.saveUser(userId, userData);
             
             try {
                 await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
@@ -2261,9 +2072,7 @@ async function handleGetPrediction(ctx, userData) {
         userData.total_predictions = (userData.total_predictions || 0) + 1;
         userData.total_bets = (userData.total_bets || 0) + ctx.session.currentBet;
         userData.lastPrediction = prediction;
-        
-        // استخدام الحفظ الفوري لتحديث بيانات المستخدم
-        await dbManager.saveUserImmediately(ctx.from.id.toString(), userData);
+        await dbManager.saveUser(ctx.from.id.toString(), userData);
 
         // الحصول على الوقت الحقيقي الحالي
         const now = new Date();
@@ -3179,7 +2988,6 @@ async function handleAdminPendingPayments(ctx) {
                 }
             );
         }
-            }
     } catch (error) {
         console.error('Admin pending payments error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المعلقة', getAdminPaymentsKeyboard());
@@ -3753,8 +3561,7 @@ async function handlePaymentAccept(ctx, paymentId) {
         userData.subscription_end_date = endDate;
         userData.free_attempts = 0;
         
-        // استخدام الحفظ الفوري لتحديث بيانات المستخدم
-        await dbManager.saveUserImmediately(payment.user_id, userData);
+        await dbManager.saveUser(payment.user_id, userData);
         await dbManager.updatePayment(paymentId, { 
             status: 'accepted',
             processed_at: new Date().toISOString()
@@ -3858,9 +3665,6 @@ bot.launch().then(() => {
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
     console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
-    console.log('🛠️ Enhanced Data Saving: IMMEDIATE FIREBASE SYNC');
-    console.log('🔒 Duplicate Prevention: ENHANCED ACCOUNT CHECKING');
-    console.log('🔥 DATA PERSISTENCE: USERS & SUBSCRIPTIONS SAVED IMMEDIATELY');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
@@ -3871,16 +3675,16 @@ bot.launch().then(() => {
 // 🛑 GRACEFUL SHUTDOWN WITH DATA BACKUP
 process.once('SIGINT', async () => {
     console.log('🔄 Creating final backup before shutdown...');
-    await persistentStorage.enhancedAutoBackup();
+    await persistentStorage.createBackup();
     persistentStorage.stop();
     await bot.stop('SIGINT');
 });
 
 process.once('SIGTERM', async () => {
     console.log('🔄 Creating final backup before shutdown...');
-    await persistentStorage.enhancedAutoBackup();
+    await persistentStorage.createBackup();
     persistentStorage.stop();
     await bot.stop('SIGTERM');
 });
 
-console.log('✅ AI Goal Prediction System with Dual Payment & Enhanced Firebase Data Ready! 🔥');
+console.log('✅ AI Goal Prediction System with Dual Payment & Firebase Data Ready!');
