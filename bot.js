@@ -3,82 +3,94 @@
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
+// 🔐 ALL KEYS FROM ENVIRONMENT VARIABLES
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
 console.log('🕒 ' + new Date().toISOString());
 
-// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
+// 🔧 CONFIGURATION - ALL FROM ENVIRONMENT VARIABLES
 const CONFIG = {
-    BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU",
-    ADMIN_ID: process.env.ADMIN_ID || "6565594143",
-    CHANNEL_ID: process.env.CHANNEL_ID || "-1003283663811",
-    CHANNEL_USERNAME: process.env.CHANNEL_USERNAME || "@GEMZGOOL",
+    BOT_TOKEN: process.env.BOT_TOKEN,
+    ADMIN_ID: process.env.ADMIN_ID,
+    CHANNEL_ID: process.env.CHANNEL_ID,
+    CHANNEL_USERNAME: process.env.CHANNEL_USERNAME,
     
     // 🧠 AI APIS
     AI_APIS: {
-        GEMINI: process.env.GEMINI_API_KEY || "AIzaSyCtjtT98-M5v6t8qICPSDw-1TLwPneyaQc",
-        OPENAI: process.env.OPENAI_API_KEY || "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"
+        GEMINI: process.env.GEMINI_API_KEY,
+        OPENAI: process.env.OPENAI_API_KEY
     },
 
     // 💰 DEFAULT PRICING - DUAL SYSTEM
     SUBSCRIPTION_PRICES: {
         binance: {
-            week: 10,
-            month: 30,
-            three_months: 80,
-            year: 250
+            week: parseInt(process.env.PRICE_WEEK_BINANCE) || 10,
+            month: parseInt(process.env.PRICE_MONTH_BINANCE) || 30,
+            three_months: parseInt(process.env.PRICE_3MONTHS_BINANCE) || 80,
+            year: parseInt(process.env.PRICE_YEAR_BINANCE) || 250
         },
         bank: {
-            week: 10,
-            month: 30, 
-            three_months: 80,
-            year: 250
+            week: parseInt(process.env.PRICE_WEEK_BANK) || 10,
+            month: parseInt(process.env.PRICE_MONTH_BANK) || 30, 
+            three_months: parseInt(process.env.PRICE_3MONTHS_BANK) || 80,
+            year: parseInt(process.env.PRICE_YEAR_BANK) || 250
         }
     },
 
     // 🔐 DEFAULT PAYMENT LINKS - DUAL SYSTEM
     PAYMENT_LINKS: {
         binance: {
-            week: process.env.PAYMENT_WEEK || "https://binance.com/payment/weekly",
-            month: process.env.PAYMENT_MONTH || "https://binance.com/payment/monthly", 
-            three_months: process.env.PAYMENT_3MONTHS || "https://binance.com/payment/3months",
-            year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
+            week: process.env.PAYMENT_WEEK_BINANCE,
+            month: process.env.PAYMENT_MONTH_BINANCE, 
+            three_months: process.env.PAYMENT_3MONTHS_BINANCE,
+            year: process.env.PAYMENT_YEAR_BINANCE
         },
         bank: {
             week: {
-                account: "1234567890",
-                image: "https://i.ibb.co/default-bank-week.jpg",
-                description: "🔹 تحويل بنكي - باقة أسبوعية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 10$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
+                account: process.env.BANK_ACCOUNT_WEEK || "1234567890",
+                image: process.env.BANK_IMAGE_WEEK || "https://i.ibb.co/default-bank-week.jpg",
+                description: process.env.BANK_DESCRIPTION_WEEK || "🔹 تحويل بنكي - باقة أسبوعية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 10$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
             },
             month: {
-                account: "1234567890",
-                image: "https://i.ibb.co/default-bank-month.jpg", 
-                description: "🔹 تحويل بنكي - باقة شهرية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 30$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
+                account: process.env.BANK_ACCOUNT_MONTH || "1234567890",
+                image: process.env.BANK_IMAGE_MONTH || "https://i.ibb.co/default-bank-month.jpg", 
+                description: process.env.BANK_DESCRIPTION_MONTH || "🔹 تحويل بنكي - باقة شهرية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 30$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
             },
             three_months: {
-                account: "1234567890",
-                image: "https://i.ibb.co/default-bank-3months.jpg",
-                description: "🔹 تحويل بنكي - باقة 3 أشهر\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 80$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
+                account: process.env.BANK_ACCOUNT_3MONTHS || "1234567890",
+                image: process.env.BANK_IMAGE_3MONTHS || "https://i.ibb.co/default-bank-3months.jpg",
+                description: process.env.BANK_DESCRIPTION_3MONTHS || "🔹 تحويل بنكي - باقة 3 أشهر\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 80$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
             },
             year: {
-                account: "1234567890",
-                image: "https://i.ibb.co/default-bank-year.jpg",
-                description: "🔹 تحويل بنكي - باقة سنوية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 250$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
+                account: process.env.BANK_ACCOUNT_YEAR || "1234567890",
+                image: process.env.BANK_IMAGE_YEAR || "https://i.ibb.co/default-bank-year.jpg",
+                description: process.env.BANK_DESCRIPTION_YEAR || "🔹 تحويل بنكي - باقة سنوية\n💳 رقم الحساب: 1234567890\n🏦 البنك: البنك الكريمي\n💰 المبلغ: 250$\n💵 العملة: الدولار الأمريكي\n\n📋 الشروط:\n• يجب التحويل بالدولار الأمريكي\n• إرفاق صورة إثبات الدفع\n• كتابة رقم حساب 1xBet الخاص بك"
             }
         }
     },
     
     VERSION: "16.0.0",
-    DEVELOPER: "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
-    CHANNEL: "@GEMZGOOL",
-    START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
-    ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
-    PREDICTION_IMAGE: "https://i.ibb.co/rGTZm2mB/IMG.jpg",
-    IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
+    DEVELOPER: process.env.DEVELOPER_NAME || "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
+    CHANNEL: process.env.CHANNEL_NAME || "@GEMZGOOL",
+    START_IMAGE: process.env.START_IMAGE_URL || "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
+    ANALYSIS_IMAGE: process.env.ANALYSIS_IMAGE_URL || "https://i.ibb.co/VYjf05S0/Screenshot.png",
+    PREDICTION_IMAGE: process.env.PREDICTION_IMAGE_URL || "https://i.ibb.co/rGTZm2mB/IMG.jpg",
+    IMGBB_API_KEY: process.env.IMGBB_API_KEY
 };
 
-console.log('✅ Dual Payment Configuration loaded successfully');
+// ✅ التحقق من وجود المفاتيح الأساسية
+if (!CONFIG.BOT_TOKEN) {
+    console.error('❌ BOT_TOKEN is required in environment variables');
+    process.exit(1);
+}
+
+if (!CONFIG.ADMIN_ID) {
+    console.error('❌ ADMIN_ID is required in environment variables');
+    process.exit(1);
+}
+
+console.log('✅ Configuration loaded from environment variables');
 
 // 🚀 INITIALIZE BOT
 const { Telegraf, Markup, session } = require('telegraf');
@@ -128,22 +140,28 @@ async function initializeFirebase() {
         // 🔐 FIREBASE CONFIG FROM ENVIRONMENT VARIABLES
         const serviceAccount = {
             "type": "service_account",
-            "project_id": process.env.FIREBASE_PROJECT_ID || "bot-tlegram-9f4b5",
-            "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID || "5c64bc8c07e94dd271388582545f47fa4afee4f9",
-            "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDDXZ6hoQ3APNmj\nhZsDwDra0rgkJw3E1B4uJcv46uOcXSwIlHRqKZ9ZJ0BtAO0LrEv/SHmyrlZ1/s71\nF67laIlbnH83SIbxO0ObeYx/Sq9j07hsdCNZAg4iinM8XGPHKUFOT+Zk0HWSkI4O\nQMDpXqg9rjukLUDTHNCAmKtK8BUHN/eZX4J8KNAEewFyGkBPQoFzAvIAshohkiLV\nyxvr7L5EpszzQGfq6znkuV78PfyNPR8SufVbCy2PKEUy01uZxBGv/mAH88yfaI3B\n6amPdo/2bZkwLl/wpMBALTXKz9R3ZfAfo9FaXsdD7cQt4SJEYcTQP3jXjGFSawS+\nuWu8WNrRAgMBAAECggEARcfcP84HW9lAQYSYzFuuifeHFz6tz9aWGxScCQJZH0I2\nVrAz7rGEPbNj8ytIAAngMURBV72mm0nSwT9e1IkkusioteXdcS+iY9ekA9l40RbQ\nAkjvUT0HMHY0V+SGLR6CuYaXe/3raNjiLJwba5/IRxPDMM6LH3zkynH9iOw9DpDi\nyAKiog4/i1Oh0db7F48ukjVxtXDQHPU7ba0u99go/JoOJLIEdY4bnO/l/5mgcVAu\n9dBRLp0wPp86MPNizxoPIVse3mb9PCl1RieHJ0kLNeJO1XpKH3DBp9vyc9AfNBLf\n8ekU1odpWglGQX+93BCpdQ/K9lN2ORgXIfX0knEn2wKBgQDgn4bDzaSLYaL4vD88\nl317F8WUtcpWTBQmpkfsErpt8DzItfx3x6hu8iXwvEo/P9GAVYYlTsEkhkNANZWm\nBigdjYaHNx8tfoUra7NnlfkjeM4erwU4hko1K/JGRxrFzyriihmXXiKN7/5wIivs\nn83lGP7JCcJtY1GCh/7lRGzUuwKBgQDep9p6BxLnAq/R7QDkjgG68QsoQNgCw2qR\nsgNMI9tHp4uQ7kblA8v2soRZsJUoQ7rDKYAi7ygV3W845sLHMegZkJDKOgLQiVwP\ncGw2qyhCGOqyAKuF9jqelRy4kA2sT63uoa8uw3fa2Fwj6ZvbAuFXF8oLjUK7URFy\nOXj+xfGb4wKBgQC39O3BXaDsJUH6wvBnBwnUzVsatubGVfgKzxMH2y6i6qRdG+1v\niyv98IHx7cJAmltQ5rm9xAmZh/t7kmbEWTZxPX53LkVyVLNrJAEBTGmFC2KC7oMw\nD4qmkR8RPxpF9awBa2gZ9xYFeA7AdrvSRe2xOg8vRbbdLwGKDSZLTQZ0EQKBgCTf\nPTH6G+o/qqgkDILM9YJkyok2+86xV+OazCr+wSCDoXw1yW3BjDRlab+Em57YYIRT\nShH+8u90BSgyJs1f+WTKaP/kTXUFWkaAQptnCrqvb6ZcsAr2NMzwOpph2LHRXCdp\nhR5EZoPKUq/rztCdEH4gxWfWU9e7XB1DYUMnupQrAoGBAIlP0e9Fj4fJIpZ1XAkl\nB1Xzk0LlQHO8gCD2uVfuIenqa47CPYTiYG99C+Hrb8IuIf9abKW9+juc8M9iPW+h\nThLt6XB6PDffNTnq/bP9pIclwsfVoj7Fdk8bhjbBMZqnaOvwEnhY/jW9aAPlgoua\nQrGzKTrmDOvCcFOnlMX6Aymd\n-----END PRIVATE KEY-----\n",
-            "client_email": process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk-fbsvc@bot-tlegram-9f4b5.iam.gserviceaccount.com",
-            "client_id": process.env.FIREBASE_CLIENT_ID || "105258007010795889602",
+            "project_id": process.env.FIREBASE_PROJECT_ID,
+            "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+            "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+            "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+            "client_id": process.env.FIREBASE_CLIENT_ID,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": process.env.FIREBASE_CLIENT_X509_CERT_URL || "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40bot-tlegram-9f4b5.iam.gserviceaccount.com",
+            "client_x509_cert_url": process.env.FIREBASE_CLIENT_X509_CERT_URL,
             "universe_domain": "googleapis.com"
         };
+
+        // ✅ التحقق من وجود مفاتيح Firebase
+        if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+            console.log('❌ Firebase configuration is incomplete, using local storage only');
+            return false;
+        }
 
         if (!admin.apps.length) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
-                databaseURL: process.env.FIREBASE_DATABASE_URL || "https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com"
+                databaseURL: process.env.FIREBASE_DATABASE_URL
             });
         }
         
@@ -208,7 +226,7 @@ class PersistentStorage {
         // 🔄 AUTO BACKUP EVERY 10 MINUTES
         this.backupInterval = setInterval(() => {
             this.createBackup();
-        }, 10 * 60 * 1000); // كل 10 دقائق بدلاً من 30
+        }, 10 * 60 * 1000);
         
         console.log(`✅ Persistent storage initialized: ${this.userDatabase.size} users loaded`);
     }
@@ -331,7 +349,6 @@ class EnhancedDatabaseManager {
             // 💾 SAVE TO FIREBASE (PRIMARY)
             if (this.firebaseEnabled && db) {
                 await db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
-                console.log(`✅ User ${userId} saved to Firebase`);
             }
             
             // 💾 SAVE TO LOCAL STORAGE (BACKUP)
@@ -660,23 +677,6 @@ class EnhancedDatabaseManager {
         }
     }
 
-    isMaintenanceMode() {
-        return this.maintenanceMode;
-    }
-
-    async setMaintenanceMode(enabled) {
-        try {
-            const settings = await this.getSettings();
-            settings.maintenance_mode = enabled;
-            await this.updateSettings(settings);
-            this.maintenanceMode = enabled;
-            return true;
-        } catch (error) {
-            this.maintenanceMode = enabled;
-            return true;
-        }
-    }
-
     async searchUsers(query) {
         try {
             const users = await this.getAllUsers();
@@ -693,62 +693,20 @@ class EnhancedDatabaseManager {
         }
     }
 
-    // دالة جديدة لحفظ بيانات النسخ الاحتياطي
-    async backupData() {
-        try {
-            const backupData = {
-                users: await this.getAllUsers(),
-                payments: await this.getAllPayments(),
-                settings: await this.getSettings(),
-                timestamp: new Date().toISOString()
-            };
-            
-            if (this.firebaseEnabled && db) {
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-            }
-            
-            return backupData;
-        } catch (error) {
-            console.error('Backup error:', error);
-            return null;
-        }
+    isMaintenanceMode() {
+        return this.maintenanceMode;
     }
 
-    // دالة جديدة للحصول على جميع الإحصائيات
-    async getAllStats() {
+    async setMaintenanceMode(enabled) {
         try {
-            const users = await this.getAllUsers();
-            const payments = await this.getAllPayments();
-            
-            const activeUsers = users.filter(u => u.subscription_status === 'active');
-            const freeUsers = users.filter(u => u.subscription_status === 'free');
-            
-            const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
-            const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
-            const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
-            
-            return {
-                totalUsers: users.length,
-                activeUsers: activeUsers.length,
-                freeUsers: freeUsers.length,
-                totalPredictions,
-                totalProfit,
-                totalBets,
-                totalPayments: payments.length,
-                pendingPayments: payments.filter(p => p.status === 'pending').length
-            };
+            const settings = await this.getSettings();
+            settings.maintenance_mode = enabled;
+            await this.updateSettings(settings);
+            this.maintenanceMode = enabled;
+            return true;
         } catch (error) {
-            console.error('Get all stats error:', error);
-            return {
-                totalUsers: 0,
-                activeUsers: 0,
-                freeUsers: 0,
-                totalPredictions: 0,
-                totalProfit: 0,
-                totalBets: 0,
-                totalPayments: 0,
-                pendingPayments: 0
-            };
+            this.maintenanceMode = enabled;
+            return true;
         }
     }
 }
