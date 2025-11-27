@@ -1647,20 +1647,8 @@ bot.on('callback_query', async (ctx) => {
                 userData.losses = (userData.losses || 0) + 1;
                 ctx.session.currentBet = newBet;
                 
-                await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);
-                
-                // توليد توقع جديد تلقائياً
-                const newPrediction = goalAI.generateNextPrediction(userId);
-                
-                await ctx.replyWithMarkdown(
-                    `🔄 *خسرت هذه الجولة*\n\n` +
-                    `📈 الرهان التالي مضاعف: ${newBet}$\n` +
-                    `💪 لا توقف.. استمر في المحاولة\n\n` +
-                    `🎯 *التوقع التالي:*\n` +
-                    `${newPrediction.type}\n` +
-                    `📈 ${newPrediction.probability}% | 🎯 ${newPrediction.confidence}%\n` +
-                    `💡 ${newPrediction.reasoning}`,
-                    getMainKeyboard()
+                await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);               
+                                                                                    
                 );
             }
             
@@ -1877,7 +1865,7 @@ ${userData.subscription_status !== 'active' ?
         // حفظ الأزرار في الجلسة
         ctx.session.predictionButtons = Markup.inlineKeyboard([
             [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)],
-            [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)]
+            [Markup.button.callback('❌ ', `lose_${Date.now()}`)]
         ]);
 
         // إرسال الصورة مع التوقع في رسالة واحدة
