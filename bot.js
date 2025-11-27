@@ -4,6 +4,7 @@
 // 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
 // 🔐 ALL KEYS FROM ENVIRONMENT VARIABLES
+// 🔄 ENHANCED BACKUP SYSTEM - FIXED
 // ===================================================
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 FIXED...');
@@ -209,6 +210,288 @@ async function checkChannelSubscription(userId) {
     }
 }
 
+// 🔄 ENHANCED BACKUP SYSTEM - FIXED
+class EnhancedBackupSystem {
+    constructor() {
+        this.backupInterval = null;
+        this.lastBackupTime = null;
+    }
+
+    async createBackup() {
+        try {
+            console.log('🔄 Creating comprehensive backup...');
+            
+            if (!db) {
+                console.log('❌ Firebase not available for backup');
+                return false;
+            }
+
+            const backupData = {
+                users: await this.getAllUsersForBackup(),
+                payments: await this.getAllPaymentsForBackup(),
+                settings: await this.getSettingsForBackup(),
+                system_info: {
+                    version: CONFIG.VERSION,
+                    timestamp: new Date().toISOString(),
+                    total_users: (await this.getAllUsersForBackup()).length,
+                    total_payments: (await this.getAllPaymentsForBackup()).length
+                }
+            };
+
+            const backupId = `backup_${Date.now()}`;
+            await db.collection('backups').doc(backupId).set(backupData);
+            
+            this.lastBackupTime = new Date().toISOString();
+            console.log(`✅ Backup created successfully: ${backupId}`);
+            console.log(`📊 Backup contains: ${backupData.users.length} users, ${backupData.payments.length} payments`);
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Backup creation failed:', error);
+            return false;
+        }
+    }
+
+    async getAllUsersForBackup() {
+        try {
+            if (db) {
+                const usersSnapshot = await db.collection('users').get();
+                return usersSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            } else {
+                // Fallback to local storage
+                return Array.from(persistentStorage.userDatabase.entries()).map(([id, data]) => ({
+                    id,
+                    ...data
+                }));
+            }
+        } catch (error) {
+            console.error('Error getting users for backup:', error);
+            return [];
+        }
+    }
+
+    async getAllPaymentsForBackup() {
+        try {
+            if (db) {
+                const paymentsSnapshot = await db.collection('payments').get();
+                return paymentsSnapshot.docs.map(doc => doc.data());
+            } else {
+                return Array.from(persistentStorage.paymentDatabase.values());
+            }
+        } catch (error) {
+            console.error('Error getting payments for backup:', error);
+            return [];
+        }
+    }
+
+    async getSettingsForBackup() {
+        try {
+            if (db) {
+                const settingsDoc = await db.collection('settings').doc('config').get();
+                return settingsDoc.exists ? settingsDoc.data() : {};
+            } else {
+                return persistentStorage.settingsDatabase.get('config') || {};
+            }
+        } catch (error) {
+            console.error('Error getting settings for backup:', error);
+            return {};
+        }
+    }
+
+    async restoreFromBackup(backupId = null) {
+        try {
+            console.log('📥 Starting data restoration...');
+            
+            if (!db) {
+                console.log('❌ Firebase not available for restore');
+                return { success: false, error: 'Firebase not available' };
+            }
+
+            let backupData;
+            
+            if (backupId) {
+                // Restore from specific backup
+                const backupDoc = await db.collection('backups').doc(backupId).get();
+                if (!backupDoc.exists) {
+                    return { success: false, error: 'Backup not found' };
+                }
+                backupData = backupDoc.data();
+            } else {
+                // Restore from latest backup
+                const backupsSnapshot = await db.collection('backups')
+                    .orderBy('system_info.timestamp', 'desc')
+                    .limit(1)
+                    .get();
+                
+                if (backupsSnapshot.empty) {
+                    return { success: false, error: 'No backups found' };
+                }
+                
+                backupData = backupsSnapshot.docs[0].data();
+                backupId = backupsSnapshot.docs[0].id;
+            }
+
+            console.log(`🔄 Restoring from backup: ${backupId}`);
+            console.log(`📊 Backup contains: ${backupData.users?.length || 0} users, ${backupData.payments?.length || 0} payments`);
+
+            let restoredCount = 0;
+            let errorCount = 0;
+
+            // Restore Users
+            if (backupData.users && backupData.users.length > 0) {
+                for (const user of backupData.users) {
+                    try {
+                        await db.collection('users').doc(user.id.toString()).set(user, { merge: true });
+                        
+                        // Update local storage
+                        persistentStorage.userDatabase.set(user.id, user);
+                        
+                        restoredCount++;
+                        
+                        // Add delay to avoid rate limits
+                        if (restoredCount % 50 === 0) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                    } catch (userError) {
+                        console.error(`Error restoring user ${user.id}:`, userError);
+                        errorCount++;
+                    }
+                }
+            }
+
+            // Restore Payments
+            if (backupData.payments && backupData.payments.length > 0) {
+                for (const payment of backupData.payments) {
+                    try {
+                        await db.collection('payments').doc(payment.id).set(payment, { merge: true });
+                        persistentStorage.paymentDatabase.set(payment.id, payment);
+                    } catch (paymentError) {
+                        console.error(`Error restoring payment ${payment.id}:`, paymentError);
+                        errorCount++;
+                    }
+                }
+            }
+
+            // Restore Settings
+            if (backupData.settings) {
+                try {
+                    await db.collection('settings').doc('config').set(backupData.settings, { merge: true });
+                    persistentStorage.settingsDatabase.set('config', backupData.settings);
+                } catch (settingsError) {
+                    console.error('Error restoring settings:', settingsError);
+                    errorCount++;
+                }
+            }
+
+            console.log(`✅ Restore completed: ${restoredCount} users restored, ${errorCount} errors`);
+            
+            return {
+                success: true,
+                restoredCount,
+                errorCount,
+                backupId,
+                backupTime: backupData.system_info?.timestamp
+            };
+
+        } catch (error) {
+            console.error('❌ Restore failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async listBackups() {
+        try {
+            if (!db) {
+                console.log('❌ Firebase not available');
+                return [];
+            }
+
+            const backupsSnapshot = await db.collection('backups')
+                .orderBy('system_info.timestamp', 'desc')
+                .limit(10)
+                .get();
+
+            return backupsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data().system_info,
+                userCount: doc.data().users?.length || 0,
+                paymentCount: doc.data().payments?.length || 0
+            }));
+        } catch (error) {
+            console.error('Error listing backups:', error);
+            return [];
+        }
+    }
+
+    async deleteOldBackups(keepCount = 5) {
+        try {
+            if (!db) {
+                return { success: false, error: 'Firebase not available' };
+            }
+
+            const backupsSnapshot = await db.collection('backups')
+                .orderBy('system_info.timestamp', 'desc')
+                .get();
+
+            const backups = backupsSnapshot.docs;
+            
+            if (backups.length <= keepCount) {
+                return { success: true, deleted: 0, message: 'No old backups to delete' };
+            }
+
+            const backupsToDelete = backups.slice(keepCount);
+            let deletedCount = 0;
+
+            for (const backupDoc of backupsToDelete) {
+                try {
+                    await db.collection('backups').doc(backupDoc.id).delete();
+                    deletedCount++;
+                } catch (deleteError) {
+                    console.error(`Error deleting backup ${backupDoc.id}:`, deleteError);
+                }
+            }
+
+            console.log(`🗑️ Deleted ${deletedCount} old backups`);
+            return { success: true, deleted: deletedCount };
+
+        } catch (error) {
+            console.error('Error deleting old backups:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    startAutoBackup(intervalMinutes = 60) {
+        if (this.backupInterval) {
+            clearInterval(this.backupInterval);
+        }
+
+        this.backupInterval = setInterval(async () => {
+            console.log('🔄 Auto-backup in progress...');
+            const success = await this.createBackup();
+            if (success) {
+                // Delete old backups after successful backup
+                await this.deleteOldBackups(10);
+            }
+        }, intervalMinutes * 60 * 1000);
+
+        console.log(`✅ Auto-backup started (every ${intervalMinutes} minutes)`);
+    }
+
+    stopAutoBackup() {
+        if (this.backupInterval) {
+            clearInterval(this.backupInterval);
+            this.backupInterval = null;
+            console.log('🛑 Auto-backup stopped');
+        }
+    }
+}
+
+// INITIALIZE ENHANCED BACKUP SYSTEM
+const backupSystem = new EnhancedBackupSystem();
+
 // 💾 ENHANCED LOCAL STORAGE WITH BACKUP SYSTEM
 class PersistentStorage {
     constructor() {
@@ -220,57 +503,59 @@ class PersistentStorage {
     }
 
     async init() {
-        // 🗄️ LOAD DATA FROM BACKUP ON STARTUP
-        await this.loadBackup();
+        // 🗄️ LOAD DATA FROM FIREBASE ON STARTUP
+        await this.loadFromFirebase();
         
-        // 🔄 AUTO BACKUP EVERY 10 MINUTES
-        this.backupInterval = setInterval(() => {
-            this.createBackup();
-        }, 10 * 60 * 1000);
+        // 🔄 AUTO BACKUP EVERY 60 MINUTES
+        backupSystem.startAutoBackup(60);
         
         console.log(`✅ Persistent storage initialized: ${this.userDatabase.size} users loaded`);
     }
 
-    async loadBackup() {
+    async loadFromFirebase() {
         try {
             if (db) {
+                console.log('📥 Loading data from Firebase...');
+                
                 // 📥 LOAD USERS FROM FIREBASE
                 const usersSnapshot = await db.collection('users').get();
+                let userCount = 0;
                 usersSnapshot.forEach(doc => {
                     this.userDatabase.set(doc.id, doc.data());
+                    userCount++;
                 });
 
-                console.log(`✅ Loaded ${this.userDatabase.size} users from Firebase`);
+                // 📥 LOAD PAYMENTS FROM FIREBASE
+                const paymentsSnapshot = await db.collection('payments').get();
+                let paymentCount = 0;
+                paymentsSnapshot.forEach(doc => {
+                    this.paymentDatabase.set(doc.id, doc.data());
+                    paymentCount++;
+                });
+
+                // 📥 LOAD SETTINGS FROM FIREBASE
+                const settingsDoc = await db.collection('settings').doc('config').get();
+                if (settingsDoc.exists) {
+                    this.settingsDatabase.set('config', settingsDoc.data());
+                }
+
+                console.log(`✅ Loaded from Firebase: ${userCount} users, ${paymentCount} payments`);
+                
+            } else {
+                console.log('❌ Firebase not available, using local storage only');
             }
         } catch (error) {
-            console.error('Backup load error:', error);
+            console.error('❌ Error loading from Firebase:', error);
         }
     }
 
     async createBackup() {
-        try {
-            if (db) {
-                const backupData = {
-                    users: Array.from(this.userDatabase.entries()),
-                    payments: Array.from(this.paymentDatabase.entries()),
-                    settings: Array.from(this.settingsDatabase.entries()),
-                    timestamp: new Date().toISOString(),
-                    version: CONFIG.VERSION
-                };
-
-                await db.collection('backups').doc(Date.now().toString()).set(backupData);
-                console.log('✅ Auto-backup created successfully');
-            }
-        } catch (error) {
-            console.error('Auto-backup error:', error);
-        }
+        return await backupSystem.createBackup();
     }
 
     // 🛑 STOP BACKUP INTERVAL ON SHUTDOWN
     stop() {
-        if (this.backupInterval) {
-            clearInterval(this.backupInterval);
-        }
+        backupSystem.stopAutoBackup();
     }
 }
 
@@ -691,6 +976,35 @@ class EnhancedDatabaseManager {
             console.error('Search users error:', error);
             return [];
         }
+    }
+
+    // 🔄 BACKUP SYSTEM METHODS
+    async createBackup() {
+        try {
+            const result = await backupSystem.createBackup();
+            return result;
+        } catch (error) {
+            console.error('Backup creation error:', error);
+            return false;
+        }
+    }
+
+    async restoreFromBackup(backupId = null) {
+        try {
+            const result = await backupSystem.restoreFromBackup(backupId);
+            return result;
+        } catch (error) {
+            console.error('Restore error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async listBackups() {
+        return await backupSystem.listBackups();
+    }
+
+    async deleteOldBackups(keepCount = 5) {
+        return await backupSystem.deleteOldBackups(keepCount);
     }
 
     isMaintenanceMode() {
@@ -2548,6 +2862,18 @@ async function handleAdminCommands(ctx, text) {
             return;
         }
 
+        // 🆕 معالجة أوامر النسخ الاحتياطي
+        if (['💾 نسخ احتياطي', '📥 استعادة البيانات', '📋 قائمة النسخ'].includes(text)) {
+            await handleAdminBackupCommands(ctx, text);
+            return;
+        }
+
+        // Handle backup restore step
+        if (session.adminStep === 'restore_backup') {
+            await handleAdminBackupRestoreSelection(ctx, text);
+            return;
+        }
+
         // SECOND: Handle navigation and main commands
         switch (text) {
             case '📊 إحصائيات النظام':
@@ -2601,26 +2927,6 @@ async function handleAdminCommands(ctx, text) {
                 await handleAdminGeneralSettings(ctx);
                 break;
 
-            case '💾 نسخ احتياطي':
-                await ctx.replyWithMarkdown('🔄 *جاري إنشاء نسخة احتياطية...*');
-                const backupSuccess = await dbManager.syncAllDataToFirebase();
-                if (backupSuccess) {
-                    await ctx.replyWithMarkdown('✅ *تم إنشاء النسخة الاحتياطية بنجاح*');
-                } else {
-                    await ctx.replyWithMarkdown('❌ *فشل في إنشاء النسخة الاحتياطية*');
-                }
-                return;
-
-            case '📥 استعادة البيانات':
-                await ctx.replyWithMarkdown('🔄 *جاري استعادة البيانات...*');
-                const restoreSuccess = await dbManager.restoreFromFirebase();
-                if (restoreSuccess) {
-                    await ctx.replyWithMarkdown('✅ *تم استعادة البيانات بنجاح*');
-                } else {
-                    await ctx.replyWithMarkdown('❌ *فشل في استعادة البيانات*');
-                }
-                return;
-                
             case '🔄 إعادة التعيين':
                 await handleAdminReset(ctx);
                 break;
@@ -2677,6 +2983,160 @@ async function handleAdminCommands(ctx, text) {
     } catch (error) {
         console.error('Admin commands error:', error);
         await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
+    }
+}
+
+// 🆕 معالجة أوامر النسخ الاحتياطي في الإدمن
+async function handleAdminBackupCommands(ctx, text) {
+    try {
+        const session = ctx.session;
+        
+        if (text === '💾 نسخ احتياطي') {
+            const backupMsg = await ctx.replyWithMarkdown('🔄 *جاري إنشاء نسخة احتياطية...*');
+            
+            const success = await dbManager.createBackup();
+            
+            if (success) {
+                await ctx.telegram.editMessageText(
+                    ctx.chat.id,
+                    backupMsg.message_id,
+                    null,
+                    '✅ *تم إنشاء النسخة الاحتياطية بنجاح*\n\n' +
+                    '📊 تم حفظ جميع بيانات المستخدمين والإعدادات\n' +
+                    '🛡️ البيانات محفوظة بأمان في Firebase',
+                    { parse_mode: 'Markdown' }
+                );
+            } else {
+                await ctx.telegram.editMessageText(
+                    ctx.chat.id,
+                    backupMsg.message_id,
+                    null,
+                    '❌ *فشل في إنشاء النسخة الاحتياطية*\n\n' +
+                    '⚠️ يرجى التحقق من اتصال Firebase والمحاولة مرة أخرى',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+            return;
+        }
+
+        if (text === '📥 استعادة البيانات') {
+            await handleAdminRestoreData(ctx);
+            return;
+        }
+
+        if (text === '📋 قائمة النسخ') {
+            await handleAdminListBackups(ctx);
+            return;
+        }
+
+    } catch (error) {
+        console.error('Admin backup commands error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
+    }
+}
+
+// 🆕 معالجة استعادة البيانات
+async function handleAdminRestoreData(ctx) {
+    try {
+        const backups = await dbManager.listBackups();
+        
+        if (backups.length === 0) {
+            await ctx.replyWithMarkdown(
+                '❌ *لا توجد نسخ احتياطية*\n\n' +
+                '💾 يرجى إنشاء نسخة احتياطية أولاً',
+                getAdminMainKeyboard()
+            );
+            return;
+        }
+
+        let message = '📋 *النسخ الاحتياطية المتاحة*\n\n';
+        
+        backups.forEach((backup, index) => {
+            const date = new Date(backup.timestamp).toLocaleString('ar-EG');
+            message += `${index + 1}. *${backup.id}*\n`;
+            message += `   📅 ${date}\n`;
+            message += `   👥 ${backup.userCount} مستخدم\n`;
+            message += `   💰 ${backup.paymentCount} عملية دفع\n\n`;
+        });
+
+        message += '🔢 *أرسل رقم النسخة التي تريد استعادتها:*';
+
+        await ctx.replyWithMarkdown(message);
+        ctx.session.adminStep = 'restore_backup';
+        
+    } catch (error) {
+        console.error('Admin restore data error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب النسخ الاحتياطية', getAdminMainKeyboard());
+    }
+}
+
+// 🆕 معالجة اختيار النسخة للاستعادة
+async function handleAdminBackupRestoreSelection(ctx, text) {
+    try {
+        const backups = await dbManager.listBackups();
+        const backupIndex = parseInt(text) - 1;
+        
+        if (isNaN(backupIndex) || backupIndex < 0 || backupIndex >= backups.length) {
+            await ctx.replyWithMarkdown('❌ *رقم غير صحيح!*\n\nيرجى إرسال رقم صحيح من القائمة');
+            return;
+        }
+
+        const selectedBackup = backups[backupIndex];
+        
+        const confirmKeyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('✅ نعم، استعادة', `confirm_restore_${selectedBackup.id}`)],
+            [Markup.button.callback('❌ إلغاء', 'cancel_restore')]
+        ]);
+
+        await ctx.replyWithMarkdown(
+            `⚠️ *تأكيد استعادة البيانات*\n\n` +
+            `📦 *النسخة:* ${selectedBackup.id}\n` +
+            `📅 *التاريخ:* ${new Date(selectedBackup.timestamp).toLocaleString('ar-EG')}\n` +
+            `👥 *المستخدمين:* ${selectedBackup.userCount}\n` +
+            `💰 *المدفوعات:* ${selectedBackup.paymentCount}\n\n` +
+            `❌ *تحذير:* هذه العملية ستستبدل جميع البيانات الحالية!\n\n` +
+            `هل أنت متأكد من المتابعة؟`,
+            confirmKeyboard
+        );
+
+        ctx.session.adminStep = 'main';
+        
+    } catch (error) {
+        console.error('Admin backup restore selection error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الاختيار', getAdminMainKeyboard());
+    }
+}
+
+// 🆕 معالجة قائمة النسخ الاحتياطية
+async function handleAdminListBackups(ctx) {
+    try {
+        const backups = await dbManager.listBackups();
+        
+        if (backups.length === 0) {
+            await ctx.replyWithMarkdown(
+                '❌ *لا توجد نسخ احتياطية*\n\n' +
+                '💾 يرجى إنشاء نسخة احتياطية أولاً',
+                getAdminMainKeyboard()
+            );
+            return;
+        }
+
+        let message = '📋 *النسخ الاحتياطية*\n\n';
+        
+        backups.forEach((backup, index) => {
+            const date = new Date(backup.timestamp).toLocaleString('ar-EG');
+            message += `${index + 1}. *${backup.id}*\n`;
+            message += `   📅 ${date}\n`;
+            message += `   👥 ${backup.userCount} مستخدم\n`;
+            message += `   💰 ${backup.paymentCount} عملية دفع\n`;
+            message += `   🏷️ ${backup.version}\n\n`;
+        });
+
+        await ctx.replyWithMarkdown(message, getAdminMainKeyboard());
+        
+    } catch (error) {
+        console.error('Admin list backups error:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب قائمة النسخ', getAdminMainKeyboard());
     }
 }
 
@@ -3623,6 +4083,7 @@ bot.launch().then(() => {
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
     console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
+    console.log('💾 Enhanced Backup System: ENABLED (Auto-backup every 60 minutes)');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
