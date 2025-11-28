@@ -12,7 +12,6 @@ console.log('🕒 ' + new Date().toISOString());
 const admin = require('firebase-admin');
 
 // 🔐 تهيئة Firebase باستخدام متغيرات البيئة فقط
-let db;
 try {
     admin.initializeApp({
         credential: admin.credential.cert({
@@ -22,17 +21,30 @@ try {
         })
     });
 
-    db = admin.firestore();
+    const db = admin.firestore();
     console.log("🔥 Firebase connected");
     
+    // اختبار الاتصال
+    db.collection('connection_test').doc('startup').set({
+        timestamp: new Date().toISOString(),
+        status: 'connected',
+        version: "16.0.0"
+    }).then(() => {
+        console.log('✅ Firebase connection test passed');
+    }).catch(error => {
+        console.log('❌ Firebase connection test failed:', error.message);
+    });
+
 } catch (error) {
     console.log('❌ Firebase initialization failed:', error.message);
     process.exit(1);
 }
 
+const db = admin.firestore();
+
 // 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
 const CONFIG = {
-    BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU",
+    BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFhRt5xY_bTgvfUu3mL6B0JFkS7wXgdS34",
     ADMIN_ID: process.env.ADMIN_ID || "6565594143",
     CHANNEL_ID: process.env.CHANNEL_ID || "-1003283663811",
     CHANNEL_USERNAME: process.env.CHANNEL_USERNAME || "@GEMZGOOL",
@@ -144,7 +156,7 @@ class FirebaseManager {
     constructor() {
         this.db = db;
         this.initialized = false;
-        this.initializationPromise = this.init(); // 🔥 إضافة وعد التهيئة
+        this.init();
     }
 
     async init() {
@@ -160,16 +172,13 @@ class FirebaseManager {
         } catch (error) {
             console.log('❌ Firebase Manager initialization failed:', error.message);
             this.initialized = false;
-            throw error; // 🔥 رفع الخطأ لمعالجته
         }
     }
 
     // 🔄 دوال إدارة المستخدمين في Firestore
     async getUser(userId) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise; // 🔥 الانتظار حتى اكتمال التهيئة
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const userDoc = await this.db.collection('users').doc(userId.toString()).get();
             if (userDoc.exists) {
@@ -184,9 +193,7 @@ class FirebaseManager {
 
     async saveUser(userId, userData) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise; // 🔥 الانتظار حتى اكتمال التهيئة
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
 
             const completeUserData = {
                 user_id: userId,
@@ -221,9 +228,7 @@ class FirebaseManager {
 
     async getUserByOneXBet(onexbet) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const usersSnapshot = await this.db.collection('users')
                 .where('onexbet', '==', onexbet)
@@ -242,9 +247,7 @@ class FirebaseManager {
 
     async getAllUsers() {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const usersSnapshot = await this.db.collection('users').get();
             return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -256,9 +259,7 @@ class FirebaseManager {
 
     async searchUsers(query) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const users = await this.getAllUsers();
             const lowerQuery = query.toLowerCase();
@@ -277,9 +278,7 @@ class FirebaseManager {
     // 🔄 دوال إدارة الإعدادات
     async getSettings() {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise; // 🔥 الانتظار حتى اكتمال التهيئة
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const settingsDoc = await this.db.collection('settings').doc('config').get();
             if (settingsDoc.exists) {
@@ -310,9 +309,7 @@ class FirebaseManager {
 
     async updateSettings(newSettings) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const updatedSettings = {
                 ...newSettings,
@@ -342,9 +339,7 @@ class FirebaseManager {
     // 🔄 دوال إدارة المدفوعات
     async addPayment(paymentData) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const paymentId = Date.now().toString();
             const fullPaymentData = {
@@ -364,9 +359,7 @@ class FirebaseManager {
 
     async getPayment(paymentId) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const paymentDoc = await this.db.collection('payments').doc(paymentId).get();
             if (paymentDoc.exists) {
@@ -381,9 +374,7 @@ class FirebaseManager {
 
     async updatePayment(paymentId, updates) {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             await this.db.collection('payments').doc(paymentId).update(updates);
             return true;
@@ -395,9 +386,7 @@ class FirebaseManager {
 
     async getAllPayments() {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const paymentsSnapshot = await this.db.collection('payments').get();
             return paymentsSnapshot.docs.map(doc => doc.data());
@@ -420,9 +409,7 @@ class FirebaseManager {
     // 🔄 دوال الإحصائيات
     async getAllStats() {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const users = await this.getAllUsers();
             const payments = await this.getAllPayments();
@@ -453,9 +440,7 @@ class FirebaseManager {
     // 🔄 دالة النسخ الاحتياطي
     async backupData() {
         try {
-            if (!this.initialized) {
-                await this.initializationPromise;
-            }
+            if (!this.initialized) throw new Error('Firebase not initialized');
             
             const backupData = {
                 users: await this.getAllUsers(),
@@ -496,75 +481,60 @@ class EnhancedDatabaseManager {
     constructor() {
         this.maintenanceMode = false;
         this.firebaseManager = firebaseManager;
-        this.initializationPromise = this.init(); // 🔥 إضافة وعد التهيئة
+        this.init();
     }
 
     async init() {
         try {
-            // 🔥 الانتظار حتى اكتمال تهيئة Firebase أولاً
-            await this.firebaseManager.initializationPromise;
-            
             const settings = await this.firebaseManager.getSettings();
             this.maintenanceMode = settings.maintenance_mode || false;
             console.log(`✅ Database Manager initialized with Firebase`);
         } catch (error) {
             console.log('❌ Database Manager initialization failed:', error.message);
-            throw error;
         }
     }
 
     async getUser(userId) {
-        await this.initializationPromise; // 🔥 الانتظار للتهيئة
         return await this.firebaseManager.getUser(userId);
     }
 
     async saveUser(userId, userData) {
-        await this.initializationPromise;
         return await this.firebaseManager.saveUser(userId, userData);
     }
 
     async getSettings() {
-        await this.initializationPromise;
         return await this.firebaseManager.getSettings();
     }
 
     async updateSettings(newSettings) {
-        await this.initializationPromise;
         return await this.firebaseManager.updateSettings(newSettings);
     }
 
     async getAllUsers() {
-        await this.initializationPromise;
         return await this.firebaseManager.getAllUsers();
     }
 
     async addPayment(paymentData) {
-        await this.initializationPromise;
         return await this.firebaseManager.addPayment(paymentData);
     }
 
     async updatePayment(paymentId, updates) {
-        await this.initializationPromise;
         return await this.firebaseManager.updatePayment(paymentId, updates);
     }
 
     async getPayment(paymentId) {
-        await this.initializationPromise;
         return await this.firebaseManager.getPayment(paymentId);
     }
 
     async getAllPayments() {
-        await this.initializationPromise;
         return await this.firebaseManager.getAllPayments();
     }
 
     async getPendingPayments() {
-        await this.initializationPromise;
         return await this.firebaseManager.getPendingPayments();
     }
 
     async getUserByOneXBet(onexbet) {
-        await this.initializationPromise;
         return await this.firebaseManager.getUserByOneXBet(onexbet);
     }
 
@@ -573,24 +543,20 @@ class EnhancedDatabaseManager {
     }
 
     async setMaintenanceMode(enabled) {
-        await this.initializationPromise;
         await this.firebaseManager.setMaintenanceMode(enabled);
         this.maintenanceMode = enabled;
         return true;
     }
 
     async searchUsers(query) {
-        await this.initializationPromise;
         return await this.firebaseManager.searchUsers(query);
     }
 
     async backupData() {
-        await this.initializationPromise;
         return await this.firebaseManager.backupData();
     }
 
     async getAllStats() {
-        await this.initializationPromise;
         return await this.firebaseManager.getAllStats();
     }
 }
@@ -768,6 +734,8 @@ class ChannelNotifier {
             console.error('Error sending subscription notification:', error);
         }
     }
+
+    // ❌ REMOVED PREDICTION NOTIFICATION METHOD - NO ANALYTICS TO CHANNEL
 }
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
@@ -1060,9 +1028,6 @@ async function requireChannelSubscription(ctx, next) {
 
 bot.start(async (ctx) => {
     try {
-        // 🔥 الانتظار حتى اكتمال تهيئة قاعدة البيانات
-        await dbManager.initializationPromise;
-        
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: @GEMZGOOLBOT');
@@ -1204,9 +1169,6 @@ bot.start(async (ctx) => {
 // 📝 HANDLE TEXT MESSAGES - UPDATED FOR DUAL PAYMENT AND COUNTRY SELECTION
 bot.on('text', async (ctx) => {
     try {
-        // 🔥 الانتظار حتى اكتمال تهيئة قاعدة البيانات
-        await dbManager.initializationPromise;
-        
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: @GEMZGOOLBOT');
@@ -3695,39 +3657,19 @@ async function handlePaymentReject(ctx, paymentId) {
     }
 }
 
-// 🚀 START BOT WITH PROPER INITIALIZATION
-async function startBot() {
-    try {
-        console.log('🔄 جاري تهيئة البوت...');
-        
-        // 🔥 الانتظار حتى اكتمال تهيئة جميع الأنظمة
-        await firebaseManager.initializationPromise;
-        await dbManager.initializationPromise;
-        
-        console.log('✅ تم تهيئة جميع الأنظمة بنجاح');
-        
-        // بدء البوت
-        await bot.launch();
-        
-        console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with DUAL PAYMENT is RUNNING!');
-        console.log('💳 Payment Systems: Binance + Bank Transfer');
-        console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
-        console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
-        console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
-        console.log('👤 Developer:', CONFIG.DEVELOPER);
-        console.log('📢 Channel:', CONFIG.CHANNEL);
-        console.log('🌐 Health check: http://localhost:' + PORT);
-        console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
-        console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
-        
-    } catch (error) {
-        console.error('❌ فشل في بدء البوت:', error);
-        process.exit(1);
-    }
-}
-
-// بدء البوت
-startBot();
+// 🚀 START BOT
+bot.launch().then(() => {
+    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 FIXED with DUAL PAYMENT is RUNNING!');
+    console.log('💳 Payment Systems: Binance + Bank Transfer');
+    console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
+    console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
+    console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
+    console.log('👤 Developer:', CONFIG.DEVELOPER);
+    console.log('📢 Channel:', CONFIG.CHANNEL);
+    console.log('🌐 Health check: http://localhost:' + PORT);
+    console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
+    console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
+}).catch(console.error);
 
 // 🛑 GRACEFUL SHUTDOWN
 process.once('SIGINT', async () => {
