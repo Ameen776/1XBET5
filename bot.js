@@ -705,7 +705,7 @@ const goalAI = new GoalPredictionAI();
 const dynamicStats = new DynamicStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 
-// 📢 CHANNEL NOTIFICATION SYSTEM - MODIFIED TO ONLY SEND SUBSCRIPTIONS
+// 📢 CHANNEL NOTIFICATION SYSTEM
 class ChannelNotifier {
     constructor(bot, channelId) {
         this.bot = bot;
@@ -725,6 +725,8 @@ class ChannelNotifier {
 📦 *الباقة:* ${subscriptionDisplayName}
 💰 *المبلغ:* ${amount}$
 💳 *النظام:* ${systemText}
+
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
             `;
 
             await this.bot.telegram.sendMessage(this.channelId, message, {
@@ -735,7 +737,30 @@ class ChannelNotifier {
         }
     }
 
-    // ❌ REMOVED PREDICTION NOTIFICATION METHOD - NO ANALYTICS TO CHANNEL
+    async sendPredictionNotification(userData, prediction, betAmount) {
+        try {
+            const message = `
+🎯 *توقع جديد في البوت*
+
+👤 *المستخدم:* ${userData.username}
+🔐 *الحساب:* ${userData.onexbet}
+🎯 *التوقع:* ${prediction.type}
+📈 *الاحتمالية:* ${prediction.probability}%
+💰 *مبلغ الرهان:* ${betAmount}$
+
+💡 *التحليل:*
+${prediction.reasoning}
+
+🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
+            `;
+
+            await this.bot.telegram.sendMessage(this.channelId, message, {
+                parse_mode: 'Markdown'
+            });
+        } catch (error) {
+            console.error('Error sending prediction notification:', error);
+        }
+    }
 }
 
 const channelNotifier = new ChannelNotifier(bot, CONFIG.CHANNEL_ID);
@@ -814,7 +839,7 @@ const getCountriesKeyboard = () => {
         ['🇯🇴 الأردن', '🇱🇧 لبنان', '🇪🇬 مصر'],
         ['🇩🇿 الجزائر', '🇲🇦 المغرب', '🇹🇳 تونس'],
         ['🇱🇾 ليبيا', '🇸🇩 السودان', '🇸🇸 جنوب السودان'],
-        ['🇵🇸 فلسطين', '🇲🇷 موريتانيا', '🇩🇯 جيبوتi'],
+        ['🇵🇸 فلسطين', '🇲🇷 موريتانيا', '🇩🇯 جيبوتي'],
         ['🇸🇴 الصومال', '🇰🇲 جزر القمر']
     ]).resize();
 };
@@ -997,33 +1022,6 @@ async function reconnectAlgorithm(ctx, userData) {
     );
 }
 
-// 🔐 نظام فحص الاشتراك المستمر - NEW FUNCTION
-async function requireChannelSubscription(ctx, next) {
-    try {
-        const userId = ctx.from.id.toString();
-        const isSubscribed = await checkChannelSubscription(userId);
-        
-        if (!isSubscribed) {
-            // منع المستخدم من الاستمرار
-            await ctx.replyWithMarkdown(
-                `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                `📢 يرجى الاشتراك في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return; // إيقاف التنفيذ هنا
-        }
-        
-        // إذا كان مشتركاً، استمر في التنفيذ
-        if (next) await next();
-    } catch (error) {
-        console.error('Channel subscription check error:', error);
-    }
-}
-
 // 🎯 BOT COMMANDS
 
 bot.start(async (ctx) => {
@@ -1037,40 +1035,10 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // 🔐 فحص الاشتراك في القناة أولاً
-        const isSubscribed = await checkChannelSubscription(userId);
-        if (!isSubscribed) {
-            await ctx.replyWithMarkdown(
-                `🔐 *مرحباً ${userName}*\n\n` +
-                `📢 *للاستخدام البوت يجب الاشتراك في قناتنا أولاً*\n\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على الزر أدناه للتحقق:`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
-
         // التحقق إذا كان المستخدم مسجل مسبقاً
         const existingUser = await dbManager.getUser(userId);
         
         if (existingUser) {
-            // 🔐 فحص الاشتراك مرة أخرى للتأكد
-            const isStillSubscribed = await checkChannelSubscription(userId);
-            if (!isStillSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على الزر أدناه للتحقق:`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
             // المستخدم مسجل مسبقاً - دخول مباشر
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
@@ -1194,24 +1162,6 @@ bot.on('text', async (ctx) => {
             }
         }
 
-        // 🔐 فحص الاشتراك في القناة لأي أمر رئيسي
-        const mainCommands = ['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '👤 حالة الاشتراك', '🆘 الدعم الفني'];
-        if (mainCommands.includes(text)) {
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
-                    `📢 يرجى الاشتراك في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-        }
-
         // 🆕 معالجة اختيار الدولة
         if (session.step === 'awaiting_country' && session.awaitingCountry) {
             const arabCountries = [
@@ -1226,7 +1176,7 @@ bot.on('text', async (ctx) => {
                 ctx.session.country = text;
                 ctx.session.awaitingCountry = false;
                 
-                // 🔐 التحقق من الاشتراك في القناة بعد اختيار الدولة
+                // التحقق من الاشتراك في القناة بعد اختيار الدولة
                 const isSubscribed = await checkChannelSubscription(userId);
                 
                 if (!isSubscribed) {
@@ -1272,23 +1222,26 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // 🆕 معالجة إدخال مبلغ الرهان - الإصلاح الرئيسي هنا
-        if (session.awaitingBetAmount) {
-            // 🔐 فحص الاشتراك أولاً
+        // التحقق من الاشتراك في القناة للمستخدمين الجدد
+        const existingUser = await dbManager.getUser(userId);
+        if (!existingUser && session.step !== 'awaiting_verification' && session.step !== 'awaiting_account_id') {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
                 await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
+                    `❌ *يجب الاشتراك في القناة أولاً*\n\n` +
+                    `📢 يرجى الاشتراك في القناة:\n` +
                     `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
+                    `✅ ثم اضغط على /start للبدء`,
                     Markup.inlineKeyboard([
                         [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
                     ])
                 );
                 return;
             }
+        }
 
+        // 🆕 معالجة إدخال مبلغ الرهان - الإصلاح الرئيسي هنا
+        if (session.awaitingBetAmount) {
             const betAmount = parseFloat(text);
             if (isNaN(betAmount) || betAmount <= 0) {
                 await ctx.replyWithMarkdown('❌ *مبلغ غير صحيح!*\n\nيرجى إدخال مبلغ صحيح (أرقام فقط)');
@@ -1313,21 +1266,6 @@ bot.on('text', async (ctx) => {
 
         // 🆕 معالجة اختيار طريقة الدفع
         if (session.step === 'choose_payment_method') {
-            // 🔐 فحص الاشتراك أولاً
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
             if (text === '💳 باينانس') {
                 ctx.session.paymentSystem = 'binance';
                 ctx.session.step = 'verified';
@@ -1442,21 +1380,6 @@ bot.on('text', async (ctx) => {
         }
         // 🔐 STEP 2: Verify Code
         else if (session.step === 'awaiting_verification' && /^\d{6}$/.test(text)) {
-            // 🔐 فحص الاشتراك أولاً
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
             if (parseInt(text) === ctx.session.verificationCode) {
                 
                 // إرسال رسالة الانتظار المتحركة
@@ -1534,21 +1457,6 @@ bot.on('text', async (ctx) => {
         }
         // 💳 معالجة طلبات الدفع - طلب رقم الحساب
         else if (session.awaitingPaymentAccount) {
-            // 🔐 فحص الاشتراك أولاً
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
             if (/^\d{10}$/.test(text)) {
                 const userData = await dbManager.getUser(userId);
                 
@@ -1589,21 +1497,6 @@ bot.on('text', async (ctx) => {
             
             if (!userData) {
                 await ctx.replyWithMarkdown('❌ *جلسة منتهية*\n\n🔐 أرسل /start للبدء', getLoginKeyboard());
-                return;
-            }
-
-            // 🔐 فحص الاشتراك في القناة لأي أمر
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
                 return;
             }
 
@@ -1684,21 +1577,6 @@ bot.on('photo', async (ctx) => {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
         
-        // 🔐 فحص الاشتراك أولاً لأي صورة دفع
-        const isSubscribed = await checkChannelSubscription(userId);
-        if (!isSubscribed) {
-            await ctx.replyWithMarkdown(
-                `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
-        
         // 💳 معالجة صور الدفع من المستخدمين فقط
         if (session.paymentType) {
             await handlePaymentScreenshot(ctx, userId);
@@ -1735,22 +1613,6 @@ bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
         const userId = ctx.from.id.toString();
-        
-        // 🔐 فحص الاشتراك لأي زر يضغطه المستخدم
-        const isSubscribed = await checkChannelSubscription(userId);
-        if (!isSubscribed && !callbackData.includes('check_channel_subscription')) {
-            await ctx.answerCbQuery('❌ يجب الاشتراك في القناة أولاً');
-            await ctx.replyWithMarkdown(
-                `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
         
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
@@ -1913,21 +1775,6 @@ async function handleCheckChannelSubscription(ctx) {
 
 async function handleGetPrediction(ctx, userData) {
     try {
-        // 🔐 التحقق من الاشتراك في القناة أولاً
-        const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-        if (!isSubscribed) {
-            await ctx.replyWithMarkdown(
-                `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
-
         // 🔐 التحقق من انتهاء الخوارزمية أولاً
         if (isAlgorithmExpired(userData.last_algorithm_check)) {
             await ctx.replyWithMarkdown(
@@ -2046,7 +1893,8 @@ ${userData.subscription_status !== 'active' ?
             reply_markup: ctx.session.predictionButtons.reply_markup
         });
 
-        // ❌ REMOVED: إرسال الإشعار للقناة - لا نرسل تحليلات للتوقعات
+        // إرسال الإشعار للقناة
+        await channelNotifier.sendPredictionNotification(userData, prediction, ctx.session.currentBet);
 
         // حذف رسالة الانتظار
         await ctx.deleteMessage(loadingMsg.message_id);
@@ -2058,21 +1906,6 @@ ${userData.subscription_status !== 'active' ?
 }
 
 async function handleUserStats(ctx, userData) {
-    // 🔐 فحص الاشتراك أولاً
-    const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-    if (!isSubscribed) {
-        await ctx.replyWithMarkdown(
-            `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-            `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-            `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-            `✅ بعد الاشتراك اضغط على /start للبدء`,
-            Markup.inlineKeyboard([
-                [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-            ])
-        );
-        return;
-    }
-
     const accuracy = userData.correct_predictions > 0 ? 
         Math.round((userData.correct_predictions / (userData.total_predictions || 1)) * 100) : 0;
     
@@ -2104,21 +1937,6 @@ async function handleUserStats(ctx, userData) {
 }
 
 async function handleBotStats(ctx) {
-    // 🔐 فحص الاشتراك أولاً
-    const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-    if (!isSubscribed) {
-        await ctx.replyWithMarkdown(
-            `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-            `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-            `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-            `✅ بعد الاشتراك اضغط على /start للبدء`,
-            Markup.inlineKeyboard([
-                [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-            ])
-        );
-        return;
-    }
-
     const stats = dynamicStats.getStats();
     await ctx.replyWithMarkdown(
         `👥 *إحصائيات البوت*\n\n` +
@@ -2132,21 +1950,6 @@ async function handleBotStats(ctx) {
 
 async function handleSubscriptions(ctx, userData) {
     try {
-        // 🔐 فحص الاشتراك أولاً
-        const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-        if (!isSubscribed) {
-            await ctx.replyWithMarkdown(
-                `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
-
         await ctx.replyWithMarkdown(
             '💳 *باقات الاشتراك المتاحة*\n\n' +
             '📦 اختر الباقة المناسبة لك:\n\n' +
@@ -2165,21 +1968,6 @@ async function handleSubscriptions(ctx, userData) {
 
 // 🆕 HANDLE SUBSCRIPTION SELECTION - UPDATED FOR DUAL PAYMENT
 async function handleSubscriptionSelection(ctx, userData, text) {
-    // 🔐 فحص الاشتراك أولاً
-    const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-    if (!isSubscribed) {
-        await ctx.replyWithMarkdown(
-            `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-            `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-            `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-            `✅ بعد الاشتراك اضغط على /start للبدء`,
-            Markup.inlineKeyboard([
-                [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-            ])
-        );
-        return;
-    }
-
     const subscriptionTypeMap = {
         '💰 أسبوعي': 'week',
         '💰 شهري': 'month', 
@@ -2342,22 +2130,6 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
             return;
         }
 
-        // 🔐 فحص الاشتراك أولاً
-        const isSubscribed = await checkChannelSubscription(userId);
-        if (!isSubscribed) {
-            await ctx.answerCbQuery('❌ يجب الاشتراك في القناة أولاً');
-            await ctx.replyWithMarkdown(
-                `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                `✅ بعد الاشتراك اضغط على /start للبدء`,
-                Markup.inlineKeyboard([
-                    [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                ])
-            );
-            return;
-        }
-
         // فصل بيانات الكallback
         const parts = callbackData.split('_');
         const paymentSystem = parts[1];
@@ -2409,21 +2181,6 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
 }
 
 async function handleSubscriptionStatus(ctx, userData) {
-    // 🔐 فحص الاشتراك أولاً
-    const isSubscribed = await checkChannelSubscription(ctx.from.id.toString());
-    if (!isSubscribed) {
-        await ctx.replyWithMarkdown(
-            `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-            `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-            `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-            `✅ بعد الاشتراك اضغط على /start للبدء`,
-            Markup.inlineKeyboard([
-                [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-            ])
-        );
-        return;
-    }
-
     let statusMessage = '';
     
     if (userData.subscription_status === 'active') {
