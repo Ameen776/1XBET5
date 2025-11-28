@@ -1608,7 +1608,7 @@ bot.on('photo', async (ctx) => {
     }
 });
 
-// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH ALGORITHM RECONNECTION
+// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH NEW BUTTON LOGIC
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
@@ -1632,23 +1632,41 @@ bot.on('callback_query', async (ctx) => {
                 
                 await ctx.answerCbQuery(`🎊 مبروك! نجح التوقع وربحت ${profit}$`);
                 
+                // قائمة رسائل التهنئة المتنوعة
+                const winMessages = [
+                    `🎊 *مبروك! التوقع كان صحيح!* ✨\n\n💰 ربحت: ${profit}$\n💵 إجمالي أرباحك: ${ctx.session.totalProfit}$`,
+                    `🎉 *ممتاز! التوقع كان صحيح!* 🎯\n\n💰 ربحت: ${profit}$\n💵 إجمالي أرباحك: ${ctx.session.totalProfit}$`,
+                    `🔥 *أداء رائع! استمر يا بطل.* 💪\n\n💰 ربحت: ${profit}$\n💵 إجمالي أرباحك: ${ctx.session.totalProfit}$`,
+                    `✅ *مبروك! توقع ناجح من جديد.* 🏆\n\n💰 ربحت: ${profit}$\n💵 إجمالي أرباحك: ${ctx.session.totalProfit}$`
+                ];
+                
+                // اختيار رسالة عشوائية
+                const randomWinMessage = winMessages[Math.floor(Math.random() * winMessages.length)];
+                
                 await ctx.replyWithMarkdown(
-                    `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
-                    `✅ توقعك كان دقيقاً ومميزاً\n` +
-                    `💰 ربحت: ${profit}$\n` +
-                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
-                    `🎯 يمكنك البدء بتوقع جديد`,
+                    randomWinMessage,
                     getMainKeyboard()
                 );
                 
             } else {
-                // مضاعفة الرهان وتوليد توقع جديد تلقائياً
-                const newBet = ctx.session.currentBet * 2;
                 userData.losses = (userData.losses || 0) + 1;
-                ctx.session.currentBet = newBet;
                 
-                await ctx.answerCbQuery(`🔄 جاري إنشاء التوقع التالي...`);               
-                                                                                    
+                await ctx.answerCbQuery(`💔 خسارة هذه الجولة`);
+                
+                // قائمة الرسائل التشجيعية المتنوعة
+                const loseMessages = [
+                    `💔 *لا تيأس، القادم أفضل!* 🌟\n\n🔁 استمر في المحاولة ولا تستسلم`,
+                    `📉 *المهم تكمل الطريق، المحاولة القادمة أفضل.* 💪\n\n🔥 استمر وسوف تنجح`,
+                    `🔄 *خسارة بسيطة، وبتعوضها قريب.* 🎯\n\n💫 لا تفقد الأمل واستمر`,
+                    `🌧️ *وراء كل عاصفة شمس.* ☀️\n\n🚀 استمر في المحاولة وستحقق النجاح`
+                ];
+                
+                // اختيار رسالة عشوائية
+                const randomLoseMessage = loseMessages[Math.floor(Math.random() * loseMessages.length)];
+                
+                await ctx.replyWithMarkdown(
+                    randomLoseMessage,
+                    getMainKeyboard()
                 );
             }
             
@@ -1865,7 +1883,7 @@ ${userData.subscription_status !== 'active' ?
         // حفظ الأزرار في الجلسة
         ctx.session.predictionButtons = Markup.inlineKeyboard([
             [Markup.button.callback('✅ ربحت', `win_${Date.now()}`)],
-            [Markup.button.callback('❌ ', `lose_${Date.now()}`)]
+            [Markup.button.callback('❌ خسرت', `lose_${Date.now()}`)]
         ]);
 
         // إرسال الصورة مع التوقع في رسالة واحدة
