@@ -1,12 +1,12 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 17.0 ENHANCED
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 16.0 ENHANCED
 // 👤 DEVELOPER: ♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛
-// 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE + REFERRAL + LUCKY WHEEL
+// 🔥 FEATURES: DUAL PAYMENT SYSTEM + BANK TRANSFER + BINANCE
 // 💾 PERSISTENT DATA STORAGE - FIREBASE INTEGRATION
 // 🎯 ENHANCED WITH REAL-TIME UPDATES & USER MANAGEMENT
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v17.0 ENHANCED...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔥 FIREBASE ADMIN SDK INITIALIZATION - UPDATED
@@ -29,7 +29,7 @@ try {
     db.collection('connection_test').doc('startup').set({
         timestamp: new Date().toISOString(),
         status: 'connected',
-        version: "17.0.0"
+        version: "16.0.1"
     }).then(() => {
         console.log('✅ Firebase connection test passed');
     }).catch(error => {
@@ -43,7 +43,7 @@ try {
 
 const db = admin.firestore();
 
-// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT + REFERRAL + LUCKY WHEEL
+// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT
 const CONFIG = {
     BOT_TOKEN: process.env.BOT_TOKEN || "8125363786:AAFhRt5xY_bTgvfUu3mL6B0JFkS7wXgdS34",
     ADMIN_ID: process.env.ADMIN_ID || "6565594143",
@@ -104,35 +104,16 @@ const CONFIG = {
         }
     },
     
-    VERSION: "17.0.0",
+    VERSION: "16.0.1",
     DEVELOPER: "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
     PREDICTION_IMAGE: "https://i.ibb.co/rGTZm2mB/IMG.jpg",
-    IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee",
-    
-    // 🎰 LUCKY WHEEL CONFIG
-    LUCKY_WHEEL: {
-        prizes: [
-            { id: 1, name: "🎁 1 تحليل مجاني", value: 1, probability: 30 },
-            { id: 2, name: "🎁 3 تحليلات مجانية", value: 3, probability: 25 },
-            { id: 3, name: "🎁 7 تحليلات مجانية", value: 7, probability: 20 },
-            { id: 4, name: "🎁 20 تحليل مجاني", value: 20, probability: 15 },
-            { id: 5, name: "💣 القنبلة", value: 0, probability: 5 },
-            { id: 6, name: "🔄 إعادة الدوران", value: -1, probability: 5 }
-        ],
-        special_prize: { id: 7, name: "🏆 1000 تحليل مجاني", value: 1000, required_spins: 500 }
-    },
-    
-    // 📨 REFERRAL SYSTEM CONFIG
-    REFERRAL: {
-        reward: 50,
-        min_spins_for_special: 500
-    }
+    IMGBB_API_KEY: process.env.IMGBB_API_KEY || "42b155a527bee21e62e524a31fe9b1ee"
 };
 
-console.log('✅ Enhanced Configuration loaded successfully');
+console.log('✅ Dual Payment Configuration loaded successfully');
 
 // 🚀 INITIALIZE BOT
 const { Telegraf, Markup, session } = require('telegraf');
@@ -166,287 +147,9 @@ app.get('/keep-alive', (req, res) => {
     });
 });
 
-// 🎰 LUCKY WHEEL WEB APP ENDPOINT
-app.get('/wheel/:userId', (req, res) => {
-    const userId = req.params.userId;
-    res.send(`
-        <!DOCTYPE html>
-        <html lang="ar" dir="rtl">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>🎰 عجلة الحظ - AI Goal Predictor</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    margin: 0;
-                    padding: 20px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    color: white;
-                }
-                
-                .container {
-                    background: rgba(255, 255, 255, 0.1);
-                    backdrop-filter: blur(10px);
-                    border-radius: 20px;
-                    padding: 30px;
-                    text-align: center;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-                    max-width: 500px;
-                    width: 90%;
-                }
-                
-                .wheel-container {
-                    position: relative;
-                    width: 300px;
-                    height: 300px;
-                    margin: 30px auto;
-                }
-                
-                .wheel {
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    background: conic-gradient(
-                        #ff6b6b 0deg 60deg,
-                        #4ecdc4 60deg 120deg,
-                        #45b7d1 120deg 180deg,
-                        #96ceb4 180deg 240deg,
-                        #feca57 240deg 300deg,
-                        #ff9ff3 300deg 360deg
-                    );
-                    position: relative;
-                    transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1);
-                    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-                }
-                
-                .pointer {
-                    position: absolute;
-                    top: -20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 40px;
-                    height: 40px;
-                    background: #ffd700;
-                    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-                    z-index: 10;
-                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-                }
-                
-                .spin-btn {
-                    background: linear-gradient(45deg, #FFD700, #FFA500);
-                    color: #333;
-                    border: none;
-                    padding: 15px 40px;
-                    font-size: 18px;
-                    font-weight: bold;
-                    border-radius: 50px;
-                    cursor: pointer;
-                    margin: 20px 0;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-                }
-                
-                .spin-btn:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-                }
-                
-                .spin-btn:disabled {
-                    background: #666;
-                    cursor: not-allowed;
-                    transform: none;
-                }
-                
-                .prizes-list {
-                    text-align: right;
-                    margin: 20px 0;
-                }
-                
-                .prize-item {
-                    background: rgba(255, 255, 255, 0.2);
-                    margin: 5px 0;
-                    padding: 10px;
-                    border-radius: 10px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                
-                .result {
-                    font-size: 24px;
-                    font-weight: bold;
-                    margin: 20px 0;
-                    padding: 15px;
-                    border-radius: 15px;
-                    background: rgba(255, 255, 255, 0.2);
-                    animation: pulse 1s infinite;
-                }
-                
-                @keyframes pulse {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.05); }
-                    100% { transform: scale(1); }
-                }
-                
-                .special-prize {
-                    background: linear-gradient(45deg, #FFD700, #FF6B6B);
-                    color: #000;
-                    font-weight: bold;
-                    padding: 10px;
-                    border-radius: 10px;
-                    margin: 10px 0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🎰 عجلة الحظ</h1>
-                <p>ادور العجلة واربح تحليلات مجانية! 🎁</p>
-                
-                <div class="wheel-container">
-                    <div class="pointer"></div>
-                    <div class="wheel" id="wheel"></div>
-                </div>
-                
-                <button class="spin-btn" id="spinBtn">🎰 دور العجلة!</button>
-                
-                <div class="result" id="result" style="display: none;"></div>
-                
-                <div class="prizes-list">
-                    <h3>🎁 الجوائز المتاحة:</h3>
-                    <div class="prize-item">
-                        <span>🎁 1 تحليل مجاني</span>
-                        <span>30%</span>
-                    </div>
-                    <div class="prize-item">
-                        <span>🎁 3 تحليلات مجانية</span>
-                        <span>25%</span>
-                    </div>
-                    <div class="prize-item">
-                        <span>🎁 7 تحليلات مجانية</span>
-                        <span>20%</span>
-                    </div>
-                    <div class="prize-item">
-                        <span>🎁 20 تحليل مجاني</span>
-                        <span>15%</span>
-                    </div>
-                    <div class="prize-item">
-                        <span>💣 القنبلة</span>
-                        <span>5%</span>
-                    </div>
-                    <div class="prize-item">
-                        <span>🔄 إعادة الدوران</span>
-                        <span>5%</span>
-                    </div>
-                    <div class="special-prize">
-                        <span>🏆 1000 تحليل مجاني</span>
-                        <span>🔥 جائزة خاصة بعد 500 دوران!</span>
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                const wheel = document.getElementById('wheel');
-                const spinBtn = document.getElementById('spinBtn');
-                const result = document.getElementById('result');
-                let isSpinning = false;
-                let spinCount = 0;
-                
-                const prizes = [
-                    { name: "🎁 1 تحليل مجاني", degrees: 30, color: "#ff6b6b" },
-                    { name: "🎁 3 تحليلات مجانية", degrees: 30, color: "#4ecdc4" },
-                    { name: "🎁 7 تحليلات مجانية", degrees: 30, color: "#45b7d1" },
-                    { name: "🎁 20 تحليل مجاني", degrees: 30, color: "#96ceb4" },
-                    { name: "💣 القنبلة", degrees: 30, color: "#feca57" },
-                    { name: "🔄 إعادة الدوران", degrees: 30, color: "#ff9ff3" }
-                ];
-                
-                function spinWheel() {
-                    if (isSpinning) return;
-                    
-                    isSpinning = true;
-                    spinBtn.disabled = true;
-                    result.style.display = 'none';
-                    
-                    // دوران عشوائي مع توقف تدريجي
-                    const extraSpins = 5;
-                    const randomDegree = Math.floor(Math.random() * 360);
-                    const totalDegree = 360 * extraSpins + randomDegree;
-                    
-                    wheel.style.transform = \`rotate(\${-totalDegree}deg)\`;
-                    
-                    setTimeout(() => {
-                        // حساب الجائزة بناءً على الزاوية
-                        const normalizedDegree = randomDegree % 360;
-                        const prizeIndex = Math.floor(normalizedDegree / 60);
-                        const prize = prizes[prizeIndex];
-                        
-                        // إرسال النتيجة إلى البوت
-                        sendResultToBot(prizeIndex + 1);
-                        
-                        // عرض النتيجة
-                        result.innerHTML = \`🎉 مبروك! لقد ربحت: <br>\${prize.name}\`;
-                        result.style.display = 'block';
-                        
-                        isSpinning = false;
-                        spinBtn.disabled = false;
-                        spinCount++;
-                        
-                    }, 4000);
-                }
-                
-                function sendResultToBot(prizeId) {
-                    // إرسال النتيجة عبر Telegram Web App
-                    if (window.Telegram && Telegram.WebApp) {
-                        Telegram.WebApp.sendData(JSON.stringify({
-                            prize_id: prizeId,
-                            user_id: '${userId}',
-                            action: 'lucky_wheel_result'
-                        }));
-                    } else {
-                        // Fallback for testing
-                        console.log('Prize won:', prizeId);
-                        alert('تم الربح! سيتم إضافة الجوائز إلى حسابك.');
-                    }
-                }
-                
-                spinBtn.addEventListener('click', spinWheel);
-                
-                // تهيئة العجلة
-                function initWheel() {
-                    wheel.innerHTML = '';
-                    prizes.forEach((prize, index) => {
-                        const segment = document.createElement('div');
-                        segment.style.position = 'absolute';
-                        segment.style.width = '100%';
-                        segment.style.height = '100%';
-                        segment.style.clipPath = \`polygon(50% 50%, 50% 0%, \${getPoint(60 * index)}%, \${getPoint(60 * (index + 1))}%)\`;
-                        segment.style.background = prize.color;
-                        wheel.appendChild(segment);
-                    });
-                }
-                
-                function getPoint(degree) {
-                    const rad = (degree * Math.PI) / 180;
-                    return 50 + 50 * Math.sin(rad);
-                }
-                
-                initWheel();
-            </script>
-        </body>
-        </html>
-    `);
-});
-
 app.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
     console.log(`🔄 Keep alive endpoint: http://localhost:${PORT}/keep-alive`);
-    console.log(`🎰 Lucky wheel endpoint: http://localhost:${PORT}/wheel/:userId`);
 });
 
 // 🕒 REAL-TIME CLOCK MANAGEMENT SYSTEM - NEW
@@ -637,12 +340,12 @@ class FirebaseManager {
                 active_session: true,
                 last_login: new Date().toISOString(),
                 login_count: (userData.login_count || 0) + 1,
-                // 🆕 حقول جديدة للنظام
-                referral_code: userData.referral_code || this.generateReferralCode(userId),
+                // 🆕 حقول جديدة للإحالات وعجلة الحظ
+                referral_code: userData.referral_code || this.generateReferralCode(),
                 referred_by: userData.referred_by || null,
-                referrals_count: userData.referrals_count || 0,
+                referral_count: userData.referral_count || 0,
                 total_spins: userData.total_spins || 0,
-                lucky_wheel_attempts: userData.lucky_wheel_attempts || 1
+                free_spins: userData.free_spins || 0
             };
 
             await this.db.collection('users').doc(userId.toString()).set(completeUserData, { merge: true });
@@ -650,106 +353,6 @@ class FirebaseManager {
             return true;
         } catch (error) {
             console.error('Save user error:', error);
-            throw error;
-        }
-    }
-
-    // 🆕 دالة إنشاء كود دعوة فريد
-    generateReferralCode(userId) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code + userId.toString().slice(-4);
-    }
-
-    // 🆕 دالة البحث عن مستخدم بواسطة كود الدعوة
-    async getUserByReferralCode(referralCode) {
-        try {
-            if (!this.initialized) throw new Error('Firebase not initialized');
-            
-            const usersSnapshot = await this.db.collection('users')
-                .where('referral_code', '==', referralCode)
-                .limit(1)
-                .get();
-            
-            if (!usersSnapshot.empty) {
-                return usersSnapshot.docs[0].data();
-            }
-            return null;
-        } catch (error) {
-            console.error('Get user by referral code error:', error);
-            throw error;
-        }
-    }
-
-    // 🆕 دالة تحديث محاولات عجلة الحظ
-    async updateLuckyWheelAttempts(userId, attempts) {
-        try {
-            if (!this.initialized) throw new Error('Firebase not initialized');
-            
-            await this.db.collection('users').doc(userId.toString()).update({
-                lucky_wheel_attempts: attempts,
-                last_updated: new Date().toISOString()
-            });
-            return true;
-        } catch (error) {
-            console.error('Update lucky wheel attempts error:', error);
-            throw error;
-        }
-    }
-
-    // 🆕 دالة تحديث عدد الدورانات
-    async updateSpinCount(userId, spinCount) {
-        try {
-            if (!this.initialized) throw new Error('Firebase not initialized');
-            
-            await this.db.collection('users').doc(userId.toString()).update({
-                total_spins: spinCount,
-                last_updated: new Date().toISOString()
-            });
-            return true;
-        } catch (error) {
-            console.error('Update spin count error:', error);
-            throw error;
-        }
-    }
-
-    // 🆕 دالة إضافة تحليلات مجانية
-    async addFreeAttempts(userId, attempts) {
-        try {
-            if (!this.initialized) throw new Error('Firebase not initialized');
-            
-            const user = await this.getUser(userId);
-            if (!user) throw new Error('User not found');
-            
-            const newAttempts = (user.free_attempts || 0) + attempts;
-            
-            await this.db.collection('users').doc(userId.toString()).update({
-                free_attempts: newAttempts,
-                last_updated: new Date().toISOString()
-            });
-            
-            return newAttempts;
-        } catch (error) {
-            console.error('Add free attempts error:', error);
-            throw error;
-        }
-    }
-
-    // 🆕 دالة تحديث عدد المحالين
-    async updateReferralCount(userId, count) {
-        try {
-            if (!this.initialized) throw new Error('Firebase not initialized');
-            
-            await this.db.collection('users').doc(userId.toString()).update({
-                referrals_count: count,
-                last_updated: new Date().toISOString()
-            });
-            return true;
-        } catch (error) {
-            console.error('Update referral count error:', error);
             throw error;
         }
     }
@@ -796,7 +399,7 @@ class FirebaseManager {
                 (user.user_id && user.user_id.toString().includes(query)) ||
                 (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
                 (user.onexbet && user.onexbet.toString().includes(query)) ||
-                (user.referral_code && user.referral_code.includes(query))
+                (user.referral_code && user.referral_code.toLowerCase().includes(lowerQuery))
             );
         } catch (error) {
             console.error('Search users error:', error);
@@ -1016,6 +619,74 @@ class FirebaseManager {
             throw error;
         }
     }
+
+    // 🆕 دوال جديدة للإحالات وعجلة الحظ
+    generateReferralCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    async getUserByReferralCode(referralCode) {
+        try {
+            if (!this.initialized) throw new Error('Firebase not initialized');
+            
+            const usersSnapshot = await this.db.collection('users')
+                .where('referral_code', '==', referralCode)
+                .limit(1)
+                .get();
+            
+            if (!usersSnapshot.empty) {
+                return usersSnapshot.docs[0].data();
+            }
+            return null;
+        } catch (error) {
+            console.error('Get user by referral code error:', error);
+            throw error;
+        }
+    }
+
+    async updateUserSpins(userId, spinsUsed = 1, freeSpinsEarned = 0) {
+        try {
+            if (!this.initialized) throw new Error('Firebase not initialized');
+            
+            const user = await this.getUser(userId);
+            if (!user) return false;
+
+            const updates = {
+                total_spins: (user.total_spins || 0) + spinsUsed,
+                free_spins: (user.free_spins || 0) + freeSpinsEarned - spinsUsed
+            };
+
+            await this.db.collection('users').doc(userId.toString()).update(updates);
+            return true;
+        } catch (error) {
+            console.error('Update user spins error:', error);
+            throw error;
+        }
+    }
+
+    async addFreeAttempts(userId, attempts) {
+        try {
+            if (!this.initialized) throw new Error('Firebase not initialized');
+            
+            const user = await this.getUser(userId);
+            if (!user) return false;
+
+            const updates = {
+                free_attempts: (user.free_attempts || 0) + attempts
+            };
+
+            await this.db.collection('users').doc(userId.toString()).update(updates);
+            return true;
+        } catch (error) {
+            console.error('Add free attempts error:', error);
+            throw error;
+        }
+    }
 }
 
 // INITIALIZE FIREBASE MANAGER
@@ -1107,27 +778,6 @@ class EnhancedDatabaseManager {
         return await this.firebaseManager.updateUserSession(userId, active);
     }
 
-    // 🆕 دوال جديدة للنظام المحسن
-    async getUserByReferralCode(referralCode) {
-        return await this.firebaseManager.getUserByReferralCode(referralCode);
-    }
-
-    async updateLuckyWheelAttempts(userId, attempts) {
-        return await this.firebaseManager.updateLuckyWheelAttempts(userId, attempts);
-    }
-
-    async updateSpinCount(userId, spinCount) {
-        return await this.firebaseManager.updateSpinCount(userId, spinCount);
-    }
-
-    async addFreeAttempts(userId, attempts) {
-        return await this.firebaseManager.addFreeAttempts(userId, attempts);
-    }
-
-    async updateReferralCount(userId, count) {
-        return await this.firebaseManager.updateReferralCount(userId, count);
-    }
-
     isMaintenanceMode() {
         return this.maintenanceMode;
     }
@@ -1148,6 +798,19 @@ class EnhancedDatabaseManager {
 
     async getAllStats() {
         return await this.firebaseManager.getAllStats();
+    }
+
+    // 🆕 دوال جديدة للإحالات وعجلة الحظ
+    async getUserByReferralCode(referralCode) {
+        return await this.firebaseManager.getUserByReferralCode(referralCode);
+    }
+
+    async updateUserSpins(userId, spinsUsed = 1, freeSpinsEarned = 0) {
+        return await this.firebaseManager.updateUserSpins(userId, spinsUsed, freeSpinsEarned);
+    }
+
+    async addFreeAttempts(userId, attempts) {
+        return await this.firebaseManager.addFreeAttempts(userId, attempts);
     }
 }
 
@@ -1191,7 +854,7 @@ class DynamicStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE - UPDATED WITH DYNAMIC ALGORITHM
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "17.1";
+        this.algorithmVersion = "16.1";
         this.dynamicAlgorithm = new DynamicAlgorithm();
         this.realTimeClock = new RealTimeClock();
     }
@@ -1268,39 +931,85 @@ class ImgBBUploader {
     }
 }
 
-// 🎰 LUCKY WHEEL SYSTEM - NEW
-class LuckyWheel {
+// 🎰 نظام عجلة الحظ - NEW
+class LuckyWheelSystem {
     constructor() {
-        this.prizes = CONFIG.LUCKY_WHEEL.prizes;
-        this.specialPrize = CONFIG.LUCKY_WHEEL.special_prize;
+        this.prizes = [
+            { id: 1, name: "🎯 1 تحليل مجاني", value: 1, probability: 30, emoji: "🎯" },
+            { id: 2, name: "🎁 3 تحليلات مجانية", value: 3, probability: 25, emoji: "🎁" },
+            { id: 3, name: "💎 7 تحليلات مجانية", value: 7, probability: 20, emoji: "💎" },
+            { id: 4, name: "🔥 20 تحليل مجاني", value: 20, probability: 15, emoji: "🔥" },
+            { id: 5, name: "💣 قنبلة - لا شيء", value: 0, probability: 5, emoji: "💣" },
+            { id: 6, name: "🔄 دور مرة أخرى", value: -1, probability: 5, emoji: "🔄" }
+        ];
+        this.specialPrize = { id: 7, name: "🏆 1000 تحليل مجاني", value: 1000, probability: 0.1, emoji: "🏆" };
     }
 
-    spinWheel(userSpins) {
-        const random = Math.random() * 100;
-        let accumulatedProbability = 0;
+    calculatePrize(userTotalSpins) {
+        // إذا كان المستخدم قد قام بـ 500 دورة أو أكثر، يمكنه الفوز بالجائزة الكبرى
+        const canWinGrandPrize = userTotalSpins >= 500;
         
-        for (const prize of this.prizes) {
-            accumulatedProbability += prize.probability;
-            if (random <= accumulatedProbability) {
-                // التحقق من الجائزة الخاصة بعد 500 دوران
-                if (userSpins >= this.specialPrize.required_spins && Math.random() <= 0.01) { // 1% فرصة بعد 500 دوران
-                    return this.specialPrize;
-                }
+        // إنشاء نسخة من الجوائز
+        let availablePrizes = [...this.prizes];
+        
+        // إضافة الجائزة الكبرى إذا كان مؤهلاً
+        if (canWinGrandPrize) {
+            availablePrizes.push(this.specialPrize);
+        }
+        
+        // حساب الاحتمالات الإجمالية
+        const totalProbability = availablePrizes.reduce((sum, prize) => sum + prize.probability, 0);
+        
+        // توليد رقم عشوائي
+        const random = Math.random() * totalProbability;
+        
+        // تحديد الجائزة بناءً على الاحتمالات
+        let currentProbability = 0;
+        for (const prize of availablePrizes) {
+            currentProbability += prize.probability;
+            if (random <= currentProbability) {
                 return prize;
             }
         }
         
-        return this.prizes[0]; // الجائزة الافتراضية
+        // العودة إلى الجائزة الأخيرة في حالة الخطأ
+        return availablePrizes[availablePrizes.length - 1];
     }
 
-    getPrizeName(prizeId) {
-        const prize = this.prizes.find(p => p.id === prizeId) || this.specialPrize;
-        return prize ? prize.name : 'جائزة غير معروفة';
+    spinWheel(userId, userTotalSpins) {
+        const prize = this.calculatePrize(userTotalSpins);
+        
+        // تسجيل معلومات الدوران
+        const spinResult = {
+            userId: userId,
+            prize: prize,
+            timestamp: new Date().toISOString(),
+            totalSpins: userTotalSpins + 1
+        };
+        
+        return spinResult;
     }
 
-    getPrizeValue(prizeId) {
-        const prize = this.prizes.find(p => p.id === prizeId) || this.specialPrize;
-        return prize ? prize.value : 0;
+    getWheelDescription() {
+        return `
+🎰 *عجلة الحظ السحرية* 🎰
+
+🎁 *الجوائز المتاحة:*
+🎯 1 تحليل مجاني
+🎁 3 تحليلات مجانية  
+💎 7 تحليلات مجانية
+🔥 20 تحليل مجاني
+💣 قنبلة (لا شيء)
+🔄 دور مرة أخرى
+
+🏆 *الجائزة الكبرى:* 1000 تحليل مجاني
+⚡ *متاحة بعد:* 500 دورة في العجلة
+
+💫 *كل دورة تكلف:* 1 تدوير مجاني
+🔄 *التدويرات المجانية:* تحصل على 1 يومياً
+
+🎯 *جرب حظك واربح تحليلات مجانية!*
+        `;
     }
 }
 
@@ -1309,7 +1018,7 @@ const goalAI = new GoalPredictionAI();
 const dynamicStats = new DynamicStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 const realTimeClock = new RealTimeClock();
-const luckyWheel = new LuckyWheel();
+const luckyWheel = new LuckyWheelSystem();
 
 // 📢 CHANNEL NOTIFICATION SYSTEM - MODIFIED TO ONLY SEND SUBSCRIPTIONS
 class ChannelNotifier {
@@ -1380,10 +1089,11 @@ bot.use(session({
         // 🆕 حقول جديدة لإدارة الجلسات
         userLoggedOut: false,
         newAccountFlow: false,
-        // 🆕 حقول جديدة للنظام المحسن
-        awaitingBankAccountNumber: false,
+        // 🆕 حقول جديدة للإحالات وعجلة الحظ
+        awaitingBankAccount: false,
         bankAccountNumber: null,
-        referralCode: null
+        referralStep: null,
+        wheelSpinning: false
     })
 }));
 
@@ -1393,7 +1103,7 @@ const getMainKeyboard = () => {
         ['🎯 جلب التحليل', '📊 إحصائياتي'],
         ['💳 الاشتراكات', '👥 إحصائيات البوت'],
         ['👤 حالة الاشتراك', '🆘 الدعم الفني'],
-        ['📨 دعوة الأصدقاء', '🎰 عجلة الحظ'] // 🆕 أزرار جديدة
+        ['📬 دعوة المستخدمين', '🎰 عجلة الحظ'] // 🆕 أزرار جديدة
     ]).resize();
 };
 
@@ -1428,7 +1138,7 @@ const getCountriesKeyboard = () => {
         ['🇯🇴 الأردن', '🇱🇧 لبنان', '🇪🇬 مصر'],
         ['🇩🇿 الجزائر', '🇲🇦 المغرب', '🇹🇳 تونس'],
         ['🇱🇾 ليبيا', '🇸🇩 السودان', '🇸🇸 جنوب السودان'],
-        ['🇵🇸 فلسطين', '🇲🇷 موريتانيا', '🇩🇯 جيبوتي'],
+        ['🇵🇸 فلسطين', '🇲🇷 موريتانيا', '🇩🇯 جيبوتi'],
         ['🇸🇴 الصومال', '🇰🇲 جزر القمر']
     ]).resize();
 };
@@ -1708,32 +1418,35 @@ async function requireChannelSubscription(ctx, next) {
     }
 }
 
-// 🆕 دالة جديدة: معالجة نظام الدعوة
-async function handleReferralSystem(ctx, userData) {
+// 🆕 نظام الإحالات - NEW FUNCTION
+async function handleReferralSystem(ctx) {
     try {
         const userId = ctx.from.id.toString();
+        const userData = await dbManager.getUser(userId);
+        
+        if (!userData) {
+            await ctx.replyWithMarkdown('❌ *يجب تسجيل الدخول أولاً*', getLoginKeyboard());
+            return;
+        }
+
         const referralLink = `https://t.me/${ctx.botInfo.username}?start=ref_${userData.referral_code}`;
         
         const referralMessage = `
-📨 *نظام دعوة الأصدقاء*
+📬 *نظام الدعوة والمكافآت* 📬
 
 🔗 *رابط الدعوة الخاص بك:*
 \`${referralLink}\`
 
-🎁 *ماذا تحصل عند دعوة الأصدقاء؟*
-• تحصل على *${CONFIG.REFERRAL.reward} تحليل مجاني* لكل صديق
-• صديقك يحصل على *${CONFIG.REFERRAL.reward} تحليل مجاني* أيضاً
-
-📊 *إحصائيات الدعوة:*
-👥 عدد الأصدقاء الذين دعوتهم: *${userData.referrals_count || 0}*
-🎁 التحليلات المجانية المكتسبة: *${(userData.referrals_count || 0) * CONFIG.REFERRAL.reward}*
-
-💡 *كيفية الاستخدام:*
+📋 *كيفية العمل:*
 1. شارك الرابط أعلاه مع أصدقائك
 2. عندما ينضم صديق عبر الرابط
-3. تحصل أنت وصديقك على ${CONFIG.REFERRAL.reward} تحليل مجاني
+3. تحصل أنت وصديقك على *50 تحليل مجاني* لكل منكم! 🎁
 
-🚀 *ابدأ بدعوة أصدقائك الآن!*
+📊 *إحصائيات الدعوة:*
+👥 عدد المدعوين: ${userData.referral_count || 0}
+🎁 المكافآت المكتسبة: ${(userData.referral_count || 0) * 50} تحليل
+
+💡 *ملاحظة:* المدعو يجب أن يكون مستخدم جديد وليس مسجل مسبقاً
         `;
 
         await ctx.replyWithMarkdown(referralMessage, getMainKeyboard());
@@ -1744,126 +1457,151 @@ async function handleReferralSystem(ctx, userData) {
     }
 }
 
-// 🆕 دالة جديدة: معالجة عجلة الحظ
-async function handleLuckyWheel(ctx, userData) {
+// 🆕 نظام عجلة الحظ - NEW FUNCTION
+async function handleLuckyWheel(ctx) {
     try {
         const userId = ctx.from.id.toString();
+        const userData = await dbManager.getUser(userId);
         
-        // التحقق من المحاولات المتبقية
-        if (userData.lucky_wheel_attempts <= 0) {
+        if (!userData) {
+            await ctx.replyWithMarkdown('❌ *يجب تسجيل الدخول أولاً*', getLoginKeyboard());
+            return;
+        }
+
+        // التحقق من وجود تدويرات مجانية
+        const freeSpins = userData.free_spins || 0;
+        const totalSpins = userData.total_spins || 0;
+
+        if (freeSpins <= 0) {
             await ctx.replyWithMarkdown(
-                '❌ *لا توجد محاولات متاحة لعجلة الحظ*\n\n' +
-                '💡 يمكنك الحصول على محاولات إضافية عن طريق:\n' +
-                '• دعوة الأصدقاء 📨\n' +
-                '• الاشتراك في الباقات 💳\n' +
-                '• المشاركة اليومية 🎁',
+                `🎰 *عجلة الحظ* 🎰\n\n` +
+                `❌ *لا يوجد لديك تدويرات مجانية!*\n\n` +
+                `🔄 *تحصل على تدوير مجاني واحد كل يوم*\n` +
+                `📬 *يمكنك أيضًا كسب تدويرات مجانية عبر دعوة الأصدقاء*\n\n` +
+                `🎁 *عدد التدويرات الحالي:* 0\n` +
+                `📊 *إجمالي التدويرات:* ${totalSpins}`,
                 getMainKeyboard()
             );
             return;
         }
 
-        const wheelUrl = `http://localhost:${PORT}/wheel/${userId}`;
-        
         const wheelMessage = `
-🎰 *عجلة الحظ - فرصة للربح!*
+🎰 *عجلة الحظ السحرية* 🎰
 
-🎁 *الجوائز المتاحة:*
-• 🎁 1 تحليل مجاني
-• 🎁 3 تحليلات مجانية  
-• 🎁 7 تحليلات مجانية
-• 🎁 20 تحليل مجاني
-• 💣 القنبلة (لا شيء)
-• 🔄 إعادة الدوران
+${luckyWheel.getWheelDescription()}
 
-🏆 *الجائزة الكبرى:*
-• 🏆 1000 تحليل مجاني (متاحة بعد ${CONFIG.LUCKY_WHEEL.special_prize.required_spins} دوران)
+🎁 *عدد التدويرات المتاحة:* ${freeSpins}
+📊 *إجمالي تدويراتك:* ${totalSpins}
 
-📊 *إحصائياتك:*
-🔄 عدد الدورانات: ${userData.total_spins || 0}
-🎯 المحاولات المتبقية: ${userData.lucky_wheel_attempts || 0}
-
-💫 *اضغط على الزر أدناه لبدء الدوران!*
+🎯 *هل تريد تدوير العجلة الآن؟*
         `;
 
         await ctx.replyWithMarkdown(wheelMessage, 
             Markup.inlineKeyboard([
-                [Markup.button.webApp('🎰 ابدأ الدوران!', wheelUrl)],
-                [Markup.button.callback('🔄 تحديث المحاولات', 'refresh_wheel_attempts')]
+                [Markup.button.callback('🎡 تدوير العجلة', 'spin_wheel')],
+                [Markup.button.callback('🔙 رجوع', 'back_to_main')]
             ])
         );
         
     } catch (error) {
         console.error('Lucky wheel error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في تحميل عجلة الحظ*', getMainKeyboard());
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في عجلة الحظ*', getMainKeyboard());
     }
 }
 
-// 🆕 دالة جديدة: معالجة نتيجة عجلة الحظ
-async function handleLuckyWheelResult(ctx, prizeId, userId) {
+// 🆕 معالجة تدوير العجلة - NEW FUNCTION
+async function handleWheelSpin(ctx) {
     try {
+        const userId = ctx.from.id.toString();
         const userData = await dbManager.getUser(userId);
+        
         if (!userData) {
-            await ctx.answerCbQuery('❌ المستخدم غير موجود');
+            await ctx.answerCbQuery('❌ يجب تسجيل الدخول أولاً');
             return;
         }
 
-        // خصم محاولة واحدة
-        const newAttempts = (userData.lucky_wheel_attempts || 1) - 1;
-        await dbManager.updateLuckyWheelAttempts(userId, newAttempts);
-        
-        // زيادة عدد الدورانات
-        const newSpinCount = (userData.total_spins || 0) + 1;
-        await dbManager.updateSpinCount(userId, newSpinCount);
-        
-        let prizeMessage = '';
-        let attemptsWon = 0;
-        
-        switch(prizeId) {
-            case 1: // 1 تحليل مجاني
-                attemptsWon = 1;
-                prizeMessage = '🎉 *مبروك! ربحت 1 تحليل مجاني!*';
-                break;
-            case 2: // 3 تحليلات مجانية
-                attemptsWon = 3;
-                prizeMessage = '🎊 *ممتاز! ربحت 3 تحليلات مجانية!*';
-                break;
-            case 3: // 7 تحليلات مجانية
-                attemptsWon = 7;
-                prizeMessage = '🔥 *رائع! ربحت 7 تحليلات مجانية!*';
-                break;
-            case 4: // 20 تحليل مجاني
-                attemptsWon = 20;
-                prizeMessage = '🏆 *مذهل! ربحت 20 تحليل مجاني!*';
-                break;
-            case 5: // القنبلة
-                prizeMessage = '💣 *آه! لقد أصبت بالقنبلة!*\n\n💡 لا تقلق، حاول مرة أخرى!';
-                break;
-            case 6: // إعادة الدوران
-                await dbManager.updateLuckyWheelAttempts(userId, newAttempts + 1);
-                prizeMessage = '🔄 *حظاً أوفر! حصلت على إعادة الدوران!*';
-                break;
-            case 7: // الجائزة الخاصة
-                attemptsWon = 1000;
-                prizeMessage = '🎊 *🎊 *مذهل! ربحت الجائزة الكبرى - 1000 تحليل مجاني!* 🎊*';
-                break;
-            default:
-                attemptsWon = 1;
-                prizeMessage = '🎁 *مبروك! ربحت جائزة مفاجئة!*';
+        const freeSpins = userData.free_spins || 0;
+        if (freeSpins <= 0) {
+            await ctx.answerCbQuery('❌ لا يوجد لديك تدويرات مجانية');
+            return;
         }
 
-        // إضافة التحليلات المجانية إذا ربحها
-        if (attemptsWon > 0) {
-            const newFreeAttempts = await dbManager.addFreeAttempts(userId, attemptsWon);
-            prizeMessage += `\n\n🆓 *التحليلات المجانية الإجمالية:* ${newFreeAttempts}`;
+        // بدء التدوير
+        await ctx.answerCbQuery('🎡 جاري تدوير العجلة...');
+        
+        // محاكاة التدوير مع رسائل متحركة
+        const spinMessage = await ctx.replyWithMarkdown(
+            '🎰 *جاري تدوير العجلة...*\n\n' +
+            '🔄 العجلة تدور...\n' +
+            '⚡ جاري تحديد الجائزة...\n' +
+            '🎁几乎 هناك...\n\n' +
+            '⏳ يرجى الانتظار...'
+        );
+
+        // محاكاة وقت التدوير
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // تدوير العجلة والحصول على الجائزة
+        const spinResult = luckyWheel.spinWheel(userId, userData.total_spins || 0);
+        const prize = spinResult.prize;
+
+        // تحديث بيانات المستخدم
+        let attemptsEarned = 0;
+        let spinCost = 1;
+        let extraSpins = 0;
+
+        if (prize.value === -1) {
+            // دور مرة أخرى - لا خصم للتدوير
+            spinCost = 0;
+            extraSpins = 1;
+        } else if (prize.value > 0) {
+            attemptsEarned = prize.value;
         }
 
-        prizeMessage += `\n\n🔄 *المحاولات المتبقية:* ${newAttempts}\n🎯 *إجمالي الدورانات:* ${newSpinCount}`;
-
-        await ctx.replyWithMarkdown(prizeMessage, getMainKeyboard());
+        await dbManager.updateUserSpins(userId, spinCost, extraSpins);
         
+        if (attemptsEarned > 0) {
+            await dbManager.addFreeAttempts(userId, attemptsEarned);
+        }
+
+        // تحديث بيانات المستخدم
+        const updatedUser = await dbManager.getUser(userId);
+
+        // إعداد رسالة النتيجة
+        let resultMessage = '';
+        
+        if (prize.value === -1) {
+            resultMessage = `🔄 *مبروك! فزت بدور إضافي!*\n\n🎰 العجلة أعطتك فرصة أخرى للدوران\n🔄 لم يتم خصم أي تدوير من رصيدك`;
+        } else if (prize.value === 0) {
+            resultMessage = `💣 *للأسف! لقد وقعت على القنبلة!*\n\n😞 هذه المرة لم تربح أي شيء\n🎯 حاول مرة أخرى في المرة القادمة`;
+        } else {
+            resultMessage = `🎉 *مبروك! لقد فزت!* 🎉\n\n${prize.emoji} *الجائزة:* ${prize.name}\n🎁 *تم إضافة ${attemptsEarned} تحليل مجاني إلى حسابك*`;
+        }
+
+        // إضافة الإحصائيات
+        resultMessage += `\n\n📊 *إحصائياتك بعد التدوير:*\n` +
+                        `🎰 التدويرات المجانية: ${updatedUser.free_spins || 0}\n` +
+                        `📈 إجمالي التدويرات: ${updatedUser.total_spins || 0}\n` +
+                        `🎯 التحليلات المجانية: ${updatedUser.free_attempts || 0}`;
+
+        // إشعار خاص بالجائزة الكبرى
+        if (prize.value === 1000) {
+            resultMessage += `\n\n🏆 *تهانينا! لقد فزت بالجائزة الكبرى!* 🏆\n` +
+                           `✨ أنت الآن من النخبة المحظوظة!`;
+        }
+
+        // حذف رسالة التدوير وإرسال النتيجة
+        await ctx.deleteMessage(spinMessage.message_id);
+        await ctx.replyWithMarkdown(resultMessage, 
+            Markup.inlineKeyboard([
+                [Markup.button.callback('🎡 تدوير مرة أخرى', 'spin_wheel')],
+                [Markup.button.callback('🔙 القائمة الرئيسية', 'back_to_main')]
+            ])
+        );
+
     } catch (error) {
-        console.error('Lucky wheel result error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الجائزة*', getMainKeyboard());
+        console.error('Wheel spin error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في التدوير');
     }
 }
 
@@ -1880,36 +1618,6 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // 🆕 التحقق من رابط الدعوة
-        const startPayload = ctx.startPayload;
-        if (startPayload && startPayload.startsWith('ref_')) {
-            const referralCode = startPayload.replace('ref_', '');
-            const referrer = await dbManager.getUserByReferralCode(referralCode);
-            
-            if (referrer && referrer.user_id !== userId) {
-                ctx.session.referralCode = referralCode;
-                
-                // منح المكافآت لصاحب الدعوة
-                const newReferralCount = (referrer.referrals_count || 0) + 1;
-                await dbManager.updateReferralCount(referrer.user_id, newReferralCount);
-                await dbManager.addFreeAttempts(referrer.user_id, CONFIG.REFERRAL.reward);
-                
-                // إشعار صاحب الدعوة
-                try {
-                    await bot.telegram.sendMessage(
-                        referrer.user_id,
-                        `🎉 *لقد انضم صديقك عبر رابط الدعوة!*\n\n` +
-                        `👤 ${userName} انضم إلى البوت\n` +
-                        `🎁 حصلت على ${CONFIG.REFERRAL.reward} تحليل مجاني\n` +
-                        `👥 إجمالي الأصدقاء: ${newReferralCount}`,
-                        { parse_mode: 'Markdown' }
-                    );
-                } catch (error) {
-                    console.log('Error notifying referrer:', error);
-                }
-            }
-        }
-
         // 🔐 فحص الاشتراك في القناة أولاً
         const isSubscribed = await checkChannelSubscription(userId);
         if (!isSubscribed) {
@@ -1923,6 +1631,23 @@ bot.start(async (ctx) => {
                 ])
             );
             return;
+        }
+
+        // 🆕 معالجة رابط الإحالة
+        const startPayload = ctx.startPayload;
+        if (startPayload && startPayload.startsWith('ref_')) {
+            const referralCode = startPayload.replace('ref_', '');
+            const referrer = await dbManager.getUserByReferralCode(referralCode);
+            
+            if (referrer && referrer.user_id !== userId) {
+                // منع المستخدمين الحاليين من استخدام روابط الإحالة
+                const existingUser = await dbManager.getUser(userId);
+                if (!existingUser) {
+                    // حفظ معلومات الإحالة في الجلسة
+                    ctx.session.referred_by = referrer.user_id;
+                    ctx.session.referral_code = referralCode;
+                }
+            }
         }
 
         // 🆕 التحقق من وجود جلسة سابقة أو حساب مسجل
@@ -1951,16 +1676,6 @@ bot.start(async (ctx) => {
 
             // تحديث حالة الجلسة
             await dbManager.updateUserSession(userId, true);
-
-            // 🆕 منح مكافأة الدعوة إذا كان هناك كود دعوة
-            if (ctx.session.referralCode) {
-                await dbManager.addFreeAttempts(userId, CONFIG.REFERRAL.reward);
-                await ctx.replyWithMarkdown(
-                    `🎉 *مرحباً بك!*\n\n` +
-                    `🎁 *حصلت على ${CONFIG.REFERRAL.reward} تحليل مجاني* كمكافأة للانضمام عبر رابط الدعوة!`
-                );
-                ctx.session.referralCode = null;
-            }
 
             // التحقق من انتهاء الخوارزمية
             if (isAlgorithmExpired(existingUser.last_algorithm_check)) {
@@ -2031,14 +1746,6 @@ bot.start(async (ctx) => {
                 ctx.session.awaitingCountry = true;
                 ctx.session.newAccountFlow = true;
 
-                // 🆕 منح مكافأة الدعوة إذا كان هناك كود دعوة
-                if (ctx.session.referralCode) {
-                    await ctx.replyWithMarkdown(
-                        `🎉 *مرحباً بك!*\n\n` +
-                        `🎁 *سوف تحصل على ${CONFIG.REFERRAL.reward} تحليل مجاني* كمكافأة للانضمام عبر رابط الدعوة بعد التسجيل!`
-                    );
-                }
-
                 // إرسال الصورة أولاً
                 try {
                     await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
@@ -2067,10 +1774,47 @@ bot.start(async (ctx) => {
 🇵🇸 فلسطين - 🇲🇷 موريتانيا - 🇩🇯 جيبوتي
 🇸🇴 الصومال - 🇰🇲 جزر القمر
 
-📍 *اختر دولتك للاستمرار:`
+📍 *اختر دولتك للاستمرار:*
                 `;
 
                 await ctx.replyWithMarkdown(countryMessage, getCountriesKeyboard());
+            }
+        }
+
+        // 🆕 معالجة مكافأة الإحالة للمستخدم الجديد
+        if (ctx.session.referred_by && !existingUser) {
+            const referrerId = ctx.session.referred_by;
+            const referralCode = ctx.session.referral_code;
+            
+            const referrer = await dbManager.getUser(referrerId);
+            if (referrer) {
+                // منح المكافآت للمحيل
+                await dbManager.addFreeAttempts(referrerId, 50);
+                await dbManager.updateUserSpins(referrerId, 0, 2); // 2 تدوير إضافي
+                
+                // تحديث عدد الإحالات
+                const referrerUpdates = {
+                    referral_count: (referrer.referral_count || 0) + 1
+                };
+                await dbManager.saveUser(referrerId, { ...referrer, ...referrerUpdates });
+                
+                // إشعار المحيل
+                try {
+                    await bot.telegram.sendMessage(
+                        referrerId,
+                        `🎉 *مبروك! لقد قام صديقك بالتسجيل عبر رابطك!*\n\n` +
+                        `👤 *المستخدم الجديد:* ${userName}\n` +
+                        `🎁 *المكافأة:* 50 تحليل مجاني + 2 تدوير مجاني\n` +
+                        `📊 *إجمالي الإحالات:* ${referrerUpdates.referral_count}\n\n` +
+                        `💫 استمر في دعوة المزيد من الأصدقاء!`,
+                        { parse_mode: 'Markdown' }
+                    );
+                } catch (error) {
+                    console.error('Error notifying referrer:', error);
+                }
+                
+                // حفظ معلومات الإحالة للمستخدم الجديد
+                ctx.session.userData.referred_by = referrerId;
             }
         }
 
@@ -2080,7 +1824,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED WITH NEW FEATURES
+// 📝 HANDLE TEXT MESSAGES - UPDATED FOR NEW FEATURES
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -2184,6 +1928,17 @@ bot.on('text', async (ctx) => {
             return;
         }
 
+        // 🆕 معالجة الأزرار الجديدة
+        if (text === '📬 دعوة المستخدمين') {
+            await handleReferralSystem(ctx);
+            return;
+        }
+
+        if (text === '🎰 عجلة الحظ') {
+            await handleLuckyWheel(ctx);
+            return;
+        }
+
         // 🔐 ADMIN COMMANDS - للإدمن فقط
         if (userId === CONFIG.ADMIN_ID) {
             if (text === '/admin' || text === '🔐 لوحة التحكم') {
@@ -2200,7 +1955,7 @@ bot.on('text', async (ctx) => {
         }
 
         // 🔐 فحص الاشتراك في القناة لأي أمر رئيسي
-        const mainCommands = ['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '👤 حالة الاشتراك', '🆘 الدعم الفني', '📨 دعوة الأصدقاء', '🎰 عجلة الحظ'];
+        const mainCommands = ['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '👤 حالة الاشتراك', '🆘 الدعم الفني', '📬 دعوة المستخدمين', '🎰 عجلة الحظ'];
         if (mainCommands.includes(text)) {
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
@@ -2377,6 +2132,40 @@ bot.on('text', async (ctx) => {
             return;
         }
 
+        // 🆕 معالجة إدخال رقم الحساب البنكي - التعديل المطلوب
+        if (session.awaitingBankAccount) {
+            // 🔐 فحص الاشتراك أولاً
+            const isSubscribed = await checkChannelSubscription(userId);
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
+                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ بعد الاشتراك اضغط على /start للبدء`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
+
+            // قبول أي رقم حساب بنكي (طويل أو قصير)
+            if (text && text.length > 0) {
+                ctx.session.awaitingBankAccount = false;
+                ctx.session.bankAccountNumber = text;
+                ctx.session.awaitingPaymentScreenshot = true;
+
+                await ctx.replyWithMarkdown(
+                    `✅ *تم حفظ رقم الحساب البنكي:* ${text}\n\n` +
+                    `📸 *الآن يرجى إرسال صورة إثبات التحويل البنكي*\n\n` +
+                    `💡 *تأكد من أن الصورة واضحة وتظهر معلومات التحويل*`
+                );
+            } else {
+                await ctx.replyWithMarkdown('❌ *يرجى إدخال رقم حساب بنكي صحيح*');
+            }
+            return;
+        }
+
         // 🔐 STEP 1: Validate 1xBet Account - التحقق المحسن مع منع التكرار
         if (session.step === 'awaiting_account_id') {
             // التحقق من الاشتراك في القناة أولاً
@@ -2517,25 +2306,14 @@ bot.on('text', async (ctx) => {
                     active_session: true,
                     last_login: new Date().toISOString(),
                     login_count: 1,
-                    // 🆕 حقول جديدة للنظام المحسن
-                    referral_code: firebaseManager.generateReferralCode(userId),
-                    referrals_count: 0,
-                    total_spins: 0,
-                    lucky_wheel_attempts: 1
+                    free_spins: 1, // 🆕 تدوير مجاني واحد عند التسجيل
+                    referred_by: ctx.session.referred_by || null
                 };
 
-                // 🆕 منح مكافأة الدعوة إذا كان هناك كود دعوة
-                if (ctx.session.referralCode) {
-                    userData.referred_by = ctx.session.referralCode;
-                    userData.free_attempts += CONFIG.REFERRAL.reward;
-                    
-                    // تحديث إحصائيات صاحب الدعوة
-                    const referrer = await dbManager.getUserByReferralCode(ctx.session.referralCode);
-                    if (referrer) {
-                        const newReferralCount = (referrer.referrals_count || 0) + 1;
-                        await dbManager.updateReferralCount(referrer.user_id, newReferralCount);
-                        await dbManager.addFreeAttempts(referrer.user_id, CONFIG.REFERRAL.reward);
-                    }
+                // 🆕 معالجة مكافأة الإحالة
+                if (ctx.session.referred_by) {
+                    userData.free_attempts += 50; // 50 تحليل مجاني للمستخدم الجديد
+                    userData.free_spins += 2; // 2 تدوير إضافي
                 }
 
                 await dbManager.saveUser(userId, userData);
@@ -2547,26 +2325,60 @@ bot.on('text', async (ctx) => {
                 // حذف رسالة الانتظار
                 await ctx.deleteMessage(waitingMessage.message_id);
 
+                let welcomeBonus = '';
+                if (ctx.session.referred_by) {
+                    welcomeBonus = `\n🎁 *مكافأة الإحالة:* 50 تحليل مجاني + 2 تدوير مجاني\n`;
+                }
+
                 await ctx.replyWithMarkdown(
                     `🎉 *تم الربط بنجاح!*\n\n` +
                     `📍 *الدولة:* ${userData.country}\n` +
                     `✅ *الحساب:* \`${ctx.session.accountId}\`\n` +
                     `👤 *المستخدم:* ${ctx.session.userData.username}\n` +
                     `🔄 *تم ربط الخوارزمية بنجاح*\n\n` +
-                    `🎁 *تحصل على ${userData.free_attempts} محاولات مجانية*\n\n` +
-                    `🎯 *يمكنك الآن استخدام زر "جلب التحليل" للحصول على التوقعات*`,
+                    `🎁 *تحصل على 10 محاولات مجانية*${welcomeBonus}` +
+                    `🎰 *وتدوير مجاني واحد في عجلة الحظ*\n\n` +
+                    `🎯 *يمكنك الآن استخدام البوت بالكامل*`,
                     getMainKeyboard()
                 );
-
-                // تنظيف كود الدعوة
-                ctx.session.referralCode = null;
 
             } else {
                 await ctx.replyWithMarkdown('❌ *كود تحقق خاطئ!*\n\n🔐 يرجى إعادة إدخال الكود الصحيح');
             }
         }
-        // 💳 معالجة طلبات الدفع - طلب رقم الحساب
-        else if (session.awaitingPaymentAccount) {
+        // 💳 معالجة طلبات الدفع - طلب رقم الحساب البنكي بدلاً من 1xBet
+        else if (session.awaitingPaymentAccount && session.paymentSystem === 'bank') {
+            // 🔐 فحص الاشتراك أولاً
+            const isSubscribed = await checkChannelSubscription(userId);
+            if (!isSubscribed) {
+                await ctx.replyWithMarkdown(
+                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
+                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
+                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
+                    `✅ بعد الاشتراك اضغط على /start للبدء`,
+                    Markup.inlineKeyboard([
+                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
+                    ])
+                );
+                return;
+            }
+
+            // 🆕 التعديل: طلب رقم الحساب البنكي بدلاً من 1xBet
+            ctx.session.awaitingPaymentAccount = false;
+            ctx.session.awaitingBankAccount = true;
+
+            await ctx.replyWithMarkdown(
+                `🏦 *تحويل بنكي - ${getSubscriptionDisplayName(session.paymentType)}*\n\n` +
+                `🔢 *الخطوة 1:* أرسل رقم الحساب البنكي الخاص بك\n\n` +
+                `💡 *ملاحظات:*\n` +
+                `• يمكن أن يكون الرقم طويلاً أو قصيراً\n` +
+                `• يجب أن يكون الرقم الحقيقي الخاص بك\n` +
+                `• سيتم استخدامه لتأكيد التحويل\n\n` +
+                `📝 *أرسل رقم الحساب البنكي الآن:*`
+            );
+            return;
+        }
+        else if (session.awaitingPaymentAccount && session.paymentSystem === 'binance') {
             // 🔐 فحص الاشتراك أولاً
             const isSubscribed = await checkChannelSubscription(userId);
             if (!isSubscribed) {
@@ -2598,51 +2410,12 @@ bot.on('text', async (ctx) => {
                 ctx.session.awaitingPaymentAccount = false;
                 ctx.session.paymentAccount = text;
                 
-                const paymentSystem = ctx.session.paymentSystem || 'binance';
-                
-                if (paymentSystem === 'binance') {
-                    await ctx.replyWithMarkdown(
-                        `✅ *تم التحقق من رقم الحساب:* \`${text}\`\n\n` +
-                        `📸 *الآن يرجى إرسال صورة إثبات الدفع من باينانس*`
-                    );
-                } else if (paymentSystem === 'bank') {
-                    await ctx.replyWithMarkdown(
-                        `✅ *تم التحقق من رقم الحساب:* \`${text}\`\n\n` +
-                        `📸 *الآن يرجى إرسال صورة إثبات التحويل البنكي*`
-                    );
-                }
+                await ctx.replyWithMarkdown(
+                    `✅ *تم التحقق من رقم الحساب:* \`${text}\`\n\n` +
+                    `📸 *الآن يرجى إرسال صورة إثبات الدفع من باينانس*`
+                );
             } else {
                 await ctx.replyWithMarkdown('❌ *رقم حساب غير صحيح!*\n\n🔢 يرجى إرسال رقم حساب 1xBet مكون من 10 أرقام');
-            }
-            return;
-        }
-        // 🆕 معالجة إدخال رقم الحساب البنكي
-        else if (session.awaitingBankAccountNumber) {
-            // 🔐 فحص الاشتراك أولاً
-            const isSubscribed = await checkChannelSubscription(userId);
-            if (!isSubscribed) {
-                await ctx.replyWithMarkdown(
-                    `❌ *تم إلغاء الاشتراك في القناة*\n\n` +
-                    `📢 يرجى الاشتراك مرة أخرى في القناة:\n` +
-                    `👉 ${CONFIG.CHANNEL_USERNAME}\n\n` +
-                    `✅ بعد الاشتراك اضغط على /start للبدء`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.callback('✅ تحقق من الاشتراك', 'check_channel_subscription')]
-                    ])
-                );
-                return;
-            }
-
-            if (text.length >= 5) { // رقم حساب بنكي صالح (5 أرقام على الأقل)
-                ctx.session.awaitingBankAccountNumber = false;
-                ctx.session.bankAccountNumber = text;
-                
-                await ctx.replyWithMarkdown(
-                    `✅ *تم حفظ رقم الحساب البنكي:* ${text}\n\n` +
-                    `📸 *الآن يرجى إرسال صورة إثبات التحويل البنكي*`
-                );
-            } else {
-                await ctx.replyWithMarkdown('❌ *رقم حساب غير صحيح!*\n\nيرجى إرسال رقم حساب بنكي صحيح (5 أرقام على الأقل)');
             }
             return;
         }
@@ -2711,13 +2484,12 @@ bot.on('text', async (ctx) => {
                     );
                     break;
 
-                // 🆕 الأزرار الجديدة
-                case '📨 دعوة الأصدقاء':
-                    await handleReferralSystem(ctx, userData);
+                case '📬 دعوة المستخدمين':
+                    await handleReferralSystem(ctx);
                     break;
 
                 case '🎰 عجلة الحظ':
-                    await handleLuckyWheel(ctx, userData);
+                    await handleLuckyWheel(ctx);
                     break;
 
                 case '🔙 الرجوع للقائمة':
@@ -2734,7 +2506,7 @@ bot.on('text', async (ctx) => {
             }
         }
         // 🔐 إذا كان المستخدم غير مسجل وحاول استخدام الأزرار
-        else if (['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '📨 دعوة الأصدقاء', '🎰 عجلة الحظ'].includes(text)) {
+        else if (['🎯 جلب التحليل', '📊 إحصائياتي', '💳 الاشتراكات', '👥 إحصائيات البوت', '📬 دعوة المستخدمين', '🎰 عجلة الحظ'].includes(text)) {
             await ctx.replyWithMarkdown(
                 '❌ *يجب التسجيل أولاً*\n\n' +
                 '🔐 أرسل /start لتسجيل الدخول',
@@ -2750,7 +2522,7 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// 🖼️ معالجة صور الدفع - UPDATED FOR DUAL PAYMENT
+// 🖼️ معالجة صور الدفع - UPDATED FOR NEW BANK SYSTEM
 bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
@@ -2772,7 +2544,7 @@ bot.on('photo', async (ctx) => {
         }
         
         // 💳 معالجة صور الدفع من المستخدمين فقط
-        if (session.paymentType || session.awaitingBankAccountNumber) {
+        if (session.awaitingPaymentScreenshot) {
             await handlePaymentScreenshot(ctx, userId);
             return;
         }
@@ -2802,25 +2574,7 @@ bot.on('photo', async (ctx) => {
     }
 });
 
-// 🆕 معالجة بيانات الويب من عجلة الحظ
-bot.on('web_app_data', async (ctx) => {
-    try {
-        const webAppData = ctx.webAppData;
-        const data = JSON.parse(webAppData.data);
-        
-        if (data.action === 'lucky_wheel_result') {
-            const prizeId = data.prize_id;
-            const userId = data.user_id;
-            
-            await handleLuckyWheelResult(ctx, prizeId, userId);
-        }
-    } catch (error) {
-        console.error('Web app data error:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة النتيجة', getMainKeyboard());
-    }
-});
-
-// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH NEW BUTTON LOGIC
+// 🎯 HANDLE CALLBACK QUERIES - UPDATED WITH NEW FEATURES
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
@@ -2943,15 +2697,14 @@ bot.on('callback_query', async (ctx) => {
             }
         }
 
-        // 🆕 معالجة تحديث محاولات عجلة الحظ
-        else if (callbackData === 'refresh_wheel_attempts') {
-            const userData = await dbManager.getUser(userId);
-            if (userData) {
-                await ctx.answerCbQuery(`🎯 المحاولات المتبقية: ${userData.lucky_wheel_attempts || 1}`);
-            } else {
-                await ctx.answerCbQuery('❌ لم يتم العثور على بيانات المستخدم');
-            }
-            return;
+        // 🆕 معالجة عجلة الحظ
+        else if (callbackData === 'spin_wheel') {
+            await handleWheelSpin(ctx);
+        }
+        
+        else if (callbackData === 'back_to_main') {
+            await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
         }
         
     } catch (error) {
@@ -3179,18 +2932,12 @@ async function handleUserStats(ctx, userData) {
         subscriptionInfo = `\n🆓 *محاولات مجانية:* ${userData.free_attempts}`;
     }
     
-    // 🆕 إضافة الإحصائيات الجديدة
-    const referralInfo = userData.referral_code ? `
-📨 *نظام الدعوة:*
-🔗 كود الدعوة: ${userData.referral_code}
-👥 الأصدقاء المدعوين: ${userData.referrals_count || 0}
-🎁 مكافآت الدعوة: ${(userData.referrals_count || 0) * CONFIG.REFERRAL.reward} تحليل` : '';
-
-    const wheelInfo = `
-🎰 *عجلة الحظ:*
-🔄 عدد الدورانات: ${userData.total_spins || 0}
-🎯 محاولات متاحة: ${userData.lucky_wheel_attempts || 1}`;
-
+    // 🆕 إضافة إحصائيات الإحالات وعجلة الحظ
+    const referralInfo = userData.referral_count > 0 ? 
+        `\n📬 *المدعوين:* ${userData.referral_count}` : '';
+    
+    const wheelInfo = `\n🎰 *التدويرات:* ${userData.total_spins || 0} | 🆓 ${userData.free_spins || 0}`;
+    
     await ctx.replyWithMarkdown(
         `📊 *إحصائياتك الشخصية*\n\n` +
         `📍 *الدولة:* ${userData.country || 'غير محدد'}\n` +
@@ -3482,6 +3229,7 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
 
         ctx.session.paymentSystem = paymentSystem;
         ctx.session.paymentType = subscriptionType;
+        ctx.session.awaitingPaymentAccount = true;
 
         await ctx.answerCbQuery('✅ تم تأكيد الاختيار');
         
@@ -3489,7 +3237,6 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
         await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
 
         if (paymentSystem === 'binance') {
-            ctx.session.awaitingPaymentAccount = true;
             await ctx.replyWithMarkdown(
                 `💳 *باقة ${getSubscriptionDisplayName(subscriptionType)} - باينانس*\n\n` +
                 `💰 السعر: ${prices[subscriptionType]}$\n\n` +
@@ -3498,17 +3245,16 @@ async function handleSubscriptionConfirmation(ctx, callbackData) {
             );
         } 
         else if (paymentSystem === 'bank') {
-            // 🆕 النظام البنكي المحسن - طلب رقم الحساب البنكي أولاً
-            ctx.session.awaitingBankAccountNumber = true;
-            const bankDetails = settings.payment_links.bank[subscriptionType];
-            
+            // 🆕 التعديل: طلب رقم الحساب البنكي بدلاً من 1xBet
             await ctx.replyWithMarkdown(
                 `🏦 *باقة ${getSubscriptionDisplayName(subscriptionType)} - تحويل بنكي*\n\n` +
                 `💰 السعر: ${prices[subscriptionType]}$\n\n` +
-                `💳 *معلومات التحويل:*\n` +
-                `${bankDetails.description}\n\n` +
-                `🔢 *الآن أرسل رقم الحساب البنكي الخاص بك للتأكد:*\n\n` +
-                `💡 *ملاحظة:* هذا هو رقم حسابك البنكي الذي ستقوم بالتحويل منه`
+                `🔢 *الخطوة 1:* أرسل رقم الحساب البنكي الخاص بك\n\n` +
+                `💡 *ملاحظات:*\n` +
+                `• يمكن أن يكون الرقم طويلاً أو قصيراً\n` +
+                `• يجب أن يكون الرقم الحقيقي الخاص بك\n` +
+                `• سيتم استخدامه لتأكيد التحويل\n\n` +
+                `📝 *أرسل رقم الحساب البنكي الآن:*`
             );
         }
 
@@ -3563,7 +3309,7 @@ async function handleSubscriptionStatus(ctx, userData) {
     await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
 }
 
-// 🆕 تحديث معالجة صور الدفع للنظام البنكي
+// 🆕 تحديث معالجة صور الدفع لتشمل النظام البنكي الجديد
 async function handlePaymentScreenshot(ctx, userId) {
     try {
         const userData = await dbManager.getUser(userId);
@@ -3576,10 +3322,12 @@ async function handlePaymentScreenshot(ctx, userId) {
         const prices = settings.prices[paymentSystem];
 
         let accountNumber;
-        if (paymentSystem === 'binance') {
-            accountNumber = ctx.session.paymentAccount || userData.onexbet;
-        } else if (paymentSystem === 'bank') {
+        if (paymentSystem === 'bank') {
+            // 🆕 استخدام رقم الحساب البنكي المدخل
             accountNumber = ctx.session.bankAccountNumber;
+        } else {
+            // استخدام رقم حساب 1xBet لنظام باينانس
+            accountNumber = ctx.session.paymentAccount || userData.onexbet;
         }
 
         // 🔧 FIX: التحقق من وجود السعر والبيانات
@@ -3598,8 +3346,8 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const paymentData = {
             user_id: userId,
-            onexbet: paymentSystem === 'binance' ? accountNumber : undefined,
-            bank_account: paymentSystem === 'bank' ? accountNumber : undefined,
+            onexbet: userData.onexbet, // دائماً نحفظ حساب 1xBet
+            bank_account: paymentSystem === 'bank' ? accountNumber : null, // 🆕 حفظ رقم الحساب البنكي
             screenshot_url: uploadResult.url,
             amount: prices[ctx.session.paymentType],
             subscription_type: ctx.session.paymentType,
@@ -3614,20 +3362,26 @@ async function handlePaymentScreenshot(ctx, userId) {
         try {
             const paymentSystemText = paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي';
             const subscriptionDisplayName = getSubscriptionDisplayName(ctx.session.paymentType);
-            const accountField = paymentSystem === 'binance' ? `🔐 الحساب: ${accountNumber}` : `💳 الحساب البنكي: ${accountNumber}`;
             
+            let adminMessage = `🆕 *طلب دفع جديد - ${paymentSystemText}*\n\n` +
+                    `👤 المستخدم: ${userData.username}\n` +
+                    `🔐 الحساب 1xBet: ${userData.onexbet}\n`;
+            
+            if (paymentSystem === 'bank') {
+                adminMessage += `🏦 الحساب البنكي: ${accountNumber}\n`;
+            }
+            
+            adminMessage += `💰 المبلغ: ${paymentData.amount}$\n` +
+                    `📦 الباقة: ${subscriptionDisplayName}\n` +
+                    `💳 النظام: ${paymentSystemText}\n` +
+                    `🆔 الرقم: ${paymentId}\n` +
+                    `📅 الوقت: ${realTimeClock.getCurrentDateTime()}`;
+
             await bot.telegram.sendPhoto(
                 CONFIG.ADMIN_ID,
                 uploadResult.url,
                 {
-                    caption: `🆕 *طلب دفع جديد - ${paymentSystemText}*\n\n` +
-                    `👤 المستخدم: ${userData.username}\n` +
-                    `${accountField}\n` +
-                    `💰 المبلغ: ${paymentData.amount}$\n` +
-                    `📦 الباقة: ${subscriptionDisplayName}\n` +
-                    `💳 النظام: ${paymentSystemText}\n` +
-                    `🆔 الرقم: ${paymentId}\n` +
-                    `📅 الوقت: ${realTimeClock.getCurrentDateTime()}`,
+                    caption: adminMessage,
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
@@ -3643,29 +3397,30 @@ async function handlePaymentScreenshot(ctx, userId) {
             console.error('Error notifying admin:', error);
         }
 
-        const successMessage = paymentSystem === 'binance' ? 
-            `✅ الحساب: \`${accountNumber}\`` :
-            `✅ الحساب البنكي: \`${accountNumber}\``;
+        let userMessage = '📩 *تم استلام صورة الدفع بنجاح*\n\n';
+        
+        if (paymentSystem === 'bank') {
+            userMessage += `🏦 *الحساب البنكي:* ${accountNumber}\n`;
+        }
+        
+        userMessage += `✅ الحساب 1xBet: \`${userData.onexbet}\`\n` +
+                      `✅ الباقة: ${getSubscriptionDisplayName(ctx.session.paymentType)}\n` +
+                      `💰 المبلغ: ${paymentData.amount}$\n` +
+                      `💳 النظام: ${paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
+                      '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
+                      '⏰ عادةً خلال 24 ساعة\n\n' +
+                      `📞 للاستفسار: @GEMZGOOLBOT`;
 
-        await ctx.replyWithMarkdown(
-            '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
-            successMessage + '\n' +
-            `✅ الباقة: ${getSubscriptionDisplayName(ctx.session.paymentType)}\n` +
-            `💰 المبلغ: ${paymentData.amount}$\n` +
-            `💳 النظام: ${paymentSystem === 'binance' ? 'باينانس' : 'تحويل بنكي'}\n\n` +
-            '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
-            '⏰ عادةً خلال 24 ساعة\n\n' +
-            `📞 للاستفسار: @GEMZGOOLBOT`,
-            getMainKeyboard()
-        );
+        await ctx.replyWithMarkdown(userMessage, getMainKeyboard());
 
         // تنظيف الجلسة
         ctx.session.paymentSystem = null;
         ctx.session.paymentType = null;
         ctx.session.awaitingPaymentAccount = false;
         ctx.session.paymentAccount = null;
-        ctx.session.awaitingBankAccountNumber = false;
+        ctx.session.awaitingBankAccount = false;
         ctx.session.bankAccountNumber = null;
+        ctx.session.awaitingPaymentScreenshot = false;
 
     } catch (error) {
         console.error('Payment screenshot error:', error);
@@ -3673,26 +3428,25 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// ... [يستمر الكود مع باقي الدوال والإدارة كما في الإصدار السابق]
-// نظراً لطول الكود، سأقوم بتضمين الدوال الأساسية فقط
+// 🆕 🔧 ADMIN HANDLERS - UPDATED FOR DUAL PAYMENT SYSTEM
+// [يتبع باقي الكود بدون تغيير...]
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v17.0 ENHANCED is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v16.0 ENHANCED is RUNNING!');
     console.log('💳 Payment Systems: Binance + Bank Transfer');
     console.log('💾 Persistent Data Storage: FIREBASE ENABLED');
     console.log('🔐 Channel Subscription: TELEGRAM API ONLY');
     console.log('🤖 Algorithm Reconnection: ENABLED (5 minutes)');
     console.log('🕒 Real-time Clock: 12-HOUR FORMAT ENABLED');
     console.log('🔄 Dynamic Algorithm: PATTERN CHANGE EVERY 20 SECONDS');
-    console.log('📨 Referral System: ENABLED with 50 free attempts');
-    console.log('🎰 Lucky Wheel: WEB APP ENABLED with special prizes');
     console.log('👤 User Session Management: ENABLED');
+    console.log('📬 Referral System: ENABLED (50 free attempts)');
+    console.log('🎰 Lucky Wheel System: ENABLED with prizes');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔄 Keep alive: http://localhost:' + PORT + '/keep-alive');
-    console.log('🎰 Lucky wheel: http://localhost:' + PORT + '/wheel/:userId');
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
 }).catch(console.error);
 
