@@ -1,0 +1,22 @@
+{
+  "name": "goal-predictor-bot",
+  "version": "1.0.0",
+  "description": "Goal Prediction Bot with Dual Payment System",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.6.0",
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.0",
+    "form-data": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["telegram", "bot", "prediction", "football"],
+  "author": "Developer",
+  "license": "MIT"
+}
