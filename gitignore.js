@@ -1,0 +1,15 @@
+node_modules/
+.env
+*.log
+.DS_Store
+.firebase/
+.vscode/
+.idea/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+firebase-key.json
+config.json
+.env.local

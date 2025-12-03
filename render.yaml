@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: goal-predictor-bot
+    env: node
+    region: frankfurt  # أو أي منطقة قريبة منك
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
