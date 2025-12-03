@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ai-goal-predictor
+    env: node
+    buildCommand: npm install
+    startCommand: node bot.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+    healthCheckPath: /
+    autoDeploy: true
