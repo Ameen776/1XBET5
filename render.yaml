@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: ai-goal-predictor-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: CHANNEL_ID
+        sync: false
+      - key: CHANNEL_USERNAME
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: IMGBB_API_KEY
+        sync: false
+      - key: PAYMENT_WEEK
+        sync: false
+      - key: PAYMENT_MONTH
+        sync: false
+      - key: PAYMENT_3MONTHS
+        sync: false
+      - key: PAYMENT_YEAR
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
