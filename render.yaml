@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: ai-goal-predictor-ultimate
+    env: node
+    region: frankfurt  # أو أي region قريب منك
+    plan: free  # أو starter للمشاريع المهمة
+    branch: main
+    
+    # Build Command
+    buildCommand: |
+      echo "Installing dependencies..."
+      npm install
+      echo "Build completed!"
+    
+    # Start Command
+    startCommand: |
+      echo "Starting AI Goal Predictor Ultimate v16.0..."
+      node bot.js
+    
+    # Health Check
+    healthCheckPath: /
+    
+    # Auto-Deploy
+    autoDeploy: true
+    
+    # Environment Variables (تضاف من Dashboard)
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: NODE_ENV
+        value: production
+    
+    # Disk (مهم لـ Firebase)
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

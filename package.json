@@ -1,0 +1,32 @@
+{
+  "name": "ai-goal-predictor-ultimate",
+  "version": "16.0.1",
+  "description": "AI GOAL PREDICTOR ULTIMATE - Version 16.0 Enhanced with Dual Payment System",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram-bot",
+    "ai-prediction",
+    "football",
+    "goal-predictor",
+    "payment-system"
+  ],
+  "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.6.0",
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.0",
+    "telegraf": "^4.16.3",
+    "form-data": "^4.0.0",
+    "dotenv": "^16.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
