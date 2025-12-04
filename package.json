@@ -5,7 +5,8 @@
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
-    "dev": "nodemon bot.js"
+    "dev": "nodemon bot.js",
+    "debug": "node -e \"console.log('Firebase Connected:', process.env.FIREBASE_PROJECT_ID ? 'Yes' : 'No'); console.log('Bot Token:', process.env.BOT_TOKEN ? 'Set' : 'Not Set');\""
   },
   "dependencies": {
     "telegraf": "^4.16.3",
@@ -13,6 +14,9 @@
     "axios": "^1.7.2",
     "express": "^4.18.2",
     "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=18.0.0"
