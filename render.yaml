@@ -2,7 +2,7 @@ services:
   - type: web
     name: ai-goal-predictor-bot
     env: node
-    region: frankfurt  # أو أي region قريب منك
+    region: frankfurt
     plan: free
     branch: main
     buildCommand: npm install
