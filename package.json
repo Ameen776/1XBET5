@@ -1,12 +1,9 @@
 {
   "name": "ai-goal-predictor-bot",
-  "version": "16.0.1",
-  "description": "AI Goal Predictor Bot with Dual Payment System and Firebase Integration",
+  "version": "1.0.0",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "nodemon bot.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
   "dependencies": {
     "telegraf": "^4.16.3",
@@ -14,25 +11,5 @@
     "express": "^4.19.2",
     "firebase-admin": "^12.1.0",
     "form-data": "^4.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "keywords": [
-    "telegram-bot",
-    "ai-prediction",
-    "goal-predictor",
-    "firebase",
-    "payment-system"
-  ],
-  "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/username/ai-goal-predictor-bot.git"
   }
 }
