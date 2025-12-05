@@ -1,0 +1,101 @@
+services:
+  - type: web
+    name: ai-goal-predictor-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: PORT
+        value: 3000
+    envVarGroups:
+      - name: telegram-config
+        envVars:
+          - key: BOT_TOKEN
+            sync: false
+          - key: ADMIN_ID
+            sync: false
+          - key: CHANNEL_ID
+            sync: false
+          - key: CHANNEL_USERNAME
+            sync: false
+      - name: firebase-config
+        envVars:
+          - key: FIREBASE_PROJECT_ID
+            sync: false
+          - key: FIREBASE_CLIENT_EMAIL
+            sync: false
+          - key: FIREBASE_PRIVATE_KEY
+            sync: false
+      - name: api-keys
+        envVars:
+          - key: GEMINI_API_KEY
+            sync: false
+          - key: OPENAI_API_KEY
+            sync: false
+          - key: IMGBB_API_KEY
+            sync: false
+      - name: prices-binance
+        envVars:
+          - key: PRICE_BINANCE_WEEK
+            value: "10"
+          - key: PRICE_BINANCE_MONTH
+            value: "30"
+          - key: PRICE_BINANCE_THREE_MONTHS
+            value: "80"
+          - key: PRICE_BINANCE_YEAR
+            value: "250"
+      - name: prices-bank
+        envVars:
+          - key: PRICE_BANK_WEEK
+            value: "10"
+          - key: PRICE_BANK_MONTH
+            value: "30"
+          - key: PRICE_BANK_THREE_MONTHS
+            value: "80"
+          - key: PRICE_BANK_YEAR
+            value: "250"
+      - name: payment-links-binance
+        envVars:
+          - key: PAYMENT_BINANCE_WEEK
+            value: "https://binance.com/payment/weekly"
+          - key: PAYMENT_BINANCE_MONTH
+            value: "https://binance.com/payment/monthly"
+          - key: PAYMENT_BINANCE_THREE_MONTHS
+            value: "https://binance.com/payment/3months"
+          - key: PAYMENT_BINANCE_YEAR
+            value: "https://binance.com/payment/yearly"
+      - name: bank-details
+        envVars:
+          - key: BANK_ACCOUNT_WEEK
+            value: "1234567890"
+          - key: BANK_ACCOUNT_MONTH
+            value: "1234567890"
+          - key: BANK_ACCOUNT_THREE_MONTHS
+            value: "1234567890"
+          - key: BANK_ACCOUNT_YEAR
+            value: "1234567890"
+          - key: BANK_IMAGE_WEEK
+            value: "https://i.ibb.co/default-bank-week.jpg"
+          - key: BANK_IMAGE_MONTH
+            value: "https://i.ibb.co/default-bank-month.jpg"
+          - key: BANK_IMAGE_THREE_MONTHS
+            value: "https://i.ibb.co/default-bank-3months.jpg"
+          - key: BANK_IMAGE_YEAR
+            value: "https://i.ibb.co/default-bank-year.jpg"
+      - name: app-config
+        envVars:
+          - key: VERSION
+            value: "16.0.1"
+          - key: DEVELOPER
+            value: "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛"
+          - key: CHANNEL
+            value: "@GEMZGOOL"
+          - key: START_IMAGE
+            value: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg"
+          - key: ANALYSIS_IMAGE
+            value: "https://i.ibb.co/VYjf05S0/Screenshot.png"
+          - key: PREDICTION_IMAGE
+            value: "https://i.ibb.co/rGTZm2mB/IMG.jpg"
