@@ -1,23 +1,25 @@
-# Telegram Bot Configuration
-BOT_TOKEN=your_bot_token_here
-ADMIN_ID=your_admin_id_here
-CHANNEL_ID=your_channel_id_here
-CHANNEL_USERNAME=@your_channel_username
+# Telegram
+BOT_TOKEN=123456:ABC-DEF-your-token
+ADMIN_ID=123456789
 
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----
+# Firebase Admin SDK
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
 
-# AI APIs (Optional)
-GEMINI_API_KEY=your_gemini_api_key
-OPENAI_API_KEY=your_openai_api_key
+# APIs
+OPENAI_API_KEY=sk-....
+GEMINI_API_KEY=....
+IMGBB_API_KEY=....
 
-# Payment Links (Optional)
-PAYMENT_WEEK=https://binance.com/payment/weekly
-PAYMENT_MONTH=https://binance.com/payment/monthly
-PAYMENT_3MONTHS=https://binance.com/payment/3months
-PAYMENT_YEAR=https://binance.com/payment/yearly
+# Payment Plans
+PAYMENT_WEEK=5
+PAYMENT_MONTH=18
+PAYMENT_3MONTHS=50
+PAYMENT_YEAR=180
 
-# ImgBB API Key
-IMGBB_API_KEY=your_imgbb_api_key
+PORT=10000
+
+# Telegram Channel
+CHANNEL_ID=-1001234567890
+CHANNEL_USERNAME=@yourchannel
