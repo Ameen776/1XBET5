@@ -1,0 +1,12 @@
+.env
+node_modules/
+*.log
+.DS_Store
+firebase-keys/
+serviceAccountKey.json
+package-lock.json
+yarn.lock
+.vercel
+.netlify
+.render
+.env.local
