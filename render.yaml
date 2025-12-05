@@ -1,37 +1,34 @@
 services:
   - type: web
-    name: ai-goal-predictor-bot
+    name: telegram-ai-bot
     env: node
-    buildCommand: npm install
-    startCommand: npm start
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node bot.js"
     envVars:
       - key: BOT_TOKEN
-        sync: false
+        value: ${BOT_TOKEN}
       - key: ADMIN_ID
-        sync: false
-      - key: CHANNEL_ID
-        sync: false
-      - key: CHANNEL_USERNAME
-        sync: false
+        value: ${ADMIN_ID}
       - key: FIREBASE_PROJECT_ID
-        sync: false
+        value: ${FIREBASE_PROJECT_ID}
       - key: FIREBASE_CLIENT_EMAIL
-        sync: false
+        value: ${FIREBASE_CLIENT_EMAIL}
       - key: FIREBASE_PRIVATE_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
+        value: ${FIREBASE_PRIVATE_KEY}
       - key: OPENAI_API_KEY
-        sync: false
+        value: ${OPENAI_API_KEY}
+      - key: GEMINI_API_KEY
+        value: ${GEMINI_API_KEY}
       - key: IMGBB_API_KEY
-        sync: false
+        value: ${IMGBB_API_KEY}
       - key: PAYMENT_WEEK
-        sync: false
+        value: ${PAYMENT_WEEK}
       - key: PAYMENT_MONTH
-        sync: false
+        value: ${PAYMENT_MONTH}
       - key: PAYMENT_3MONTHS
-        sync: false
+        value: ${PAYMENT_3MONTHS}
       - key: PAYMENT_YEAR
-        sync: false
-    healthCheckPath: /
-    autoDeploy: true
+        value: ${PAYMENT_YEAR}
+      - key: PORT
+        value: ${PORT}
