@@ -1,32 +1,19 @@
 {
-  "name": "ai-goal-predictor-bot",
-  "version": "16.0.0",
-  "description": "AI Goal Predictor Bot with Dual Payment System",
+  "name": "telegram-ai-bot",
+  "version": "1.0.0",
+  "description": "Telegram Bot deployed on Render",
   "main": "bot.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "node bot.js",
-    "dev": "nodemon bot.js",
-    "debug": "node -e \"console.log('Firebase Connected:', process.env.FIREBASE_PROJECT_ID ? 'Yes' : 'No'); console.log('Bot Token:', process.env.BOT_TOKEN ? 'Set' : 'Not Set');\""
+    "start": "node bot.js"
   },
   "dependencies": {
-    "telegraf": "^4.16.3",
-    "firebase-admin": "^12.1.1",
-    "axios": "^1.7.2",
+    "axios": "^1.4.0",
     "express": "^4.18.2",
-    "form-data": "^4.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "telegram-bot",
-    "prediction",
-    "ai",
-    "goal-predictor"
-  ],
-  "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
-  "license": "ISC"
+    "firebase-admin": "^11.10.1",
+    "form-data": "^4.0.0",
+    "telegraf": "^4.12.2"
+  }
 }
