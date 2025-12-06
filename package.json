@@ -1,0 +1,23 @@
+{
+  "name": "ai-goal-predictor-bot",
+  "version": "16.0.1",
+  "description": "AI Goal Predictor Bot with Firebase and Dual Payment System",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["telegram", "bot", "ai", "predictor", "firebase"],
+  "author": "♛𝑨𝒎𝒆𝒆𝒏 𝑨𝒍𝒛𝒘𝒂𝒉𝒊♛",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "firebase-admin": "^12.1.0",
+    "axios": "^1.6.7",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
