@@ -85,8 +85,6 @@ async function initializeFirebase() {
         return false;
     }
 }
-
-// 🔧 TION - UPDATED FOR DUAL PAYMENT (ENVIRONMENT VARIABLES ONLY)
 // 🌐 EXPRESS SERVER FOR RENDER - START IMMEDIATELY
 const express = require('express');
 const app = express();
@@ -135,11 +133,7 @@ setTimeout(() => {
     // باقي كود البوت يبدأ من هنا
 }, 2000);
 
-// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT (ENVIRONMENT VARIABLES ONLY)  <--- هنا
-const CONFIG = {
-    BOT_TOKEN: process.env.BOT_TOKEN,
-    // ... باقي الكود
-    BOT_TOKEN: process.env.BOT_TOKEN,
+const CONFIG = {  // <--- هذا السطر موجود أصلاً، لا تحذفه!
     ADMIN_ID: process.env.ADMIN_ID,
     CHANNEL_ID: process.env.CHANNEL_ID,
     CHANNEL_USERNAME: process.env.CHANNEL_USERNAME,
@@ -207,7 +201,7 @@ const CONFIG = {
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || ""
 };
 
-console.log('✅ tion loaded successfully from environment variables');
+console.log('✅ Configuration loaded successfully from environment variables');
 console.log('📊 Prices - Binance:', CONFIG.SUBSCRIPTION_PRICES.binance);
 console.log('📊 Prices - Bank:', CONFIG.SUBSCRIPTION_PRICES.bank);
 
@@ -218,7 +212,7 @@ console.log('📊 Prices - Bank:', CONFIG.SUBSCRIPTION_PRICES.bank);
     
     if (!firebaseReady) {
         console.log('❌ فشل تهيئة Firebase، إيقاف البوت');
-        console.log('💡 Please check Firebase tion in Render Environment Variables');
+        console.log('💡 Please check Firebase configuration in Render Environment Variables');
         process.exit(1);
     }
     
