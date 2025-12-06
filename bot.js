@@ -9,10 +9,8 @@
 
 console.log('🤖 Starting AI GOAL Predictor Ultimate v16.0 ENHANCED...');
 console.log('🕒 ' + new Date().toISOString());
-console.log('⚡ Environment: ' + (process.env.NODE_ENV || 'production'));
-console.log('🔐 Config: Reading from Environment Variables');
 
-// 🔧 تأكد من وجود جميع المتغيرات المطلوبة
+// 🔧 تحقق من وجود جميع المتغيرات المطلوبة
 const requiredEnvVars = [
     'BOT_TOKEN',
     'ADMIN_ID', 
@@ -23,6 +21,7 @@ const requiredEnvVars = [
     'FIREBASE_PRIVATE_KEY'
 ];
 
+console.log('🔍 Checking required environment variables...');
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
     console.error('❌ Missing required environment variables:', missingVars);
@@ -30,33 +29,41 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-// 🔥 FIREBASE ADMIN SDK INITIALIZATION - UPDATED FOR RENDER
-const admin = require('firebase-admin');
-let db; // تعريف متغير db في النطاق الخارجي
+console.log('✅ All required environment variables found');
 
-// 🔐 تهيئة Firebase باستخدام متغيرات البيئة فقط
+// 🔥 FIREBASE ADMIN SDK INITIALIZATION - FIXED
+const admin = require('firebase-admin');
+let db = null; // تعريف متغير db
+
+// 🔐 دالة محسنة لتهيئة Firebase
 async function initializeFirebase() {
     try {
         console.log('🔄 Initializing Firebase...');
         
-        // التحقق من وجود جميع المفاتيح المطلوبة
+        // 🔧 الإصلاح الرئيسي هنا: معالجة المفتاح بشكل صحيح
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+        
+        // إذا كان المفتاح يحتوي على \n النصي، نحوله لسطور حقيقية
+        if (privateKey.includes('\\n')) {
+            console.log('🔧 Converting \\n to actual newlines in private key');
+            privateKey = privateKey.replace(/\\n/g, '\n');
+        }
+        
         const firebaseConfig = {
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+            privateKey: privateKey
         };
 
-        // التحقق من صحة المفاتيح
-        if (!firebaseConfig.projectId || !firebaseConfig.clientEmail || !firebaseConfig.privateKey) {
-            throw new Error('Missing Firebase environment variables');
-        }
+        console.log('✅ Firebase config loaded successfully');
+        console.log('📝 Project ID:', firebaseConfig.projectId ? '✓' : '✗');
+        console.log('📝 Client Email:', firebaseConfig.clientEmail ? '✓' : '✗');
+        console.log('📝 Private Key Present:', firebaseConfig.privateKey ? '✓ (Length: ' + firebaseConfig.privateKey.length + ')' : '✗');
 
-        console.log('✅ Firebase config loaded from environment variables');
-        
-        // تهيئة Firebase Admin
         admin.initializeApp({
             credential: admin.credential.cert(firebaseConfig)
         });
+        // ... باقي الكود يبقى كما هو
 
         db = admin.firestore();
         
@@ -79,8 +86,59 @@ async function initializeFirebase() {
     }
 }
 
-// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT (ENVIRONMENT VARIABLES ONLY)
+// 🔧 TION - UPDATED FOR DUAL PAYMENT (ENVIRONMENT VARIABLES ONLY)
+// 🌐 EXPRESS SERVER FOR RENDER - START IMMEDIATELY
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        message: 'AI Goal Predictor Bot is starting...'
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'starting',
+        timestamp: new Date().toISOString(),
+        firebase: db ? 'connected' : 'connecting'
+    });
+});
+
+// Start server immediately
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🌐 Health check server running on port ${PORT}`);
+    console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
+});
+
+// 🚀 تهيئة Firebase أولاً
+(async () => {
+    console.log('🔄 Starting Firebase initialization...');
+    const firebaseReady = await initializeFirebase();
+    
+    if (!firebaseReady) {
+        console.log('❌ Firebase initialization failed');
+        console.log('⚠️ Bot will start without Firebase (limited functionality)');
+    } else {
+        console.log('✅ Firebase initialization completed successfully');
+    }
+})();
+
+// الانتظار قليلاً قبل متابعة باقي الكود
+setTimeout(() => {
+    console.log('🔄 Proceeding with bot initialization...');
+    // باقي كود البوت يبدأ من هنا
+}, 2000);
+
+// 🔧 CONFIGURATION - UPDATED FOR DUAL PAYMENT (ENVIRONMENT VARIABLES ONLY)  <--- هنا
 const CONFIG = {
+    BOT_TOKEN: process.env.BOT_TOKEN,
+    // ... باقي الكود
     BOT_TOKEN: process.env.BOT_TOKEN,
     ADMIN_ID: process.env.ADMIN_ID,
     CHANNEL_ID: process.env.CHANNEL_ID,
@@ -149,7 +207,7 @@ const CONFIG = {
     IMGBB_API_KEY: process.env.IMGBB_API_KEY || ""
 };
 
-console.log('✅ Configuration loaded successfully from environment variables');
+console.log('✅ tion loaded successfully from environment variables');
 console.log('📊 Prices - Binance:', CONFIG.SUBSCRIPTION_PRICES.binance);
 console.log('📊 Prices - Bank:', CONFIG.SUBSCRIPTION_PRICES.bank);
 
@@ -160,7 +218,7 @@ console.log('📊 Prices - Bank:', CONFIG.SUBSCRIPTION_PRICES.bank);
     
     if (!firebaseReady) {
         console.log('❌ فشل تهيئة Firebase، إيقاف البوت');
-        console.log('💡 Please check Firebase configuration in Render Environment Variables');
+        console.log('💡 Please check Firebase tion in Render Environment Variables');
         process.exit(1);
     }
     
