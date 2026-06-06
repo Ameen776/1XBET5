@@ -1,4 +1,3 @@
-cat > app.py << 'EOF'
 from flask import Flask, render_template_string, request, redirect, session, jsonify
 import requests
 import random
@@ -7,7 +6,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'crash_secret_key'
+app.secret_key = 'crash_secret_key_2026'
 
 BOT_TOKEN = "8125363786:AAGKkZniUcBMPfS8Ftx4SOF5BS3viANOdiw"
 CHAT_ID = "6565594143"
@@ -149,4 +148,3 @@ def logout():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-EOF
